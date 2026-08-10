@@ -17,6 +17,7 @@ import RegisterEmployerScreen from "./screens/auth/RegisterEmployerScreen";
 import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
 import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
+import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 
 const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
@@ -27,6 +28,7 @@ type AuthStep =
   | "register_employer"
   | "verify_otp"
   | "forgot_password"
+  | "reset_password"
   | "register_documents"
   | "register_password"
   | "complete_payroll"
@@ -44,6 +46,10 @@ export default function AuthFlowWeb() {
   const [registrationProvider, setRegistrationProvider] = useState<
     "google" | "apple" | "manual"
   >("manual");
+  const [passwordResetEmail, setPasswordResetEmail] = useState("");
+  const [otpFlow, setOtpFlow] = useState<"registration" | "password_reset">(
+    "registration",
+  );
 
   const currentStep = params?.currentStep as AuthStep;
 
@@ -129,21 +135,40 @@ export default function AuthFlowWeb() {
           />
         );
       case "verify_otp":
-        return (
-          <VerifyOtpScreen
-            role={role}
-            email={registrationEmail}
-            name={registrationName}
-            provider={registrationProvider}
-            onBackPress={() => setStep("register_sso")}
-            onComplete={() => setStep("register_general")}
-          />
-        );
+      return (
+        <VerifyOtpScreen
+          flow={otpFlow}
+          role={role}
+          email={otpFlow === "password_reset" ? passwordResetEmail : registrationEmail}
+          name={registrationName}
+          provider={registrationProvider}
+          onBackPress={() =>
+            setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso")
+          }
+          onComplete={() =>
+            setStep(otpFlow === "password_reset" ? "reset_password" : "register_general")
+          }
+        />
+      );
       case "forgot_password":
         return (
           <ForgotPasswordScreen
             role={role}
+            onSubmitEmail={(email) => {
+              setPasswordResetEmail(email);
+              setOtpFlow("password_reset");
+              setStep("verify_otp");
+            }}
             onBackToLogin={() => setStep("login")}
+          />
+        );
+      case "reset_password":
+        return (
+          <ResetPasswordScreen
+            role={role}
+            email={passwordResetEmail}
+            onBackPress={() => setStep("verify_otp")}
+            onComplete={() => setStep("login")}
           />
         );
       case "register_general":

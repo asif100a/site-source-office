@@ -7,6 +7,7 @@ import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 
 interface VerifyOtpScreenProps {
+  flow?: "registration" | "password_reset";
   role?: UserRole;
   name?: string;
   email?: string;
@@ -20,6 +21,7 @@ const OTP_LENGTH = 6;
 const RESEND_DELAY = 30;
 
 export default function VerifyOtpScreen({
+  flow = "registration",
   role,
   name,
   email,
@@ -84,6 +86,14 @@ export default function VerifyOtpScreen({
       return;
     }
 
+    if (flow === "password_reset") {
+      router.push({
+        pathname: "/auth",
+        params: { step: "login", role: activeRole },
+      });
+      return;
+    }
+
     router.push({
       pathname: "/auth",
       params: { step: "register_general", role: activeRole },
@@ -110,7 +120,10 @@ export default function VerifyOtpScreen({
 
     router.push({
       pathname: "/auth",
-      params: { step: "register_sso", role: activeRole },
+      params: {
+        step: flow === "password_reset" ? "forgot_password" : "register_sso",
+        role: activeRole,
+      },
     });
   };
 
@@ -126,10 +139,12 @@ export default function VerifyOtpScreen({
           <LogoWhite />
         </View>
         <Text className="text-3xl font-bold tracking-tight text-white">
-          Verify Your Email
+          {flow === "password_reset" ? "Verify Reset Code" : "Verify Your Email"}
         </Text>
         <Text className="mt-1.5 text-sm font-medium text-white/85">
-          We sent a 6-digit code to {verificationTarget}.
+          {flow === "password_reset"
+            ? `We sent a 6-digit code to ${verificationTarget}.`
+            : `We sent a 6-digit code to ${verificationTarget}.`}
         </Text>
       </View>
 
@@ -137,10 +152,16 @@ export default function VerifyOtpScreen({
         <View className="gap-6">
           <View className="gap-2">
             <Text className="text-lg font-semibold text-[#1B2530]">
-              {name ? `Hi ${name}, enter your code` : "Enter your code"}
+              {flow === "password_reset"
+                ? "Enter the reset code"
+                : name
+                  ? `Hi ${name}, enter your code`
+                  : "Enter your code"}
             </Text>
             <Text className="text-sm leading-6 text-neutral-500">
-              Type the code we sent to finish setting up your account.
+              {flow === "password_reset"
+                ? "Type the code we sent to verify your password reset request."
+                : "Type the code we sent to finish setting up your account."}
             </Text>
           </View>
 
@@ -194,7 +215,9 @@ export default function VerifyOtpScreen({
           <View className="flex-row items-center gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
             <RotateCcw size={16} color="#FF5500" />
             <Text className="text-sm font-medium text-neutral-600">
-              Resend available in {secondsLeft}s
+              {flow === "password_reset"
+                ? `Resend code in ${secondsLeft}s`
+                : `Resend available in ${secondsLeft}s`}
             </Text>
           </View>
         </View>
@@ -206,7 +229,7 @@ export default function VerifyOtpScreen({
             className="flex-row items-center justify-center gap-2 rounded-xl bg-[#1B2530] py-4"
           >
             <Text className="text-base font-semibold text-white">
-              Verify and continue
+              {flow === "password_reset" ? "Verify code" : "Verify and continue"}
             </Text>
             <ArrowRight size={16} color="#FFFFFF" />
           </TouchableOpacity>
@@ -222,13 +245,13 @@ export default function VerifyOtpScreen({
                 secondsLeft > 0 ? "text-neutral-400" : "text-[#1B2530] underline"
               }`}
             >
-              Resend code
+              {flow === "password_reset" ? "Send again" : "Resend code"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
             <Text className="text-center text-sm font-semibold text-neutral-600 underline">
-              Back to sign up
+              {flow === "password_reset" ? "Back to password reset" : "Back to sign up"}
             </Text>
           </TouchableOpacity>
         </View>

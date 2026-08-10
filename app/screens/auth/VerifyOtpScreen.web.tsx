@@ -8,6 +8,7 @@ import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import AuthWebShell from "./_web-shell";
 
 interface VerifyOtpScreenProps {
+  flow?: "registration" | "password_reset";
   role?: UserRole;
   name?: string;
   email?: string;
@@ -21,6 +22,7 @@ const OTP_LENGTH = 6;
 const RESEND_DELAY = 30;
 
 export default function VerifyOtpScreenWeb({
+  flow = "registration",
   role,
   name,
   email,
@@ -85,6 +87,14 @@ export default function VerifyOtpScreenWeb({
       return;
     }
 
+    if (flow === "password_reset") {
+      router.push({
+        pathname: "/auth",
+        params: { step: "login", role: activeRole },
+      });
+      return;
+    }
+
     router.push({
       pathname: "/auth",
       params: { step: "register_general", role: activeRole },
@@ -111,24 +121,31 @@ export default function VerifyOtpScreenWeb({
 
     router.push({
       pathname: "/auth",
-      params: { step: "register_sso", role: activeRole },
+      params: {
+        step: flow === "password_reset" ? "forgot_password" : "register_sso",
+        role: activeRole,
+      },
     });
   };
 
   return (
     <AuthWebShell
       eyebrow="Verification"
-      title="Verify your email"
+      title={flow === "password_reset" ? "Verify reset code" : "Verify your email"}
       subtitle={`We sent a 6-digit code to ${verificationTarget}.`}
     >
       <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
         <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
           <LogoWhite />
           <Text className="mt-6 text-center text-2xl font-black tracking-tight text-white">
-            Confirm your code
+            {flow === "password_reset" ? "Confirm reset code" : "Confirm your code"}
           </Text>
           <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
-            {name ? `Hi ${name}, enter the code to continue registration.` : "Enter the code to continue registration."}
+            {flow === "password_reset"
+              ? "Enter the code to verify your password reset request."
+              : name
+                ? `Hi ${name}, enter the code to continue registration.`
+                : "Enter the code to continue registration."}
           </Text>
         </View>
 
@@ -183,14 +200,18 @@ export default function VerifyOtpScreenWeb({
           <View className="flex-row items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3">
             <ShieldCheck size={16} color="#FF5500" />
             <Text className="text-sm font-medium text-neutral-600">
-              Secure verification keeps your registration linked to the right account.
+              {flow === "password_reset"
+                ? "Secure verification protects password changes."
+                : "Secure verification keeps your registration linked to the right account."}
             </Text>
           </View>
 
           <View className="flex-row items-center gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
             <RotateCcw size={16} color="#FF5500" />
             <Text className="text-sm font-medium text-neutral-600">
-              Resend available in {secondsLeft}s
+              {flow === "password_reset"
+                ? `Resend code in ${secondsLeft}s`
+                : `Resend available in ${secondsLeft}s`}
             </Text>
           </View>
         </View>
@@ -202,7 +223,7 @@ export default function VerifyOtpScreenWeb({
             className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
           >
             <Text className="text-base font-semibold text-white">
-              Verify and continue
+              {flow === "password_reset" ? "Verify code" : "Verify and continue"}
             </Text>
             <ArrowRight size={16} color="#FFFFFF" />
           </TouchableOpacity>
@@ -218,13 +239,13 @@ export default function VerifyOtpScreenWeb({
                   secondsLeft > 0 ? "text-neutral-400" : "text-[#1B2530] underline"
                 }`}
               >
-                Resend code
+                {flow === "password_reset" ? "Send again" : "Resend code"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
               <Text className="text-sm font-bold text-neutral-600 underline">
-                Back to sign up
+                {flow === "password_reset" ? "Back to password reset" : "Back to sign up"}
               </Text>
             </TouchableOpacity>
           </View>
