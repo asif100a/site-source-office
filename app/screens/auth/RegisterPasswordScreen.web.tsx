@@ -47,23 +47,8 @@ export default function RegisterPasswordScreenWeb({
   };
 
   return (
-    <AuthWebShell
-      eyebrow="Account security"
-      title="Create your password"
-      subtitle="Set a password for your new account and keep it unique."
-      footer={
-        <View className="flex-row items-center gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
-          <ShieldCheck size={16} color="#16A34A" />
-          <Text className="text-xs font-semibold text-neutral-600">
-            Passwords are checked for confirmation before submission
-          </Text>
-        </View>
-      }
-    >
-      <ScrollView
+      <View
         className="flex-1 min-h-0"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 4 }}
       >
         <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
           <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
@@ -132,7 +117,6 @@ export default function RegisterPasswordScreenWeb({
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-    </AuthWebShell>
+      </View>
   );
 }
