@@ -358,7 +358,7 @@ export default function WorkerJobsWebScreen() {
                           activeMode === "browse"
                             ? "text-white"
                             : "text-neutral-700"
-                        }`}
+                        } text-center`}
                       >
                         Browse opportunities
                       </Text>
@@ -377,7 +377,7 @@ export default function WorkerJobsWebScreen() {
                           activeMode === "offers"
                             ? "text-white"
                             : "text-neutral-700"
-                        }`}
+                        } text-center`}
                       >
                         Offers
                       </Text>

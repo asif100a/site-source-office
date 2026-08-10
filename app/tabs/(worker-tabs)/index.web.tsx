@@ -69,16 +69,16 @@ const METRICS: Metric[] = [
   },
   {
     id: "earnings",
-    label: "Earnings this week",
+    label: "Estimated weekly earnings",
     value: "GBP 620",
-    delta: "+18% vs last week",
+    delta: "Based on active jobs",
     icon: <Wallet size={18} color={Colors.common.BRAND} />,
   },
   {
     id: "response",
     label: "Response time",
     value: "12 min",
-    delta: "Fastest in your area",
+    delta: "Average employer reply",
     icon: <Clock3 size={18} color={Colors.common.BRAND} />,
   },
 ];
@@ -87,19 +87,19 @@ const ACTIVITIES: Activity[] = [
   {
     id: "1",
     title: "Interview request received",
-    detail: "Brixton Builders wants to schedule a call for the carpenter role.",
+    detail: "Brixton Builders requested a call about your carpenter application.",
     time: "10 minutes ago",
   },
   {
     id: "2",
-    title: "Saved job matched your profile",
-    detail: "Warehouse operator in Shoreditch is now open for morning shifts.",
+    title: "New job matched your profile",
+    detail: "A warehouse operative role in Shoreditch is open for morning shifts.",
     time: "1 hour ago",
   },
   {
     id: "3",
     title: "Application updated",
-    detail: "Your electrician application moved to shortlisting.",
+    detail: "Your electrician application has moved to the shortlist.",
     time: "Today",
   },
 ];
@@ -108,22 +108,22 @@ const RECOMMENDED_JOBS: RecommendedJob[] = [
   {
     id: "3",
     title: "Labourer",
-    company: "Tech Innovators Inc.",
+    company: "Shoreditch Site Services",
     payRate: "120",
     tag: "Market Rate",
     location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
+    team: "4 labourers, 1 site supervisor",
     duration: "12 Jun - 1 month",
     time: "2 hours ago",
   },
   {
     id: "4",
     title: "Labourer",
-    company: "London Builder Limited",
+    company: "London Build Group",
     payRate: "130",
-    tag: "Hot match",
+    tag: "Urgent hire",
     location: "Camden - 2.4 mi away",
-    team: "4 workers, 1 supervisor",
+    team: "6 workers, 1 site supervisor",
     duration: "15 Jun - 3 weeks",
     time: "3 hours ago",
   },
@@ -271,12 +271,11 @@ export default function WorkerHomeScreenWeb() {
 
                   <View className="gap-2">
                     <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
-                      Good morning, Worker.
+                      Your worker dashboard.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
-                      Keep track of matches, interviews, and active jobs from one
-                      place. The page is built to scale from mobile to desktop
-                      without changing how you navigate the app.
+                      Track job matches, applications, interviews, and active
+                      site work from one organized workspace.
                     </Text>
                   </View>
 
@@ -332,7 +331,7 @@ export default function WorkerHomeScreenWeb() {
                       <View className="flex-row items-center justify-between gap-3">
                         <View>
                           <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
-                            Available today
+                            Jobs available today
                           </Text>
                           <Text className="mt-1 text-xl font-black tracking-tight text-neutral-950">
                             12 jobs near you
@@ -346,7 +345,7 @@ export default function WorkerHomeScreenWeb() {
                       <View className="mt-4 flex-row items-center gap-2 rounded-2xl bg-neutral-100 px-3 py-2">
                         <CheckCircle2 size={16} color="#16A34A" />
                         <Text className="text-xs font-medium text-neutral-600">
-                          3 interviews pending and 1 offer ready to review
+                          3 interview requests and 1 offer ready for review
                         </Text>
                       </View>
                     </View>
@@ -411,8 +410,8 @@ export default function WorkerHomeScreenWeb() {
                     85% complete
                   </Text>
                   <Text className="mt-2 text-sm leading-6 text-neutral-600">
-                    Finish your profile to improve your match quality and make it
-                    easier for employers to review your availability.
+                    Complete your profile so employers can confirm your skills,
+                    location, documents, and availability faster.
                   </Text>
 
                   <View className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-100">
