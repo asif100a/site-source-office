@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   getDashboardRouteForRole,
@@ -77,9 +77,7 @@ export default function AuthFlowWeb() {
   const goToRegisterForCurrentRole = () => {
     const currentRole = params.role ? normalizeUserRole(params.role) : role;
     setRole(currentRole);
-    setStep(
-      currentRole === "employer" ? "register_employer" : "register_sso",
-    );
+    setStep(currentRole === "employer" ? "register_employer" : "register_sso");
   };
 
   const renderActiveScreen = () => {
@@ -177,47 +175,10 @@ export default function AuthFlowWeb() {
   };
 
   return (
-    <View className="flex-1 bg-neutral-50 lg:flex-row">
-      <View className="hidden lg:flex lg:w-[420px] xl:w-[480px] bg-neutral-950 px-10 py-10 justify-between">
-        <View className="gap-6">
-          <View className="rounded-[28px] border border-white/10 bg-white/5 p-6">
-            <View className="h-12 w-12 rounded-2xl bg-[#FF5500]" />
-            <View className="mt-6 gap-3">
-              <View className="self-start rounded-full bg-white/10 px-3 py-1.5">
-                <View className="h-2 w-2 rounded-full bg-emerald-400" />
-              </View>
-              <View className="gap-2">
-                <View className="h-4 w-36 rounded-full bg-white/15" />
-                <View className="h-4 w-56 rounded-full bg-white/10" />
-              </View>
-            </View>
-          </View>
-
-          <View className="max-w-sm gap-4">
-            <View className="h-10 w-36 rounded-full bg-white/10" />
-            <View className="gap-3">
-              <View className="h-3 w-full rounded-full bg-white/10" />
-              <View className="h-3 w-5/6 rounded-full bg-white/10" />
-              <View className="h-3 w-4/6 rounded-full bg-white/10" />
-            </View>
-          </View>
-        </View>
-
-        <View className="gap-3">
-          <View className="h-3 w-24 rounded-full bg-white/10" />
-          <View className="h-3 w-40 rounded-full bg-white/10" />
-        </View>
+    <ScrollView className="flex-1 bg-neutral-50 justify-center items-center">
+      <View className="max-w-full w-full md:min-w-xl xl:min-w-3xl">
+        {renderActiveScreen()}
       </View>
-
-      <View className="flex-1 min-w-0 min-h-0">
-        <View className="flex-1 min-h-0 px-4 py-6 md:px-10 md:py-10 xl:px-14">
-          <View className="mx-auto flex-1 min-h-0 w-full max-w-3xl">
-            <View className="flex-1 min-h-0 overflow-hidden rounded-[32px] border border-neutral-200 bg-white shadow-sm">
-              {renderActiveScreen()}
-            </View>
-          </View>
-        </View>
-      </View>
-    </View>
+    </ScrollView>
   );
 }

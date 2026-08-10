@@ -65,9 +65,8 @@ export default function LoginScreenWeb({
   };
 
   return (
-      <ScrollView
+      <View
         className="flex-1 min-h-0"
-        showsVerticalScrollIndicator={false}
       >
         <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
           <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
@@ -152,6 +151,6 @@ export default function LoginScreenWeb({
             </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
   );
 }
