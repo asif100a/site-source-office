@@ -13,7 +13,6 @@ import {
   MessageSquare,
   Star,
   User,
-  BadgeCheck,
   ShieldCheck,
   Sparkles,
   ArrowRight,
@@ -21,14 +20,12 @@ import {
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
-import StandardToggle from "@/components/standard_ui/StandardToggle";
 import { Colors } from "@/constants/Colors";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
   label: string;
   onPress?: () => void;
-  type?: "switch";
 };
 
 type StatCardProps = {
@@ -52,13 +49,6 @@ const PROFILE_STATS = [
     value: "4.9/5",
     note: "18 reviews",
     icon: <Star size={18} color={Colors.common.BRAND} />,
-  },
-  {
-    id: "availability",
-    label: "Availability",
-    value: "Online",
-    note: "Ready for work",
-    icon: <BadgeCheck size={18} color={Colors.common.BRAND} />,
   },
   {
     id: "response",
@@ -116,7 +106,6 @@ function SectionTitle({
 
 export default function WorkerProfileWebScreen() {
   const router = useRouter();
-  const [available, setAvailable] = useState(true);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportModalState, setSupportModalState] = useState<"form" | "submitted">(
     "form",
@@ -240,9 +229,8 @@ export default function WorkerProfileWebScreen() {
                       Manage your worker profile.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
-                      Keep your account details, availability, support, and policy
-                      settings in one desktop-friendly view without changing the
-                      mobile experience.
+                      Keep your account details, support access, and policy
+                      settings organized in one desktop-friendly view.
                     </Text>
                   </View>
 
@@ -276,8 +264,8 @@ export default function WorkerProfileWebScreen() {
                   </View>
                 </View>
 
-                <View className="w-full border-t border-neutral-200 lg:w-[360px] lg:border-l lg:border-t-0 bg-neutral-50 p-6 md:p-8">
-                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
+                <View className="w-full justify-center border-t border-neutral-200 bg-neutral-50 p-6 md:p-8 lg:w-[360px] lg:border-l lg:border-t-0">
+                  <View className="rounded-[24px] border border-neutral-200 bg-white p-6">
                     <View className="flex-row items-center gap-4">
                       <View className="h-16 w-16 items-center justify-center rounded-2xl bg-orange-50">
                         <User size={28} color={Colors.common.BRAND} />
@@ -293,41 +281,6 @@ export default function WorkerProfileWebScreen() {
                           Verified worker profile
                         </Text>
                       </View>
-                    </View>
-
-                    <View className="mt-5 gap-3">
-                      <View className="rounded-2xl bg-neutral-100 p-4">
-                        <Text className="text-sm font-semibold text-neutral-900">
-                          Availability
-                        </Text>
-                        <View className="mt-3 flex-row items-center justify-between gap-3">
-                          <Text className="text-sm text-neutral-600">
-                            Ready for new work
-                          </Text>
-                          <StandardToggle value={available} />
-                        </View>
-                      </View>
-
-                      <TouchableOpacity
-                        onPress={() =>
-                          router.push({
-                            pathname: "/screens/profile/edit",
-                            params: { origin: "worker" },
-                          })
-                        }
-                        activeOpacity={0.88}
-                        className="flex-row items-center justify-between rounded-2xl bg-neutral-100 px-4 py-4"
-                      >
-                        <View>
-                          <Text className="text-sm font-semibold text-neutral-900">
-                            Keep details current
-                          </Text>
-                          <Text className="mt-1 text-sm text-neutral-600">
-                            Update skills, phone, and location
-                          </Text>
-                        </View>
-                        <ChevronRight size={18} color="#737373" />
-                      </TouchableOpacity>
                     </View>
                   </View>
                 </View>
@@ -353,11 +306,7 @@ export default function WorkerProfileWebScreen() {
                   {menuItems.account.map((item, index) => (
                     <TouchableOpacity
                       key={item.label}
-                      onPress={
-                        item.type === "switch"
-                          ? () => setAvailable((value) => !value)
-                          : item.onPress
-                      }
+                      onPress={item.onPress}
                       className={`flex-row items-center justify-between px-5 py-4 active:opacity-70 ${
                         index !== menuItems.account.length - 1
                           ? "border-b border-neutral-50"
@@ -375,13 +324,9 @@ export default function WorkerProfileWebScreen() {
                         />
                         <Text className="min-w-[150px] text-base font-semibold text-neutral-900">
                           {item.label}
-                        </Text>
-                      </View>
-                      {item.type === "switch" ? (
-                        <StandardToggle value={available} />
-                      ) : (
-                        <ChevronRight size={20} color="#737373" />
-                      )}
+                          </Text>
+                        </View>
+                      <ChevronRight size={20} color="#737373" />
                     </TouchableOpacity>
                   ))}
                 </View>

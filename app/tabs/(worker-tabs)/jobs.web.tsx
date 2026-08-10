@@ -322,15 +322,6 @@ export default function WorkerJobsWebScreen() {
                         className="flex-1 text-sm text-neutral-900"
                       />
                     </View>
-                    <TouchableOpacity
-                      onPress={handleOpenSearch}
-                      className="flex-row items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
-                    >
-                      <SlidersHorizontal size={16} color="#737373" />
-                      <Text className="text-sm font-semibold text-neutral-700">
-                        Filters
-                      </Text>
-                    </TouchableOpacity>
                   </View>
 
                   <View className="mt-5 flex-row flex-wrap gap-2.5">

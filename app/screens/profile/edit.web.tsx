@@ -51,7 +51,6 @@ export default function EditProfileScreenWeb() {
       }
     >
       <ScrollView
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">

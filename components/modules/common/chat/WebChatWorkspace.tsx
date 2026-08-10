@@ -238,7 +238,7 @@ function ThreadRow({
       onPress={onPress}
       activeOpacity={0.88}
       className={`rounded-2xl border px-4 py-3.5 ${
-        active ? "border-neutral-950 bg-neutral-50" : "border-transparent bg-white"
+        active ? "border-gray-300 bg-neutral-50" : "border-transparent bg-white"
       }`}
     >
       <View className="flex-row gap-3">

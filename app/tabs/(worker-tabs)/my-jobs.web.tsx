@@ -463,19 +463,9 @@ export default function MyJobsWebScreen() {
                         onChangeText={setSearchQuery}
                         placeholder={activeTabContent.searchHint}
                         placeholderTextColor="#A3A3A3"
-                        className="flex-1 text-sm text-neutral-900"
+                        className="flex-1 text-sm text-neutral-900 focus:outline-none"
                       />
                     </View>
-
-                    <TouchableOpacity
-                      onPress={openSupportDialog}
-                      className="flex-row items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
-                    >
-                      <CalendarDays size={16} color="#737373" />
-                      <Text className="text-sm font-semibold text-neutral-700">
-                        Request help
-                      </Text>
-                    </TouchableOpacity>
                   </View>
 
                   <View className="mt-5 flex-row flex-wrap gap-2.5">
@@ -572,13 +562,13 @@ export default function MyJobsWebScreen() {
         </View>
       </ScrollView>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={openSupportDialog}
         style={{ backgroundColor: Colors.common.BRAND }}
         className="absolute bottom-8 right-6 h-14 w-14 items-center justify-center rounded-full active:opacity-90 z-20"
       >
         <Headphones size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <WebSupportDialog
         open={showSupportModal}
