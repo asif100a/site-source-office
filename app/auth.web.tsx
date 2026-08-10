@@ -16,6 +16,7 @@ import ReviewScreen from "./screens/auth/ReviewScreen";
 import RegisterEmployerScreen from "./screens/auth/RegisterEmployerScreen";
 import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
 import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
+import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 
 const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
@@ -25,6 +26,7 @@ type AuthStep =
   | "register_general"
   | "register_employer"
   | "verify_otp"
+  | "forgot_password"
   | "register_documents"
   | "register_password"
   | "complete_payroll"
@@ -112,7 +114,7 @@ export default function AuthFlowWeb() {
             onLoginPress={goToRoleDashboard}
           />
         );
-      case "register_sso":
+    case "register_sso":
         return (
           <RegisterSsoScreen
             onContinue={(data) => {
@@ -135,6 +137,13 @@ export default function AuthFlowWeb() {
             provider={registrationProvider}
             onBackPress={() => setStep("register_sso")}
             onComplete={() => setStep("register_general")}
+          />
+        );
+      case "forgot_password":
+        return (
+          <ForgotPasswordScreen
+            role={role}
+            onBackToLogin={() => setStep("login")}
           />
         );
       case "register_general":
@@ -190,6 +199,7 @@ export default function AuthFlowWeb() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
+            onForgotPasswordPress={() => setStep("forgot_password")}
             onLoginPress={goToRoleDashboard}
           />
         );

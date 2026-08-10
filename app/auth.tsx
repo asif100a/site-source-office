@@ -12,6 +12,7 @@ import ReviewScreen from "./screens/auth/ReviewScreen";
 import RegisterEmployerScreen from "./screens/auth/RegisterEmployerScreen";
 import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
 import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
+import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import BackButton from "@/components/standard_ui/buttons/BackButton";
@@ -29,6 +30,7 @@ type AuthStep =
   | "register_general"
   | "register_employer"
   | "verify_otp"
+  | "forgot_password"
   | "register_documents"
   | "register_password"
   | "complete_payroll"
@@ -103,6 +105,8 @@ export default function AuthFlow() {
       setStep("register_general");
     } else if (step === "verify_otp") {
       setStep("register_sso");
+    } else if (step === "forgot_password") {
+      setStep("login");
     } else if (step === "register_password") {
       setStep("register_documents");
     } else if (step === "complete_payroll" || step === "review") {
@@ -134,6 +138,7 @@ export default function AuthFlow() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
+            onForgotPasswordPress={() => setStep("forgot_password")}
             onLoginPress={goToRoleDashboard}
           />
         );
@@ -160,6 +165,13 @@ export default function AuthFlow() {
             provider={registrationProvider}
             onBackPress={() => setStep("register_sso")}
             onComplete={() => setStep("register_general")}
+          />
+        );
+      case "forgot_password":
+        return (
+          <ForgotPasswordScreen
+            role={role}
+            onBackToLogin={() => setStep("login")}
           />
         );
       case "register_general":
@@ -233,7 +245,8 @@ export default function AuthFlow() {
     step !== "review" &&
     step !== "login" &&
     step !== "register_general" &&
-    step !== "register_sso";
+    step !== "register_sso" &&
+    step !== "forgot_password";
 
   return (
     <KeyboardAvoidingView

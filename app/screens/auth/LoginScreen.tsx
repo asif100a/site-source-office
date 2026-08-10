@@ -14,12 +14,14 @@ import {
 interface LoginScreenProps {
   role?: UserRole;
   onRegisterPress?: () => void;
+  onForgotPasswordPress?: () => void;
   onLoginPress?: (email: string) => void;
 }
 
 export default function LoginScreen({
   role,
   onRegisterPress,
+  onForgotPasswordPress,
   onLoginPress,
 }: LoginScreenProps) {
   const router = useRouter();
@@ -62,7 +64,19 @@ export default function LoginScreen({
       });
     }
   };
-  
+
+  const handleForgotPassword = () => {
+    if (onForgotPasswordPress) {
+      onForgotPasswordPress();
+      return;
+    }
+
+    router.push({
+      pathname: "/auth",
+      params: { step: "forgot_password", role: activeRole },
+    });
+  };
+
   return (
     <ScrollView
       className="flex-1 bg-white"
@@ -70,7 +84,6 @@ export default function LoginScreen({
       keyboardShouldPersistTaps="handled"
       bounces={false}
     >
-      {/* Orange Header Section */}
       <View className="bg-[#FF5500] pb-10 pt-16 px-6">
         <View className="mb-4 justify-center items-center">
           <LogoWhite />
@@ -83,10 +96,8 @@ export default function LoginScreen({
         </Text>
       </View>
 
-      {/* Form Section */}
       <View className="flex-1 px-6 pt-8 pb-10 justify-between">
         <View className="gap-1">
-          {/* Email Field */}
           <StandardInputField
             label="Email Address"
             id="email"
@@ -96,7 +107,6 @@ export default function LoginScreen({
             placeholder="Enter Your Email"
           />
 
-          {/* Password Field */}
           <StandardInputField
             label="Password"
             id="password"
@@ -105,9 +115,18 @@ export default function LoginScreen({
             required={true}
             placeholder="•••••••"
           />
+
+          <TouchableOpacity
+            onPress={handleForgotPassword}
+            activeOpacity={0.7}
+            className="self-end py-1"
+          >
+            <Text className="text-sm font-semibold text-[#1B2530] underline">
+              Forgot password?
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Action Buttons */}
         <View className="mt-6 gap-6">
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
