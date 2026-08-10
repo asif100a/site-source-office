@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from "react";
-import { useRouter } from "expo-router";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -21,6 +20,7 @@ import {
 } from "react-native";
 import LabourerCard from "@/components/card/LabourerCard";
 import { Colors } from "@/constants/Colors";
+import { router } from "expo-router";
 
 type JobMode = "browse" | "offers";
 
@@ -191,16 +191,13 @@ function SideStat({
 }
 
 export default function WorkerJobsWebScreen() {
-  const router = useRouter();
   const [activeMode, setActiveMode] = useState<JobMode>("browse");
   const [activeFilter, setActiveFilter] = useState("All shifts");
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<TextInput>(null);
 
   const handleOpenSearch = () => {
-    router.push({
-      pathname: "/screens/search/SearchEmployer",
-      params: { origin: "worker" },
-    } as any);
+    searchInputRef.current?.focus();
   };
 
   const handleViewDetails = (id: string) => {
@@ -317,6 +314,7 @@ export default function WorkerJobsWebScreen() {
                     <View className="flex-1 flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
                       <Search size={18} color="#A3A3A3" />
                       <TextInput
+                        ref={searchInputRef}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholder="Search offers, companies, locations"

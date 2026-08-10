@@ -1,111 +1,106 @@
-import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-
-const MOCK_FEATURED_OFFERS = [
-  {
-    id: "3",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    payRate: "80",
-    tag: "Market Rate",
-    location: "Shoreditch • 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun • 1 month",
-    time: "2 hours ago",
-  },
-  {
-    id: "5",
-    title: "Graphic Designer",
-    company: "Creative Studios",
-    payRate: "60",
-    tag: "Competitive Rate",
-    location: "Soho • 2.5 mi away",
-    team: "1 designer",
-    duration: "15 Jun • 2 weeks",
-    time: "4 hours ago",
-  },
-];
+import type { WorkerJobItem } from "./VerticalJobListings";
 
 export default function VerticalOfferListings({
   handleViewDetails,
   handleAcceptOffer,
+  offers,
 }: {
   handleViewDetails: (id: string) => void;
   handleAcceptOffer: (id: string) => void;
+  offers?: WorkerJobItem[];
 }) {
+  const source =
+    offers ?? [
+      {
+        id: "3",
+        title: "Labourer",
+        company: "Tech Innovators Inc.",
+        payRate: "80",
+        tag: "Market Rate",
+        location: "Shoreditch • 1.2 mi away",
+        team: "2 developers, 1 designer",
+        duration: "12 Jun • 1 month",
+        time: "2 hours ago",
+      },
+      {
+        id: "5",
+        title: "Graphic Designer",
+        company: "Creative Studios",
+        payRate: "60",
+        tag: "Competitive Rate",
+        location: "Soho • 2.5 mi away",
+        team: "1 designer",
+        duration: "15 Jun • 2 weeks",
+        time: "4 hours ago",
+      },
+    ];
+
   return (
     <View className="gap-4">
-      {MOCK_FEATURED_OFFERS.map((offer) => (
+      {source.map((offer) => (
         <View
           key={offer.id}
-          className="bg-white rounded-2xl p-5 border border-neutral-100/85"
+          className="rounded-2xl border border-neutral-100/85 bg-white p-5"
         >
-          {/* Header info */}
-          <View className="flex-row justify-between items-start mb-4">
+          <View className="mb-4 flex-row items-start justify-between">
             <View className="flex-row items-center gap-3">
-              <View className="w-12 h-12 bg-blue-600 rounded-xl items-center justify-center">
+              <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
                 <Briefcase size={22} color="#FFFFFF" />
               </View>
               <View>
-                <Text className="text-neutral-950 font-extrabold text-base">
+                <Text className="text-base font-extrabold text-neutral-950">
                   {offer.title}
                 </Text>
-                <Text className="text-neutral-500 text-xs font-semibold">
+                <Text className="text-xs font-semibold text-neutral-500">
                   {offer.company}
                 </Text>
               </View>
             </View>
 
             <View className="items-end">
-              <Text className="flex-1 flex-row text-neutral-900 font-extrabold text-sm min-w-20">
+              <Text className="min-w-20 flex-row text-sm font-extrabold text-neutral-900">
                 £{offer.payRate}/hour
               </Text>
             </View>
           </View>
 
-          {/* Details layout */}
-          <View className="gap-2.5 py-3 border-y border-neutral-50 mb-4">
+          <View className="mb-4 gap-2.5 border-y border-neutral-50 py-3">
             <View className="flex-row items-center gap-2">
               <MapPin size={15} color="#858585" />
-              <Text className="text-neutral-500 text-xs font-semibold">
+              <Text className="text-xs font-semibold text-neutral-500">
                 {offer.location}
               </Text>
             </View>
             <View className="flex-row items-center gap-2">
               <Users size={15} color="#858585" />
-              <Text className="text-neutral-500 text-xs font-semibold">
+              <Text className="text-xs font-semibold text-neutral-500">
                 {offer.team}
               </Text>
             </View>
             <View className="flex-row items-center gap-2">
               <Calendar size={15} color="#858585" />
-              <Text className="text-neutral-500 text-xs font-semibold">
+              <Text className="text-xs font-semibold text-neutral-500">
                 {offer.duration}
               </Text>
             </View>
           </View>
 
-          {/* Action buttons */}
-          <View className="flex-row gap-2 justify-between items-center">
-            <Text
-              className="text-neutral-400 text-xs font-medium"
-              numberOfLines={1}
-            >
+          <View className="flex-row items-center justify-between gap-2">
+            <Text className="text-xs font-medium text-neutral-400" numberOfLines={1}>
               {offer.time}
             </Text>
 
-            <View className="flex-row gap-2 justify-end">
+            <View className="flex-row gap-2">
               <TouchableOpacity
                 onPress={() => handleViewDetails(offer.id)}
-                className="px-4 py-2 bg-neutral-100 rounded-md active:opacity-70"
+                className="rounded-md bg-neutral-100 px-4 py-2 active:opacity-70"
                 style={{ minWidth: 82 }}
               >
-                <Text
-                  className="text-neutral-600 font-bold text-xs text-center"
-                  numberOfLines={1}
-                >
+                <Text className="text-center text-xs font-bold text-neutral-600">
                   View Details
                 </Text>
               </TouchableOpacity>
@@ -115,12 +110,9 @@ export default function VerticalOfferListings({
                   backgroundColor: Colors.common.GRAY_DARK,
                   minWidth: 132,
                 }}
-                className="px-4 py-2 rounded-md active:opacity-90 shadow-sm"
+                className="rounded-md px-4 py-2 shadow-sm active:opacity-90"
               >
-                <Text
-                  className="text-white font-bold text-xs text-center"
-                  numberOfLines={1}
-                >
+                <Text className="text-center text-xs font-bold text-white">
                   Accept
                 </Text>
               </TouchableOpacity>
