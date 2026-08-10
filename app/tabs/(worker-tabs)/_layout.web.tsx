@@ -13,7 +13,7 @@ const NAV_LINKS = [
   },
   {
     href: "/tabs/(worker-tabs)/jobs",
-    label: "Jobs",
+    label: "Search Jobs",
     activePaths: ["/tabs/jobs"],
   },
   {
