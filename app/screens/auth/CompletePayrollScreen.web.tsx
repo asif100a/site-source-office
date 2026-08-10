@@ -69,8 +69,8 @@ export default function CompletePayrollScreenWeb({
       }
     >
       <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
-        <View className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-          <View className="flex items-center justify-center rounded-[24px] bg-neutral-50 p-6">
+        <View className="">
+          <View className="flex items-center justify-center rounded-[24px] bg-neutral-50 p-6 mb-6">
             <Image
               source={WalletImg}
               style={{ width: 160, height: 160, resizeMode: "contain" }}

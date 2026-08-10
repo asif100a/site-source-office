@@ -11,6 +11,7 @@ import CompletePayrollScreen from "./screens/auth/CompletePayrollScreen";
 import ReviewScreen from "./screens/auth/ReviewScreen";
 import RegisterEmployerScreen from "./screens/auth/RegisterEmployerScreen";
 import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
+import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import BackButton from "@/components/standard_ui/buttons/BackButton";
@@ -27,6 +28,7 @@ type AuthStep =
   | "register_sso"
   | "register_general"
   | "register_employer"
+  | "verify_otp"
   | "register_documents"
   | "register_password"
   | "complete_payroll"
@@ -39,6 +41,11 @@ export default function AuthFlow() {
 
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [role, setRole] = useState<UserRole>(normalizeUserRole(params.role));
+  const [registrationEmail, setRegistrationEmail] = useState("");
+  const [registrationName, setRegistrationName] = useState("");
+  const [registrationProvider, setRegistrationProvider] = useState<
+    "google" | "apple" | "manual"
+  >("manual");
 
   const currentStep = params?.currentStep as AuthStep;
 
@@ -94,6 +101,8 @@ export default function AuthFlow() {
       setStep(role === "worker" ? "register_sso" : "login");
     } else if (step === "register_documents") {
       setStep("register_general");
+    } else if (step === "verify_otp") {
+      setStep("register_sso");
     } else if (step === "register_password") {
       setStep("register_documents");
     } else if (step === "complete_payroll" || step === "review") {
@@ -132,10 +141,25 @@ export default function AuthFlow() {
         return (
           <RegisterSsoScreen
             onContinue={(data) => {
-              console.log("Worker registration data:", data);
-              setStep("register_general");
+              setRegistrationEmail(data.email ?? "");
+              setRegistrationName(data.name ?? "");
+              setRegistrationProvider(
+                (data.provider ?? "manual") as "google" | "apple" | "manual",
+              );
+              setStep("verify_otp");
             }}
             onLoginPress={() => setStep("login")}
+          />
+        );
+      case "verify_otp":
+        return (
+          <VerifyOtpScreen
+            role={role}
+            email={registrationEmail}
+            name={registrationName}
+            provider={registrationProvider}
+            onBackPress={() => setStep("register_sso")}
+            onComplete={() => setStep("register_general")}
           />
         );
       case "register_general":

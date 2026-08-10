@@ -15,6 +15,7 @@ import CompletePayrollScreen from "./screens/auth/CompletePayrollScreen";
 import ReviewScreen from "./screens/auth/ReviewScreen";
 import RegisterEmployerScreen from "./screens/auth/RegisterEmployerScreen";
 import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
+import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
 
 const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
@@ -23,6 +24,7 @@ type AuthStep =
   | "register_sso"
   | "register_general"
   | "register_employer"
+  | "verify_otp"
   | "register_documents"
   | "register_password"
   | "complete_payroll"
@@ -35,6 +37,11 @@ export default function AuthFlowWeb() {
 
   const [step, setStep] = useState<AuthStep>(initialStep);
   const [role, setRole] = useState<UserRole>(normalizeUserRole(params.role));
+  const [registrationEmail, setRegistrationEmail] = useState("");
+  const [registrationName, setRegistrationName] = useState("");
+  const [registrationProvider, setRegistrationProvider] = useState<
+    "google" | "apple" | "manual"
+  >("manual");
 
   const currentStep = params?.currentStep as AuthStep;
 
@@ -109,10 +116,25 @@ export default function AuthFlowWeb() {
         return (
           <RegisterSsoScreen
             onContinue={(data) => {
-              console.log("Worker registration data:", data);
-              setStep("register_general");
+              setRegistrationEmail(data.email ?? "");
+              setRegistrationName(data.name ?? "");
+              setRegistrationProvider(
+                (data.provider ?? "manual") as "google" | "apple" | "manual",
+              );
+              setStep("verify_otp");
             }}
             onLoginPress={() => setStep("login")}
+          />
+        );
+      case "verify_otp":
+        return (
+          <VerifyOtpScreen
+            role={role}
+            email={registrationEmail}
+            name={registrationName}
+            provider={registrationProvider}
+            onBackPress={() => setStep("register_sso")}
+            onComplete={() => setStep("register_general")}
           />
         );
       case "register_general":

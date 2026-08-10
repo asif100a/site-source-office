@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
-import { Check, ShieldCheck, Sparkles } from "lucide-react-native";
+import { ArrowRight, Check, ShieldCheck, Sparkles } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { getDashboardRouteForRole, normalizeUserRole, type UserRole } from "@/constants/Routes";
@@ -111,9 +111,9 @@ export default function RegisterPasswordScreenWeb({
               className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
             >
               <Text className="text-base font-semibold text-white">
-                Complete registration
+                Save Password
               </Text>
-              <Sparkles size={16} color="#FFFFFF" />
+              <ArrowRight size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
