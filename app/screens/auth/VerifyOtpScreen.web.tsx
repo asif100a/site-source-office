@@ -137,7 +137,7 @@ export default function VerifyOtpScreenWeb({
       <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
         <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
           <LogoWhite />
-          <Text className="mt-6 text-center text-2xl font-black tracking-tight text-white">
+          <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
             {flow === "password_reset" ? "Confirm reset code" : "Confirm your code"}
           </Text>
           <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
@@ -172,7 +172,7 @@ export default function VerifyOtpScreenWeb({
                           : "border-neutral-200 bg-white"
                     }`}
                   >
-                    <Text className="text-xl font-bold text-[#1B2530]">
+                    <Text className="text-xl font-semibold text-[#1B2530]">
                       {digit}
                     </Text>
                   </View>
@@ -235,7 +235,7 @@ export default function VerifyOtpScreenWeb({
               disabled={secondsLeft > 0}
             >
               <Text
-                className={`text-sm font-bold ${
+                className={`text-sm font-semibold ${
                   secondsLeft > 0 ? "text-neutral-400" : "text-[#1B2530] underline"
                 }`}
               >
@@ -244,7 +244,7 @@ export default function VerifyOtpScreenWeb({
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-              <Text className="text-sm font-bold text-neutral-600 underline">
+              <Text className="text-sm font-semibold text-neutral-600 underline">
                 {flow === "password_reset" ? "Back to password reset" : "Back to sign up"}
               </Text>
             </TouchableOpacity>

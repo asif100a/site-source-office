@@ -29,7 +29,7 @@ export default function ReviewScreenWeb({ onBackToLogin }: ReviewScreenProps) {
             source={ProgressImg}
             style={{ width: 160, height: 160, resizeMode: "contain" }}
           />
-          <Text className="mt-8 text-center text-[26px] font-black tracking-tight text-[#1B2530]">
+          <Text className="mt-8 text-center text-[26px] font-semibold tracking-tight text-[#1B2530]">
             Application under review
           </Text>
           <Text className="mt-4 max-w-xl text-center text-sm leading-6 text-neutral-500">

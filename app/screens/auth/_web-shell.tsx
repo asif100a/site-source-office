@@ -19,13 +19,13 @@ export default function AuthWebShell({
       <View className="mb-6 max-w-2xl gap-3">
         {eyebrow ? (
           <View className="w-fit rounded-full bg-orange-50 px-3 py-1.5">
-            <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+            <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
               {eyebrow}
             </Text>
           </View>
         ) : null}
 
-        <Text className="text-3xl font-black tracking-tight text-neutral-950 md:text-4xl">
+        <Text className="text-3xl font-semibold tracking-tight text-neutral-950 md:text-4xl">
           {title}
         </Text>
 

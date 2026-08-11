@@ -39,7 +39,7 @@ export default function CompletePayrollScreenWeb({
               source={ProgressImg}
               style={{ width: 160, height: 160, resizeMode: "contain" }}
             />
-            <Text className="mt-6 text-center text-[26px] font-black tracking-tight text-[#1B2530]">
+            <Text className="mt-6 text-center text-[26px] font-semibold tracking-tight text-[#1B2530]">
               Application under review
             </Text>
             <Text className="mt-3 max-w-xl text-center text-sm leading-6 text-neutral-500">
@@ -76,7 +76,7 @@ export default function CompletePayrollScreenWeb({
               style={{ width: 160, height: 160, resizeMode: "contain" }}
             />
             <View className="mt-6 rounded-full bg-orange-50 px-3 py-1.5">
-              <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+              <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                 Payroll
               </Text>
             </View>
@@ -124,7 +124,7 @@ export default function CompletePayrollScreenWeb({
                 style={{ width: 90, height: 90, resizeMode: "contain" }}
               />
 
-              <Text className="mt-6 text-2xl font-black tracking-tight text-[#1B2530]">
+              <Text className="mt-6 text-2xl font-semibold tracking-tight text-[#1B2530]">
                 Profile completed
               </Text>
               <Text className="mt-3 max-w-md text-center text-sm leading-6 text-neutral-500">

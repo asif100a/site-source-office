@@ -53,7 +53,7 @@ export default function RegisterPasswordScreenWeb({
         <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
           <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
             <LogoWhite />
-            <Text className="mt-6 text-center text-2xl font-black tracking-tight text-white">
+            <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
               Create your password
             </Text>
             <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
