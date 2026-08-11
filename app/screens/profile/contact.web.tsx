@@ -68,7 +68,7 @@ function ChannelCard({
           <Icon size={18} color="#0F172A" />
         </View>
         <View className="flex-1">
-          <Text className="text-sm font-extrabold text-neutral-950">{title}</Text>
+          <Text className="text-sm font-semibold text-neutral-950">{title}</Text>
           <Text className="mt-1 text-sm font-semibold text-slate-700">
             {value}
           </Text>
@@ -109,7 +109,7 @@ export default function ContactWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <Headphones size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Support
                       </Text>
                     </View>
@@ -122,7 +122,7 @@ export default function ContactWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Support that keeps work moving.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -135,18 +135,18 @@ export default function ContactWeb() {
 
                 <View className="flex-row flex-wrap gap-3">
                   <View className="rounded-2xl bg-neutral-950 px-5 py-3.5">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                       Avg response
                     </Text>
-                    <Text className="mt-1 text-lg font-black tracking-tight text-white">
+                    <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
                       Under 24h
                     </Text>
                   </View>
                   <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                       Priority
                     </Text>
-                    <Text className="mt-1 text-lg font-black tracking-tight text-neutral-950">
+                    <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
                       2h
                     </Text>
                   </View>
@@ -167,7 +167,7 @@ export default function ContactWeb() {
                     </View>
                   </View>
 
-                  <Text className="text-neutral-950 text-2xl font-extrabold">
+                  <Text className="text-neutral-950 text-2xl font-semibold">
                     How we can help
                   </Text>
                   <View className="mt-4 gap-3">
@@ -188,7 +188,7 @@ export default function ContactWeb() {
                 </Card>
 
                 <Card className="p-5">
-                  <Text className="text-neutral-950 text-lg font-extrabold mb-4">
+                  <Text className="text-neutral-950 text-lg font-semibold mb-4">
                     Contact channels
                   </Text>
                   <View className="gap-3">
@@ -226,7 +226,7 @@ export default function ContactWeb() {
                 <Card className="p-5 md:p-6">
                   {isSubmitted && (
                     <View className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
-                      <Text className="text-sm font-bold text-emerald-700">
+                      <Text className="text-sm font-semibold text-emerald-700">
                         Your support request has been prepared successfully.
                       </Text>
                       <Text className="mt-1 text-xs leading-5 text-emerald-700/80">
@@ -274,7 +274,7 @@ export default function ContactWeb() {
                     className="mt-5 w-full flex-row items-center justify-center gap-2 rounded-2xl py-4 active:opacity-90"
                   >
                     <Send size={16} color="#FFFFFF" />
-                    <Text className="text-sm font-extrabold text-white">
+                    <Text className="text-sm font-semibold text-white">
                       Submit Request
                     </Text>
                   </TouchableOpacity>
