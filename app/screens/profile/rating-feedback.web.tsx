@@ -59,7 +59,7 @@ function ReviewCard({
         <View className="flex-row items-center gap-3">
           <Image source={{ uri: image }} className="h-11 w-11 rounded-full" />
           <View>
-            <Text className="text-sm font-extrabold text-neutral-950">
+            <Text className="text-sm font-semibold text-neutral-950">
               {name}
             </Text>
             <Text className="mt-0.5 text-xs font-medium text-neutral-500">
@@ -71,7 +71,7 @@ function ReviewCard({
         <View className="items-end">
           <View className="flex-row items-center gap-1">
             <Star size={14} color="#FBC02D" fill="#FBC02D" />
-            <Text className="text-sm font-bold text-neutral-900">{rating}</Text>
+            <Text className="text-sm font-semibold text-neutral-900">{rating}</Text>
           </View>
         </View>
       </View>
@@ -130,7 +130,7 @@ export default function RatingFeedbackScreenWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <Sparkles size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Reviews
                       </Text>
                     </View>
@@ -143,7 +143,7 @@ export default function RatingFeedbackScreenWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Track your worker reputation.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -173,10 +173,10 @@ export default function RatingFeedbackScreenWeb() {
                   <View className="flex-row items-start gap-5">
                     <View className="w-28 items-center">
                       <View className="flex-row items-end">
-                        <Text className="text-4xl font-extrabold text-slate-900">
+                        <Text className="text-4xl font-semibold text-slate-900">
                           4.1
                         </Text>
-                        <Text className="mb-1 text-sm font-bold text-neutral-400">
+                        <Text className="mb-1 text-sm font-semibold text-neutral-400">
                           /5
                         </Text>
                       </View>
@@ -227,10 +227,10 @@ export default function RatingFeedbackScreenWeb() {
 
               <View className="flex-1 gap-4">
                 <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                  <Text className="text-sm font-bold uppercase tracking-[0px] text-neutral-500">
+                  <Text className="text-sm font-semibold uppercase tracking-[0px] text-neutral-500">
                     Recent feedback
                   </Text>
-                  <Text className="mt-2 text-2xl font-black tracking-tight text-neutral-950">
+                  <Text className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
                     {visibleReviews.length} visible reviews
                   </Text>
                   <Text className="mt-2 text-sm leading-6 text-neutral-600">

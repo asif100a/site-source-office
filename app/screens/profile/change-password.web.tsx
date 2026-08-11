@@ -70,7 +70,7 @@ export default function ChangePasswordScreenWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Update your password.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">

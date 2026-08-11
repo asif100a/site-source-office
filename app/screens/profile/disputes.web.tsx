@@ -42,7 +42,7 @@ function DisputeRow({
         <View className="flex-row flex-1 items-center gap-3">
           <DisputeLogo />
           <View className="flex-1">
-            <Text className="text-base font-extrabold text-neutral-950">
+            <Text className="text-base font-semibold text-neutral-950">
               {title}
             </Text>
             <Text className="mt-0.5 text-xs font-semibold text-neutral-500">
@@ -83,7 +83,7 @@ export default function DisputesScreenWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <AlertTriangle size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Support cases
                       </Text>
                     </View>
@@ -96,7 +96,7 @@ export default function DisputesScreenWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Track support cases from one place.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">

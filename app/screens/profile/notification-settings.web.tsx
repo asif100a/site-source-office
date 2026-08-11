@@ -114,7 +114,7 @@ export default function NotificationSettingsWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <BellRing size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Notifications
                       </Text>
                     </View>
@@ -127,7 +127,7 @@ export default function NotificationSettingsWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Control what the web app sends you.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -140,19 +140,19 @@ export default function NotificationSettingsWeb() {
 
                 <View className="flex-row flex-wrap gap-3">
                   <View className="rounded-2xl bg-neutral-950 px-5 py-3.5">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                       Active
                     </Text>
-                    <Text className="mt-1 text-lg font-black tracking-tight text-white">
+                    <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
                       {enabledCount}
                     </Text>
                   </View>
 
                   <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                       Muted
                     </Text>
-                    <Text className="mt-1 text-lg font-black tracking-tight text-neutral-950">
+                    <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
                       {settings.length - enabledCount}
                     </Text>
                   </View>
@@ -234,10 +234,10 @@ export default function NotificationSettingsWeb() {
                   className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                       Email summary
                     </Text>
-                    <Text className="mt-2 text-lg font-black tracking-tight text-white">
+                    <Text className="mt-2 text-lg font-semibold tracking-tight text-white">
                       Weekly digest enabled
                     </Text>
                   </View>

@@ -26,7 +26,7 @@ export default function TermsScreenWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <FileText size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Legal
                       </Text>
                     </View>
@@ -39,7 +39,7 @@ export default function TermsScreenWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Terms & Conditions
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -50,10 +50,10 @@ export default function TermsScreenWeb() {
                 </View>
 
                 <View className="rounded-2xl bg-neutral-950 px-5 py-3.5">
-                  <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                  <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                     Effective
                   </Text>
-                  <Text className="mt-1 text-lg font-black tracking-tight text-white">
+                  <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
                     1 Jan 2026
                   </Text>
                 </View>
@@ -63,13 +63,13 @@ export default function TermsScreenWeb() {
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-[1.55] gap-4">
                 <VersionBanner />
-                <Text className="text-xl font-extrabold text-neutral-950">
+                <Text className="text-xl font-semibold text-neutral-950">
                   Contents
                 </Text>
                 <View className="gap-4">
                   {sections.map((section) => (
                     <Card key={section.id} className="p-5">
-                      <Text className="text-base font-extrabold text-slate-700 mb-3">
+                      <Text className="text-base font-semibold text-slate-700 mb-3">
                         {section.title}
                       </Text>
                       <Text className="text-sm leading-6 text-slate-600">

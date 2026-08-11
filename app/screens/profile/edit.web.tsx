@@ -62,7 +62,7 @@ export default function EditProfileScreenWeb() {
                     <View className="flex-row items-center gap-3">
                       <Avatar uri={profilePhoto} size={52} />
                       <View>
-                        <Text className="text-base font-extrabold text-neutral-950">
+                        <Text className="text-base font-bold text-neutral-950">
                           Wade Warren
                         </Text>
                         <Text className="text-sm text-neutral-500">
@@ -85,7 +85,7 @@ export default function EditProfileScreenWeb() {
 
                 <View className="hidden h-px w-full bg-neutral-200 lg:block lg:h-auto lg:w-px" />
 
-                <View className="flex-[2]">
+                <View className="flex-[2] border border-neutral-300 rounded-2xl p-6">
                   <View className="gap-5">
                     <StandardInputField<EditProfileFormValues>
                       label="Full Name"
