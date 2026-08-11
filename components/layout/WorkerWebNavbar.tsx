@@ -33,10 +33,6 @@ const NAV_LINKS = [
   },
 ];
 
-export default function WorkerWebNavbar() {
-  const pathname = usePathname();
-  const router = useRouter();
-
   function isActiveNavPath(pathname: string, link: (typeof NAV_LINKS)[number]) {
     return link.activePaths.some((activePath) => {
       if (activePath === "/tabs" || activePath === "/tabs/") {
@@ -46,6 +42,10 @@ export default function WorkerWebNavbar() {
       return pathname === activePath || pathname.startsWith(`${activePath}/`);
     });
   }
+
+export default function WorkerWebNavbar() {
+  const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <View className="border-b border-neutral-200 bg-white/95 backdrop-blur">
