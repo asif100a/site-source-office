@@ -1,0 +1,330 @@
+{
+  "apiRoutes": [],
+  "htmlRoutes": [
+    {
+      "file": "./tabs/(worker-tabs)/index.web.tsx",
+      "page": "/tabs/(worker-tabs)/index",
+      "namedRegex": "^/tabs(?:/\\(worker\\-tabs\\))?(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(employer-tabs)/index.web.tsx",
+      "page": "/tabs/(employer-tabs)/index",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/index.web.tsx",
+      "page": "/tabs/index",
+      "namedRegex": "^/tabs(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./index.tsx",
+      "page": "/index",
+      "namedRegex": "^/(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(worker-tabs)/jobs.web.tsx",
+      "page": "/tabs/(worker-tabs)/jobs",
+      "namedRegex": "^/tabs(?:/\\(worker\\-tabs\\))?/jobs(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/edit.web.tsx",
+      "page": "/screens/profile/edit",
+      "namedRegex": "^/screens/profile/edit(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./auth.web.tsx",
+      "page": "/auth",
+      "namedRegex": "^/auth(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(worker-tabs)/chats.web.tsx",
+      "page": "/tabs/(worker-tabs)/chats",
+      "namedRegex": "^/tabs(?:/\\(worker\\-tabs\\))?/chats(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(employer-tabs)/chats.web.tsx",
+      "page": "/tabs/(employer-tabs)/chats",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/chats(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/terms.web.tsx",
+      "page": "/screens/profile/terms",
+      "namedRegex": "^/screens/profile/terms(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./modal.tsx",
+      "page": "/modal",
+      "namedRegex": "^/modal(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(worker-tabs)/profile.web.tsx",
+      "page": "/tabs/(worker-tabs)/profile",
+      "namedRegex": "^/tabs(?:/\\(worker\\-tabs\\))?/profile(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(worker-tabs)/my-jobs.web.tsx",
+      "page": "/tabs/(worker-tabs)/my-jobs",
+      "namedRegex": "^/tabs(?:/\\(worker\\-tabs\\))?/my\\-jobs(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(employer-tabs)/workers.web.tsx",
+      "page": "/tabs/(employer-tabs)/workers",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/workers(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(employer-tabs)/profile.web.tsx",
+      "page": "/tabs/(employer-tabs)/profile",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/profile(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./tabs/(employer-tabs)/my-jobs.web.tsx",
+      "page": "/tabs/(employer-tabs)/my-jobs",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/my\\-jobs(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/contact.web.tsx",
+      "page": "/screens/profile/contact",
+      "namedRegex": "^/screens/profile/contact(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/disputes.web.tsx",
+      "page": "/screens/profile/disputes",
+      "namedRegex": "^/screens/profile/disputes(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "expo-router/build/views/Sitemap.js",
+      "page": "/_sitemap",
+      "namedRegex": "^/_sitemap(?:/)?$",
+      "routeKeys": {},
+      "generated": true
+    },
+    {
+      "file": "./screens/profile/_components.tsx",
+      "page": "/screens/profile/_components",
+      "namedRegex": "^/screens/profile/_components(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/saved-workers.web.tsx",
+      "page": "/screens/profile/saved-workers",
+      "namedRegex": "^/screens/profile/saved\\-workers(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/privacy-policy.web.tsx",
+      "page": "/screens/profile/privacy-policy",
+      "namedRegex": "^/screens/profile/privacy\\-policy(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/dispute-detail.web.tsx",
+      "page": "/screens/profile/dispute-detail",
+      "namedRegex": "^/screens/profile/dispute\\-detail(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/rating-feedback.web.tsx",
+      "page": "/screens/profile/rating-feedback",
+      "namedRegex": "^/screens/profile/rating\\-feedback(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/change-password.web.tsx",
+      "page": "/screens/profile/change-password",
+      "namedRegex": "^/screens/profile/change\\-password(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/SplashScreen.tsx",
+      "page": "/screens/SplashScreen",
+      "namedRegex": "^/screens/SplashScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/profile/notification-settings.web.tsx",
+      "page": "/screens/profile/notification-settings",
+      "namedRegex": "^/screens/profile/notification\\-settings(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/_web-shell.tsx",
+      "page": "/screens/auth/_web-shell",
+      "namedRegex": "^/screens/auth/_web\\-shell(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/LoginScreen.web.tsx",
+      "page": "/screens/auth/LoginScreen",
+      "namedRegex": "^/screens/auth/LoginScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/OnboardingScreen.web.tsx",
+      "page": "/screens/OnboardingScreen",
+      "namedRegex": "^/screens/OnboardingScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/job/CreateJobPost.tsx",
+      "page": "/screens/job/CreateJobPost",
+      "namedRegex": "^/screens/job/CreateJobPost(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/ReviewScreen.web.tsx",
+      "page": "/screens/auth/ReviewScreen",
+      "namedRegex": "^/screens/auth/ReviewScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/search/SearchWorker.tsx",
+      "page": "/screens/search/SearchWorker",
+      "namedRegex": "^/screens/search/SearchWorker(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/common/Notifications.tsx",
+      "page": "/screens/common/Notifications",
+      "namedRegex": "^/screens/common/Notifications(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/VerifyOtpScreen.web.tsx",
+      "page": "/screens/auth/VerifyOtpScreen",
+      "namedRegex": "^/screens/auth/VerifyOtpScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/search/SearchEmployer.tsx",
+      "page": "/screens/search/SearchEmployer",
+      "namedRegex": "^/screens/search/SearchEmployer(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/RegisterSsoScreen.web.tsx",
+      "page": "/screens/auth/RegisterSsoScreen",
+      "namedRegex": "^/screens/auth/RegisterSsoScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/ResetPasswordScreen.web.tsx",
+      "page": "/screens/auth/ResetPasswordScreen",
+      "namedRegex": "^/screens/auth/ResetPasswordScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/ForgotPasswordScreen.web.tsx",
+      "page": "/screens/auth/ForgotPasswordScreen",
+      "namedRegex": "^/screens/auth/ForgotPasswordScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/RegisterGeneralScreen.web.tsx",
+      "page": "/screens/auth/RegisterGeneralScreen",
+      "namedRegex": "^/screens/auth/RegisterGeneralScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/CompletePayrollScreen.web.tsx",
+      "page": "/screens/auth/CompletePayrollScreen",
+      "namedRegex": "^/screens/auth/CompletePayrollScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/RegisterPasswordScreen.web.tsx",
+      "page": "/screens/auth/RegisterPasswordScreen",
+      "namedRegex": "^/screens/auth/RegisterPasswordScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/RegisterEmployerScreen.web.tsx",
+      "page": "/screens/auth/RegisterEmployerScreen",
+      "namedRegex": "^/screens/auth/RegisterEmployerScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/auth/RegisterDocumentsScreen.web.tsx",
+      "page": "/screens/auth/RegisterDocumentsScreen",
+      "namedRegex": "^/screens/auth/RegisterDocumentsScreen(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/worker-details/[id].tsx",
+      "page": "/screens/worker-details/[id]",
+      "namedRegex": "^/screens/worker\\-details/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/employer-details/[id].web.tsx",
+      "page": "/screens/employer-details/[id]",
+      "namedRegex": "^/screens/employer\\-details/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/completed-jobs/[id].tsx",
+      "page": "/screens/completed-jobs/[id]",
+      "namedRegex": "^/screens/completed\\-jobs/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/chats/[id].tsx",
+      "page": "/screens/chats/[id]",
+      "namedRegex": "^/screens/chats/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/cancelled-jobs/[id].tsx",
+      "page": "/screens/cancelled-jobs/[id]",
+      "namedRegex": "^/screens/cancelled\\-jobs/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/active-jobs/[id].tsx",
+      "page": "/screens/active-jobs/[id]",
+      "namedRegex": "^/screens/active\\-jobs/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    }
+  ],
+  "notFoundRoutes": [
+    {
+      "file": "./+not-found.tsx",
+      "page": "/+not-found",
+      "namedRegex": "^(?:/(?<notfound>.+?))?(?:/)?$",
+      "routeKeys": {
+        "notfound": "not-found"
+      }
+    }
+  ],
+  "redirects": [],
+  "rewrites": []
+}
