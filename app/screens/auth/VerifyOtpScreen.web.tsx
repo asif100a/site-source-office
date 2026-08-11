@@ -129,128 +129,124 @@ export default function VerifyOtpScreenWeb({
   };
 
   return (
-    <AuthWebShell
-      eyebrow="Verification"
-      title={flow === "password_reset" ? "Verify reset code" : "Verify your email"}
-      subtitle={`We sent a 6-digit code to ${verificationTarget}.`}
-    >
-      <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
-        <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
-          <LogoWhite />
-          <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
-            {flow === "password_reset" ? "Confirm reset code" : "Confirm your code"}
-          </Text>
-          <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
+    <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
+      <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
+        <LogoWhite />
+        <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
+          {flow === "password_reset"
+            ? "Verify reset code"
+            : "Verify your email"}
+        </Text>
+        <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
+          {`We sent a 6-digit code to ${verificationTarget}.`}
+        </Text>
+      </View>
+
+      <View className="grid gap-6">
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => inputRef.current?.focus()}
+          className="relative gap-3"
+        >
+          <View className="flex-row justify-between gap-2">
+            {Array.from({ length: OTP_LENGTH }).map((_, index) => {
+              const digit = code[index] ?? "";
+              const isActive = index === code.length;
+              const isFilled = Boolean(digit);
+
+              return (
+                <View
+                  key={index}
+                  className={`h-14 flex-1 items-center justify-center rounded-2xl border ${
+                    isActive
+                      ? "border-[#FF5500] bg-white"
+                      : isFilled
+                        ? "border-neutral-300 bg-neutral-50"
+                        : "border-neutral-200 bg-white"
+                  }`}
+                >
+                  <Text className="text-xl font-semibold text-[#1B2530]">
+                    {digit}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          <TextInput
+            ref={inputRef}
+            value={code}
+            onChangeText={handleChange}
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={OTP_LENGTH}
+            autoFocus
+            className="absolute h-0 w-0 opacity-0"
+          />
+        </TouchableOpacity>
+
+        {error ? (
+          <Text className="text-sm font-medium text-[#D92D20]">{error}</Text>
+        ) : null}
+
+        <View className="flex-row items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3">
+          <ShieldCheck size={16} color="#FF5500" />
+          <Text className="text-sm font-medium text-neutral-600">
             {flow === "password_reset"
-              ? "Enter the code to verify your password reset request."
-              : name
-                ? `Hi ${name}, enter the code to continue registration.`
-                : "Enter the code to continue registration."}
+              ? "Secure verification protects password changes."
+              : "Secure verification keeps your registration linked to the right account."}
           </Text>
         </View>
 
-        <View className="grid gap-6">
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => inputRef.current?.focus()}
-            className="relative gap-3"
-          >
-            <View className="flex-row justify-between gap-2">
-              {Array.from({ length: OTP_LENGTH }).map((_, index) => {
-                const digit = code[index] ?? "";
-                const isActive = index === code.length;
-                const isFilled = Boolean(digit);
-
-                return (
-                  <View
-                    key={index}
-                    className={`h-14 flex-1 items-center justify-center rounded-2xl border ${
-                      isActive
-                        ? "border-[#FF5500] bg-white"
-                        : isFilled
-                          ? "border-neutral-300 bg-neutral-50"
-                          : "border-neutral-200 bg-white"
-                    }`}
-                  >
-                    <Text className="text-xl font-semibold text-[#1B2530]">
-                      {digit}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            <TextInput
-              ref={inputRef}
-              value={code}
-              onChangeText={handleChange}
-              keyboardType="number-pad"
-              autoComplete="one-time-code"
-              textContentType="oneTimeCode"
-              maxLength={OTP_LENGTH}
-              autoFocus
-              className="absolute h-0 w-0 opacity-0"
-            />
-          </TouchableOpacity>
-
-          {error ? (
-            <Text className="text-sm font-medium text-[#D92D20]">{error}</Text>
-          ) : null}
-
-          <View className="flex-row items-center gap-3 rounded-2xl bg-neutral-50 px-4 py-3">
-            <ShieldCheck size={16} color="#FF5500" />
-            <Text className="text-sm font-medium text-neutral-600">
-              {flow === "password_reset"
-                ? "Secure verification protects password changes."
-                : "Secure verification keeps your registration linked to the right account."}
-            </Text>
-          </View>
-
-          <View className="flex-row items-center gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
-            <RotateCcw size={16} color="#FF5500" />
-            <Text className="text-sm font-medium text-neutral-600">
-              {flow === "password_reset"
-                ? `Resend code in ${secondsLeft}s`
-                : `Resend available in ${secondsLeft}s`}
-            </Text>
-          </View>
-        </View>
-
-        <View className="mt-6 gap-4">
-          <TouchableOpacity
-            onPress={handleVerify}
-            activeOpacity={0.9}
-            className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
-          >
-            <Text className="text-base font-semibold text-white">
-              {flow === "password_reset" ? "Verify code" : "Verify and continue"}
-            </Text>
-            <ArrowRight size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <View className="flex-row items-center justify-between gap-4">
-            <TouchableOpacity
-              onPress={handleResend}
-              activeOpacity={0.7}
-              disabled={secondsLeft > 0}
-            >
-              <Text
-                className={`text-sm font-semibold ${
-                  secondsLeft > 0 ? "text-neutral-400" : "text-[#1B2530] underline"
-                }`}
-              >
-                {flow === "password_reset" ? "Send again" : "Resend code"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-              <Text className="text-sm font-semibold text-neutral-600 underline">
-                {flow === "password_reset" ? "Back to password reset" : "Back to sign up"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <View className="flex-row items-center gap-2 rounded-2xl bg-neutral-50 px-4 py-3">
+          <RotateCcw size={16} color="#FF5500" />
+          <Text className="text-sm font-medium text-neutral-600">
+            {flow === "password_reset"
+              ? `Resend code in ${secondsLeft}s`
+              : `Resend available in ${secondsLeft}s`}
+          </Text>
         </View>
       </View>
-    </AuthWebShell>
+
+      <View className="mt-6 gap-4">
+        <TouchableOpacity
+          onPress={handleVerify}
+          activeOpacity={0.9}
+          className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
+        >
+          <Text className="text-base font-semibold text-white">
+            {flow === "password_reset" ? "Verify code" : "Verify and continue"}
+          </Text>
+          <ArrowRight size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <View className="flex-row items-center justify-between gap-4">
+          <TouchableOpacity
+            onPress={handleResend}
+            activeOpacity={0.7}
+            disabled={secondsLeft > 0}
+          >
+            <Text
+              className={`text-sm font-semibold ${
+                secondsLeft > 0
+                  ? "text-neutral-400"
+                  : "text-[#1B2530] underline"
+              }`}
+            >
+              {flow === "password_reset" ? "Send again" : "Resend code"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
+            <Text className="text-sm font-semibold text-neutral-600 underline">
+              {flow === "password_reset"
+                ? "Back to password reset"
+                : "Back to sign up"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
