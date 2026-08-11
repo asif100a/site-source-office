@@ -217,7 +217,7 @@ function ChatAvatar({ thread }: { thread: ChatThread }) {
       style={{ backgroundColor: thread.avatarBg }}
       className="h-11 w-11 items-center justify-center rounded-full border border-neutral-100"
     >
-      <Text style={{ color: thread.avatarColor }} className="text-sm font-bold">
+      <Text style={{ color: thread.avatarColor }} className="text-sm font-semibold">
         {thread.initials}
       </Text>
     </View>
@@ -248,7 +248,7 @@ function ThreadRow({
           <View className="flex-row items-start justify-between gap-3">
             <View className="min-w-0 flex-1">
               <View className="flex-row items-center gap-2">
-                <Text numberOfLines={1} className="text-sm font-bold text-neutral-950">
+                <Text numberOfLines={1} className="text-sm font-semibold text-neutral-950">
                   {thread.name}
                 </Text>
                 {thread.unread ? (
@@ -360,11 +360,11 @@ export default function WebChatWorkspace({
                 <View className="h-9 w-9 items-center justify-center rounded-xl bg-orange-50">
                   <BriefcaseBusiness size={17} color={Colors.common.BRAND} />
                 </View>
-                <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                   Messages
                 </Text>
               </View>
-              <Text className="mt-2 text-3xl font-black tracking-tight text-neutral-950">
+              <Text className="mt-2 text-3xl font-semibold tracking-tight text-neutral-950">
                 Chat with {origin === "worker" ? "employers" : "workers"}
               </Text>
             </View>
@@ -384,7 +384,7 @@ export default function WebChatWorkspace({
               <View className="w-full border-b border-neutral-200 bg-neutral-50 p-4 lg:w-[390px] lg:border-b-0 lg:border-r">
                 <View className="flex-row items-center justify-between gap-3">
                   <View>
-                    <Text className="text-lg font-black tracking-tight text-neutral-950">
+                    <Text className="text-lg font-semibold tracking-tight text-neutral-950">
                       Inbox
                     </Text>
                     <Text className="mt-0.5 text-xs font-medium text-neutral-500">
@@ -426,7 +426,7 @@ export default function WebChatWorkspace({
 
                   {filteredThreads.length === 0 ? (
                     <View className="items-center rounded-2xl border border-dashed border-neutral-300 bg-white p-6">
-                      <Text className="text-sm font-bold text-neutral-900">
+                      <Text className="text-sm font-semibold text-neutral-900">
                         No conversations found
                       </Text>
                       <Text className="mt-2 text-center text-sm leading-6 text-neutral-500">
@@ -442,7 +442,7 @@ export default function WebChatWorkspace({
                   <View className="flex-row min-w-0 flex-1 items-center gap-3">
                     <ChatAvatar thread={selectedThread} />
                     <View className="min-w-0 flex-1">
-                      <Text numberOfLines={1} className="text-base font-black text-neutral-950">
+                      <Text numberOfLines={1} className="text-base font-semibold text-neutral-950">
                         {selectedThread.name}
                       </Text>
                       <Text numberOfLines={1} className="mt-0.5 text-xs font-medium text-neutral-500">

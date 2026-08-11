@@ -96,7 +96,7 @@ function StatusCard({
         </View>
         <Text className="text-xs font-medium text-emerald-600">{note}</Text>
       </View>
-      <Text className="mt-3 text-2xl font-black tracking-tight text-neutral-950">
+      <Text className="mt-3 text-2xl font-semibold tracking-tight text-neutral-950">
         {value}
       </Text>
       <Text className="mt-1 text-sm font-medium text-neutral-500">{label}</Text>
@@ -159,10 +159,10 @@ function WebSupportDialog({
           <View className="p-6 md:p-8">
             <View className="flex-row items-start justify-between gap-4">
               <View>
-                <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                   Support ticket
                 </Text>
-                <Text className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
+                <Text className="mt-1 text-2xl font-semibold tracking-tight text-neutral-950">
                   Contact support
                 </Text>
                 <Text className="mt-2 max-w-xl text-sm leading-6 text-neutral-600">
@@ -183,7 +183,7 @@ function WebSupportDialog({
             <View className="mt-6 grid gap-5 lg:grid-cols-[1.15fr,0.85fr]">
               <View className="gap-5">
                 <View>
-                  <Text className="mb-2 text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                  <Text className="mb-2 text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                     Subject
                   </Text>
                   <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
@@ -198,7 +198,7 @@ function WebSupportDialog({
                 </View>
 
                 <View>
-                  <Text className="mb-2 text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                  <Text className="mb-2 text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                     Description
                   </Text>
                   <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
@@ -279,7 +279,7 @@ function WebSupportDialog({
               </View>
             </View>
 
-            <Text className="mt-6 text-2xl font-black tracking-tight text-neutral-950">
+            <Text className="mt-6 text-2xl font-semibold tracking-tight text-neutral-950">
               Ticket submitted
             </Text>
             <Text className="mt-2 text-sm font-medium text-neutral-500">
@@ -390,7 +390,7 @@ export default function MyJobsWebScreen() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <ShieldCheck size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         My jobs
                       </Text>
                     </View>
@@ -403,7 +403,7 @@ export default function MyJobsWebScreen() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Track every job in one place.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -482,7 +482,7 @@ export default function MyJobsWebScreen() {
 
                 <View className="gap-4">
                   <View className="flex-row items-center justify-between gap-4">
-                    <Text className="text-[18px] font-extrabold tracking-tight text-neutral-950">
+                    <Text className="text-[18px] font-semibold tracking-tight text-neutral-950">
                       {activeTabContent.title}
                     </Text>
                     <TouchableOpacity
@@ -508,10 +508,10 @@ export default function MyJobsWebScreen() {
                 <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
                   <View className="flex-row items-center justify-between gap-3">
                     <View>
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                         Today
                       </Text>
-                      <Text className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
+                      <Text className="mt-1 text-2xl font-semibold tracking-tight text-neutral-950">
                         3 active tasks
                       </Text>
                     </View>
@@ -547,10 +547,10 @@ export default function MyJobsWebScreen() {
                   className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                       Need support?
                     </Text>
-                    <Text className="mt-2 text-lg font-black tracking-tight text-white">
+                    <Text className="mt-2 text-lg font-semibold tracking-tight text-white">
                       Open a support ticket
                     </Text>
                   </View>

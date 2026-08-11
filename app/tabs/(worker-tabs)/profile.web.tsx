@@ -68,7 +68,7 @@ function StatCard({ label, value, note, icon }: StatCardProps) {
         </View>
         <Text className="text-xs font-medium text-emerald-600">{note}</Text>
       </View>
-      <Text className="mt-3 text-2xl font-black tracking-tight text-neutral-950">
+      <Text className="mt-3 text-2xl font-semibold tracking-tight text-neutral-950">
         {value}
       </Text>
       <Text className="mt-1 text-sm font-medium text-neutral-500">{label}</Text>
@@ -87,7 +87,7 @@ function SectionTitle({
 }) {
   return (
     <View className="flex-row items-center justify-between gap-4">
-      <Text className="text-[18px] font-extrabold tracking-tight text-neutral-950">
+      <Text className="text-[18px] font-semibold tracking-tight text-neutral-950">
         {title}
       </Text>
       {actionLabel && onAction ? (
@@ -212,7 +212,7 @@ export default function WorkerProfileWebScreen() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <Sparkles size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Profile
                       </Text>
                     </View>
@@ -225,7 +225,7 @@ export default function WorkerProfileWebScreen() {
                   </View>
 
                   <View className="mt-5 gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Manage your worker profile.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -271,10 +271,10 @@ export default function WorkerProfileWebScreen() {
                         <User size={28} color={Colors.common.BRAND} />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                        <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                           Worker account
                         </Text>
-                        <Text className="mt-1 text-xl font-black tracking-tight text-neutral-950">
+                        <Text className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                           Hafizur Rahman
                         </Text>
                         <Text className="mt-1 text-sm font-medium text-neutral-500">

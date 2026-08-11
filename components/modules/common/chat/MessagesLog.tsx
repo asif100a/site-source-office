@@ -25,7 +25,7 @@ export default function MessagesLog({ id }: { id: string }) {
         >
           <Text
             style={{ color: chatPartner.avatarColor }}
-            className="font-extrabold text-xs"
+            className="font-semibold text-xs"
           >
             {chatPartner.initials}
           </Text>
@@ -33,7 +33,7 @@ export default function MessagesLog({ id }: { id: string }) {
 
         <View className="flex-1 items-start">
           {/* Partner Name */}
-          <Text className="text-neutral-700 text-xs font-bold mb-1.5">
+          <Text className="text-neutral-700 text-xs font-semibold mb-1.5">
             {chatPartner.name}
           </Text>
 
@@ -55,7 +55,7 @@ export default function MessagesLog({ id }: { id: string }) {
       <View className="flex-row items-start justify-end mb-6 gap-3">
         <View className="flex-1 items-end">
           {/* Your Name */}
-          <Text className="text-neutral-700 text-xs font-bold mb-1.5">You</Text>
+          <Text className="text-neutral-700 text-xs font-semibold mb-1.5">You</Text>
 
           {/* Bubble */}
           <View className="bg-[#7C3AED] rounded-2xl rounded-tr-none px-4 py-3 max-w-[85%] shadow-sm">
@@ -72,7 +72,7 @@ export default function MessagesLog({ id }: { id: string }) {
 
         {/* Avatar */}
         <View className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center border border-purple-200">
-          <Text className="text-purple-700 font-extrabold text-xs">TH</Text>
+          <Text className="text-purple-700 font-semibold text-xs">TH</Text>
         </View>
       </View>
     </ScrollView>
