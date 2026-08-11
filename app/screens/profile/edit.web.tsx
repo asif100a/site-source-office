@@ -134,9 +134,9 @@ export default function EditProfileScreenWeb() {
                       label="Upload Certificate"
                       file={certificate}
                       setFile={setCertificate}
-                      mode="both"
+                      mode="pdf"
                       title="Upload Certificate"
-                      description="PDF, PNG, JPG or other files (max 10MB)"
+                      description="PDF files (max 10MB)"
                       optional
                     />
 

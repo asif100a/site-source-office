@@ -140,7 +140,7 @@ function SectionHeader({
 }) {
   return (
     <View className="flex-row items-center justify-between gap-4">
-      <Text className="text-neutral-950 text-[18px] font-extrabold tracking-tight">
+      <Text className="text-neutral-950 text-[18px] font-semibold tracking-tight">
         {title}
       </Text>
       <TouchableOpacity
@@ -164,7 +164,7 @@ function MetricCard({ metric }: { metric: Metric }) {
         </View>
         <Text className="text-xs font-medium text-emerald-600">{metric.delta}</Text>
       </View>
-      <Text className="mt-3 text-2xl font-black tracking-tight text-neutral-950">
+      <Text className="mt-3 text-2xl font-semibold tracking-tight text-neutral-950">
         {metric.value}
       </Text>
       <Text className="mt-1 text-sm font-medium text-neutral-500">
@@ -177,7 +177,7 @@ function MetricCard({ metric }: { metric: Metric }) {
 function ActivityRow({ item }: { item: Activity }) {
   return (
     <View className="rounded-2xl border border-neutral-200/80 bg-white p-4">
-      <Text className="text-sm font-bold text-neutral-950">{item.title}</Text>
+      <Text className="text-sm font-semibold text-neutral-950">{item.title}</Text>
       <Text className="mt-1 text-sm leading-5 text-neutral-600">{item.detail}</Text>
       <Text className="mt-3 text-xs font-medium text-neutral-400">{item.time}</Text>
     </View>
@@ -244,10 +244,9 @@ export default function WorkerHomeScreenWeb() {
 
   return (
     <ScreenWrapper>
-      <ScrollView
+      <View
         className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 112 }}
+        style={{ paddingBottom: 112 }}
       >
         <View className="px-6 md:px-10 xl:px-12 pt-6 md:pt-10">
           <View className="w-full max-w-7xl self-center gap-6">
@@ -257,7 +256,7 @@ export default function WorkerHomeScreenWeb() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <Sparkles size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Worker dashboard
                       </Text>
                     </View>
@@ -270,7 +269,7 @@ export default function WorkerHomeScreenWeb() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Your worker dashboard.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -333,7 +332,7 @@ export default function WorkerHomeScreenWeb() {
                           <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                             Jobs available today
                           </Text>
-                          <Text className="mt-1 text-xl font-black tracking-tight text-neutral-950">
+                          <Text className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
                             12 jobs near you
                           </Text>
                         </View>
@@ -403,10 +402,10 @@ export default function WorkerHomeScreenWeb() {
                 </View>
 
                 <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
-                  <Text className="text-sm font-bold uppercase tracking-[0px] text-neutral-500">
+                  <Text className="text-sm font-semibold uppercase tracking-[0px] text-neutral-500">
                     Profile status
                   </Text>
-                  <Text className="mt-2 text-2xl font-black tracking-tight text-neutral-950">
+                  <Text className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
                     85% complete
                   </Text>
                   <Text className="mt-2 text-sm leading-6 text-neutral-600">
@@ -436,7 +435,7 @@ export default function WorkerHomeScreenWeb() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </ScreenWrapper>
   );
 }

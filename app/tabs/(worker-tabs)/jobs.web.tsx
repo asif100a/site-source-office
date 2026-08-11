@@ -117,7 +117,7 @@ function SectionLabel({
 }) {
   return (
     <View className="flex-row items-center justify-between gap-4">
-      <Text className="text-[18px] font-extrabold tracking-tight text-neutral-950">
+      <Text className="text-[18px] font-semibold tracking-tight text-neutral-950">
         {title}
       </Text>
       <TouchableOpacity
@@ -181,7 +181,7 @@ function SideStat({
           <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
             {label}
           </Text>
-          <Text className="mt-1 text-lg font-black tracking-tight text-neutral-950">
+          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
             {value}
           </Text>
         </View>
@@ -240,10 +240,9 @@ export default function WorkerJobsWebScreen() {
 
   return (
     <View className="flex-1 bg-neutral-50">
-      <ScrollView
+      <View
         className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 96 }}
+        style={{ paddingBottom: 96 }}
       >
         <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -254,7 +253,7 @@ export default function WorkerJobsWebScreen() {
                   <View className="flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
                       <Sparkles size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                         Worker jobs
                       </Text>
                     </View>
@@ -267,7 +266,7 @@ export default function WorkerJobsWebScreen() {
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
                       Find the right shift faster.
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -319,7 +318,7 @@ export default function WorkerJobsWebScreen() {
                         onChangeText={setSearchQuery}
                         placeholder="Search offers, companies, locations"
                         placeholderTextColor="#A3A3A3"
-                        className="flex-1 text-sm text-neutral-900"
+                        className="flex-1 text-sm text-neutral-900 focus:outline-none"
                       />
                     </View>
                   </View>
@@ -410,7 +409,7 @@ export default function WorkerJobsWebScreen() {
                                   />
                                 </View>
                                 <View className="flex-1">
-                                  <Text className="text-base font-extrabold text-neutral-950">
+                                  <Text className="text-base font-semibold text-neutral-950">
                                     {job.title}
                                   </Text>
                                   <Text className="text-sm font-semibold text-neutral-500">
@@ -420,7 +419,7 @@ export default function WorkerJobsWebScreen() {
                               </View>
 
                               <View className="rounded-xl bg-orange-50 px-3 py-1.5">
-                                <Text className="text-xs font-bold text-neutral-900">
+                                <Text className="text-xs font-semibold text-neutral-900">
                                   {job.tag}
                                 </Text>
                               </View>
@@ -456,7 +455,7 @@ export default function WorkerJobsWebScreen() {
                                   onPress={() => handleViewDetails(job.id)}
                                   className="rounded-xl bg-neutral-100 px-4 py-2.5"
                                 >
-                                  <Text className="text-xs font-bold text-neutral-700">
+                                  <Text className="text-xs font-semibold text-neutral-700">
                                     View Details
                                   </Text>
                                 </TouchableOpacity>
@@ -464,7 +463,7 @@ export default function WorkerJobsWebScreen() {
                                   onPress={handleApply}
                                   className="rounded-xl bg-neutral-950 px-4 py-2.5"
                                 >
-                                  <Text className="text-xs font-bold text-white">
+                                  <Text className="text-xs font-semibold text-white">
                                     Apply
                                   </Text>
                                 </TouchableOpacity>
@@ -482,10 +481,10 @@ export default function WorkerJobsWebScreen() {
                 <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
                   <View className="flex-row items-center justify-between gap-3">
                     <View>
-                      <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
                         Match overview
                       </Text>
-                      <Text className="mt-1 text-2xl font-black tracking-tight text-neutral-950">
+                      <Text className="mt-1 text-2xl font-semibold tracking-tight text-neutral-950">
                         12 new matches
                       </Text>
                     </View>
@@ -547,10 +546,10 @@ export default function WorkerJobsWebScreen() {
                   className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
                       Need more results?
                     </Text>
-                    <Text className="mt-2 text-lg font-black tracking-tight text-white">
+                    <Text className="mt-2 text-lg font-semibold tracking-tight text-white">
                       Open advanced search
                     </Text>
                   </View>
@@ -560,7 +559,7 @@ export default function WorkerJobsWebScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }

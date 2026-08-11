@@ -77,7 +77,7 @@ function getNativeMapComponents(): NativeMapComponents | null {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
+    <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
       {children}
     </Text>
   );
@@ -97,7 +97,7 @@ function TradeSkillSection({ value }: { value: string }) {
 function RequirementsSection({ value }: { value: string }) {
   return (
     <View className="rounded-2xl border border-neutral-200/80 bg-white p-4">
-      <Text className="mb-3 text-base font-extrabold text-neutral-900">
+      <Text className="mb-3 text-base font-semibold text-neutral-900">
         Requirements
       </Text>
       <Text className="text-sm font-medium leading-relaxed text-neutral-600">
@@ -125,7 +125,7 @@ function JobHighlights({
           <View className="flex-row flex-wrap items-center gap-2">
             <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
               <MapPin size={14} color={Colors.common.BRAND} />
-              <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+              <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
                 Employer details
               </Text>
             </View>
@@ -138,7 +138,7 @@ function JobHighlights({
           </View>
 
           <View className="gap-2">
-            <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+            <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
               {jobDetails.title} at {jobDetails.company}
             </Text>
             <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
@@ -172,26 +172,26 @@ function JobHighlights({
 
       <View className="mt-6 flex-row flex-wrap gap-3">
         <View className="rounded-2xl bg-neutral-950 px-5 py-3.5">
-          <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+          <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
             Pay
           </Text>
-          <Text className="mt-1 text-lg font-black tracking-tight text-white">
+          <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
             GBP {jobDetails.payRate}/hour
           </Text>
         </View>
         <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-          <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+          <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
             Duration
           </Text>
-          <Text className="mt-1 text-lg font-black tracking-tight text-neutral-950">
+          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
             {jobDetails.jobDuration}
           </Text>
         </View>
         <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-          <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
+          <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
             Location
           </Text>
-          <Text className="mt-1 text-lg font-black tracking-tight text-neutral-950">
+          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
             {jobDetails.location}
           </Text>
         </View>
@@ -306,7 +306,7 @@ export default function EmployerDetailsWebScreen() {
                           activeOpacity={0.9}
                           className="flex-row items-center gap-2 rounded-full border border-neutral-100 bg-white/95 px-3 py-2 shadow-lg"
                         >
-                          <Text className="text-xs font-extrabold text-neutral-900">
+                          <Text className="text-xs font-semibold text-neutral-900">
                             Open in Google Maps
                           </Text>
                           <ExternalLink size={14} color="#6B7280" />
@@ -318,10 +318,10 @@ export default function EmployerDetailsWebScreen() {
               </View>
 
               <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                <Text className="text-sm font-bold uppercase tracking-[0px] text-neutral-500">
+                <Text className="text-sm font-semibold uppercase tracking-[0px] text-neutral-500">
                   Quick actions
                 </Text>
-                <Text className="mt-2 text-2xl font-black tracking-tight text-neutral-950">
+                <Text className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
                   Apply or go back
                 </Text>
                 <Text className="mt-2 text-sm leading-6 text-neutral-600">
