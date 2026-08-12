@@ -6,6 +6,7 @@ import {
   normalizeUserRole,
   type UserRole,
 } from "@/constants/Routes";
+import { safeSetWebStorageItem } from "@/constants/webStorage";
 
 import LoginScreen from "./screens/auth/LoginScreen";
 import RegisterGeneralScreen from "./screens/auth/RegisterGeneralScreen";
@@ -70,9 +71,7 @@ export default function AuthFlowWeb() {
   }, [params.step]);
 
   const goToRoleDashboard = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(WEB_ROLE_STORAGE_KEY, role);
-    }
+    safeSetWebStorageItem(WEB_ROLE_STORAGE_KEY, role);
     router.replace(getDashboardRouteForRole(role));
   };
 

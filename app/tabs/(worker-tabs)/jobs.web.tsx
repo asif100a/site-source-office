@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import {
+  Bookmark,
   ArrowRight,
   BriefcaseBusiness,
   CalendarDays,
@@ -194,6 +195,7 @@ export default function WorkerJobsWebScreen() {
   const [activeMode, setActiveMode] = useState<JobMode>("browse");
   const [activeFilter, setActiveFilter] = useState("All shifts");
   const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
   const searchInputRef = useRef<TextInput>(null);
 
   const handleOpenSearch = () => {
@@ -209,6 +211,14 @@ export default function WorkerJobsWebScreen() {
       pathname: "/auth",
       params: { role: "worker", step: "register_sso" },
     });
+  };
+
+  const toggleFavoriteJob = (id: string) => {
+    setFavoriteJobIds((current) =>
+      current.includes(id)
+        ? current.filter((jobId) => jobId !== id)
+        : [...current, id],
+    );
   };
 
   const visibleJobs = useMemo(() => {
@@ -369,7 +379,7 @@ export default function WorkerJobsWebScreen() {
                             : "text-neutral-700"
                         } text-center`}
                       >
-                        Offers
+                        Favourites
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -397,6 +407,8 @@ export default function WorkerJobsWebScreen() {
                             job={job}
                             handleViewDetails={handleViewDetails}
                             handleApply={handleApply}
+                            isFavorite={favoriteJobIds.includes(job.id)}
+                            onToggleFavorite={toggleFavoriteJob}
                           />
                         ) : (
                           <View className="rounded-2xl border border-neutral-200 bg-white p-5">
@@ -418,10 +430,41 @@ export default function WorkerJobsWebScreen() {
                                 </View>
                               </View>
 
-                              <View className="rounded-xl bg-orange-50 px-3 py-1.5">
-                                <Text className="text-xs font-semibold text-neutral-900">
-                                  {job.tag}
-                                </Text>
+                              <View className="items-end gap-2">
+                                <TouchableOpacity
+                                  onPress={() => toggleFavoriteJob(job.id)}
+                                  activeOpacity={0.8}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={
+                                    favoriteJobIds.includes(job.id)
+                                      ? "Remove from favourites"
+                                      : "Add to favourites"
+                                  }
+                                  className={`h-10 w-10 items-center justify-center rounded-full border ${
+                                    favoriteJobIds.includes(job.id)
+                                      ? "border-orange-200 bg-orange-50"
+                                      : "border-neutral-200 bg-white"
+                                  }`}
+                                >
+                                  <Bookmark
+                                    size={18}
+                                    color={
+                                      favoriteJobIds.includes(job.id)
+                                        ? Colors.common.BRAND
+                                        : "#737373"
+                                    }
+                                    fill={
+                                      favoriteJobIds.includes(job.id)
+                                        ? Colors.common.BRAND
+                                        : "transparent"
+                                    }
+                                  />
+                                </TouchableOpacity>
+                                <View className="rounded-xl bg-orange-50 px-3 py-1.5">
+                                  <Text className="text-xs font-semibold text-neutral-900">
+                                    {job.tag}
+                                  </Text>
+                                </View>
                               </View>
                             </View>
 

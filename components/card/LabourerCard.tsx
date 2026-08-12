@@ -1,89 +1,113 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
+import {
+  Bookmark,
+  Briefcase,
+  Calendar,
+  MapPin,
+  Users,
+} from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
-export default function LabourerCard({ job, handleViewDetails, handleApply }: { job: any; handleViewDetails: (id: string) => void; handleApply?: (id: string) => void; }) {
+type LabourerCardProps = {
+  job: any;
+  handleViewDetails: (id: string) => void;
+  handleApply?: (id: string) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+};
+
+export default function LabourerCard({
+  job,
+  handleViewDetails,
+  handleApply,
+  isFavorite = false,
+  onToggleFavorite,
+}: LabourerCardProps) {
   return (
-    <View
-      key={job.id}
-      className="bg-white rounded-2xl p-5 border border-neutral-100/85"
-    >
-      {/* Header info */}
-      <View className="flex-row justify-between items-start mb-4">
+    <View className="rounded-2xl border border-neutral-100/85 bg-white p-5">
+      <View className="mb-4 flex-row items-start justify-between">
         <View className="flex-row items-center gap-3">
-          <View className="w-12 h-12 bg-blue-600 rounded-xl items-center justify-center">
+          <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
             <Briefcase size={22} color="#FFFFFF" />
           </View>
           <View>
-            <Text className="text-neutral-950 font-extrabold text-base">
+            <Text className="text-base font-extrabold text-neutral-950">
               {job.title}
             </Text>
-            <Text className="text-neutral-500 text-xs font-semibold">
+            <Text className="text-xs font-semibold text-neutral-500">
               {job.company}
             </Text>
           </View>
         </View>
 
-        <View className="items-end">
-          <Text className="flex-1 flex-row text-neutral-900 font-extrabold text-sm min-w-20">
+        <View className="items-end gap-2">
+          <TouchableOpacity
+            onPress={() => onToggleFavorite?.(job.id)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isFavorite ? "Remove from favourites" : "Add to favourites"
+            }
+            className={`h-10 w-10 items-center justify-center rounded-full border ${
+              isFavorite
+                ? "border-orange-200 bg-orange-50"
+                : "border-neutral-200 bg-white"
+            }`}
+          >
+            <Bookmark
+              size={18}
+              color={isFavorite ? Colors.common.BRAND : "#737373"}
+              fill={isFavorite ? Colors.common.BRAND : "transparent"}
+            />
+          </TouchableOpacity>
+          <Text className="min-w-20 flex-row text-right text-sm font-extrabold text-neutral-900">
             £{job.payRate}/hour
           </Text>
         </View>
       </View>
 
-      {/* Details layout */}
-      <View className="gap-2.5 py-3 border-y border-neutral-50 mb-4">
+      <View className="mb-4 gap-2.5 border-y border-neutral-50 py-3">
         <View className="flex-row items-center gap-2">
           <MapPin size={15} color="#858585" />
-          <Text className="text-neutral-500 text-xs font-semibold">
+          <Text className="text-xs font-semibold text-neutral-500">
             {job.location}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Users size={15} color="#858585" />
-          <Text className="text-neutral-500 text-xs font-semibold">
+          <Text className="text-xs font-semibold text-neutral-500">
             {job.team}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Calendar size={15} color="#858585" />
-          <Text className="text-neutral-500 text-xs font-semibold">
+          <Text className="text-xs font-semibold text-neutral-500">
             {job.duration}
           </Text>
         </View>
       </View>
 
-      {/* Action buttons */}
-      <View className="flex-row gap-2 justify-between items-center">
-        <Text
-          className="text-neutral-400 text-xs font-medium"
-          numberOfLines={1}
-        >
+      <View className="flex-row items-center justify-between gap-2">
+        <Text className="text-xs font-medium text-neutral-400" numberOfLines={1}>
           {job.time}
         </Text>
 
-        <View className="flex-row gap-2 justify-end">
+        <View className="flex-row gap-2">
           <TouchableOpacity
             onPress={() => handleViewDetails(job.id)}
-            className="px-4 py-2 bg-neutral-100 rounded-md active:opacity-70"
+            className="rounded-md bg-neutral-100 px-4 py-2 active:opacity-70"
             style={{ minWidth: 82 }}
           >
-            <Text
-              className="text-neutral-600 font-bold text-xs text-center"
-              numberOfLines={1}
-            >
+            <Text className="text-center text-xs font-bold text-neutral-600">
               View Details
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => handleApply?.(job.id)}
             style={{ backgroundColor: Colors.common.GRAY_DARK, minWidth: 132 }}
-            className="px-4 py-2 rounded-md active:opacity-90 shadow-sm"
+            className="rounded-md px-4 py-2 shadow-sm active:opacity-90"
           >
-            <Text
-              className="text-white font-bold text-xs text-center"
-              numberOfLines={1}
-            >
+            <Text className="text-center text-xs font-bold text-white">
               Apply
             </Text>
           </TouchableOpacity>

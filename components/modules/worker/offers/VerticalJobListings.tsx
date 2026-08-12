@@ -17,10 +17,14 @@ export type WorkerJobItem = {
 export default function VerticalJobListings({
   handleViewDetails,
   handleApply,
+  favoriteJobIds = [],
+  onToggleFavorite,
   jobs,
 }: {
   handleViewDetails: (id: string) => void;
   handleApply: () => void;
+  favoriteJobIds?: string[];
+  onToggleFavorite?: (id: string) => void;
   jobs?: WorkerJobItem[];
 }) {
   const source =
@@ -57,6 +61,8 @@ export default function VerticalJobListings({
           job={job}
           handleViewDetails={handleViewDetails}
           handleApply={handleApply}
+          isFavorite={favoriteJobIds.includes(job.id)}
+          onToggleFavorite={onToggleFavorite}
         />
       ))}
     </View>

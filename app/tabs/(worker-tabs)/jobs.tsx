@@ -15,6 +15,7 @@ export default function WorkerJobsTabLanding() {
   const [activeCategory, setActiveCategory] = useState<"browse" | "offers">(
     "browse",
   );
+  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
 
   const handleOpenSearch = () => {
     router.push({
@@ -36,6 +37,14 @@ export default function WorkerJobsTabLanding() {
 
   const handleAcceptOffer = (id: string) => {
     console.log("Accepting offer:", id);
+  };
+
+  const toggleFavoriteJob = (id: string) => {
+    setFavoriteJobIds((current) =>
+      current.includes(id)
+        ? current.filter((jobId) => jobId !== id)
+        : [...current, id],
+    );
   };
 
   return (
@@ -81,11 +90,15 @@ export default function WorkerJobsTabLanding() {
           <VerticalJobListings
             handleViewDetails={handleViewDetails}
             handleApply={handleApply}
+            favoriteJobIds={favoriteJobIds}
+            onToggleFavorite={toggleFavoriteJob}
           />
         ) : (
           <VerticalOfferListings
             handleViewDetails={handleViewDetails}
             handleAcceptOffer={handleAcceptOffer}
+            favoriteJobIds={favoriteJobIds}
+            onToggleFavorite={toggleFavoriteJob}
           />
         )}
       </ScrollView>

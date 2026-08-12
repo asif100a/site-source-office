@@ -22,6 +22,7 @@ import {
   normalizeUserRole,
   UserRole,
 } from "@/constants/Routes";
+import { safeSetWebStorageItem } from "@/constants/webStorage";
 
 const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
@@ -74,9 +75,7 @@ export default function AuthFlow() {
   }, [params.step]);
 
   const goToRoleDashboard = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(WEB_ROLE_STORAGE_KEY, role);
-    }
+    safeSetWebStorageItem(WEB_ROLE_STORAGE_KEY, role);
     router.replace(getDashboardRouteForRole(role));
   };
 

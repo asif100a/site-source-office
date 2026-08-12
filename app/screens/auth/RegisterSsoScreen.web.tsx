@@ -42,7 +42,7 @@ export default function RegisterSsoScreenWeb({
         <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
           <LogoWhite />
           <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
-            Start your application
+            Start your registration
           </Text>
           <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
             Use Google or Apple to confirm your email and name in one step.

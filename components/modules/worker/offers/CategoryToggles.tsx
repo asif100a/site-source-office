@@ -43,7 +43,7 @@ export default function CategoryToggles({
         <Text
           className={`text-xs font-bold ${activeCategory === "offers" ? "text-white" : "text-neutral-500"}`}
         >
-          Offers
+          Favourites
         </Text>
       </TouchableOpacity>
     </View>

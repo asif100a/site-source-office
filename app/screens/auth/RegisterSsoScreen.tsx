@@ -46,7 +46,7 @@ export default function RegisterSsoScreen({
           <LogoWhite />
         </View>
         <Text className="text-white text-3xl font-bold tracking-tight">
-          Start Your Application
+          Start Your Registration
         </Text>
         <Text className="text-white/85 text-sm mt-1.5 font-medium leading-relaxed">
           Use Google or Apple to confirm your email and name in one step.
