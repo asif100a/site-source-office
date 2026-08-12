@@ -1,48 +1,27 @@
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "expo-router";
 import {
-  Bookmark,
-  ArrowRight,
-  BriefcaseBusiness,
-  CalendarDays,
+  ChevronDown,
   ChevronRight,
-  MapPin,
   Search,
   SlidersHorizontal,
-  Sparkles,
-  Star,
-  Users,
 } from "lucide-react-native";
-import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import LabourerCard from "@/components/card/LabourerCard";
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import ScreenWrapper from "@/components/layout/ScreenWrapper";
+import CategoryToggles from "@/components/modules/worker/offers/CategoryToggles";
+import VerticalJobListings, {
+  type WorkerJobItem,
+} from "@/components/modules/worker/offers/VerticalJobListings";
+import VerticalOfferListings from "@/components/modules/worker/offers/VerticalOfferListings";
+import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
 import { Colors } from "@/constants/Colors";
-import { router } from "expo-router";
 
-type JobMode = "browse" | "offers";
-
-type JobItem = {
-  id: string;
-  title: string;
-  company: string;
-  payRate: string;
-  tag: string;
-  location: string;
-  team: string;
-  duration: string;
-  time: string;
-};
-
-const BROWSE_JOBS: JobItem[] = [
+const BROWSE_JOBS: WorkerJobItem[] = [
   {
     id: "3",
     title: "Labourer",
     company: "Tech Innovators Inc.",
-    payRate: "80",
+    payRate: "120",
     tag: "Market Rate",
     location: "Shoreditch - 1.2 mi away",
     team: "2 developers, 1 designer",
@@ -50,10 +29,21 @@ const BROWSE_JOBS: JobItem[] = [
     time: "2 hours ago",
   },
   {
+    id: "4",
+    title: "Groundworker",
+    company: "Cityline Projects",
+    payRate: "95",
+    tag: "Urgent",
+    location: "Hackney - 3.4 mi away",
+    team: "1 foreman, 4 workers",
+    duration: "18 Jun - 2 weeks",
+    time: "1 hour ago",
+  },
+  {
     id: "5",
     title: "Graphic Designer",
     company: "Creative Studios",
-    payRate: "60",
+    payRate: "90",
     tag: "Competitive Rate",
     location: "Soho - 2.5 mi away",
     team: "1 designer",
@@ -62,18 +52,18 @@ const BROWSE_JOBS: JobItem[] = [
   },
   {
     id: "6",
-    title: "Warehouse Helper",
+    title: "Electrician",
     company: "Northside Logistics",
-    payRate: "72",
-    tag: "Fast Start",
-    location: "Camden - 3.1 mi away",
-    team: "1 supervisor, 6 workers",
-    duration: "18 Jun - 3 weeks",
-    time: "6 hours ago",
+    payRate: "140",
+    tag: "High Pay",
+    location: "Camden - 6.1 mi away",
+    team: "1 supervisor, 2 electricians",
+    duration: "20 Jun - 1 month",
+    time: "Today",
   },
 ];
 
-const OFFER_JOBS: JobItem[] = [
+const OFFER_JOBS: WorkerJobItem[] = [
   {
     id: "8",
     title: "Painter",
@@ -91,114 +81,93 @@ const OFFER_JOBS: JobItem[] = [
     company: "Live Works",
     payRate: "85",
     tag: "Offer",
-    location: "Waterloo - 1.9 mi away",
+    location: "Waterloo - 11 mi away",
     team: "8 crew members",
     duration: "15 Jun - weekend",
     time: "35 minutes ago",
   },
 ];
 
-const FILTERS = [
-  "All shifts",
-  "Full time",
-  "Part time",
-  "Remote",
-  "Urgent",
-  "High pay",
+const RATE_OPTIONS = [
+  "Any rate",
+  "0 - 100",
+  "100 - 200",
+  "200 - 300",
+  "300+",
 ];
 
-function SectionLabel({
-  title,
-  action,
-  onAction,
-}: {
-  title: string;
-  action: string;
-  onAction: () => void;
-}) {
-  return (
-    <View className="flex-row items-center justify-between gap-4">
-      <Text className="text-[18px] font-semibold tracking-tight text-neutral-950">
-        {title}
-      </Text>
-      <TouchableOpacity
-        onPress={onAction}
-        activeOpacity={0.8}
-        className="flex-row items-center gap-1.5"
-      >
-        <Text className="text-sm font-medium text-neutral-500">{action}</Text>
-        <ArrowRight size={16} color="#737373" />
-      </TouchableOpacity>
-    </View>
-  );
-}
+const TRADE_OPTIONS = [
+  "All trades",
+  "Groundworker",
+  "Electrician",
+  "Painter",
+  "Graphic Designer",
+  "Labourer",
+];
 
-function FilterPill({
+const RADIUS_OPTIONS = [
+  "Any distance",
+  "1 - 10 miles",
+  "10 - 25 miles",
+  "25 - 50 miles",
+  "50+ miles",
+];
+
+function FilterGroup({
   label,
-  active,
-  onPress,
+  options,
+  value,
+  onChange,
 }: {
   label: string;
-  active: boolean;
-  onPress: () => void;
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      className={`rounded-full px-4 py-2 ${
-        active ? "bg-neutral-950" : "bg-white"
-      }`}
-      style={{
-        borderWidth: 1,
-        borderColor: active ? "#111827" : "#E5E7EB",
-      }}
-    >
-      <Text
-        className={`text-sm font-semibold ${active ? "text-white" : "text-neutral-600"}`}
-      >
+    <View className="gap-3">
+      <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-500">
         {label}
       </Text>
-    </TouchableOpacity>
-  );
-}
-
-function SideStat({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View className="rounded-2xl border border-neutral-200 bg-white p-4">
-      <View className="flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-          {icon}
-        </View>
-        <View className="flex-1">
-          <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
-            {label}
-          </Text>
-          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
-            {value}
-          </Text>
-        </View>
+      <View className="flex-row flex-wrap gap-2">
+        {options.map((option) => (
+          <TouchableOpacity
+            key={option}
+            onPress={() => onChange(option)}
+            activeOpacity={0.85}
+            className={`rounded-full px-4 py-2 ${
+              value === option ? "bg-neutral-950" : "bg-neutral-100"
+            }`}
+          >
+            <Text
+              className={`text-sm font-bold ${
+                value === option ? "text-white" : "text-neutral-700"
+              }`}
+            >
+              {option}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
 }
 
 export default function WorkerJobsWebScreen() {
-  const [activeMode, setActiveMode] = useState<JobMode>("browse");
-  const [activeFilter, setActiveFilter] = useState("All shifts");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const router = useRouter();
   const searchInputRef = useRef<TextInput>(null);
+  const [activeCategory, setActiveCategory] = useState<"browse" | "offers">(
+    "browse",
+  );
+  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [rateRange, setRateRange] = useState("Any rate");
+  const [tradeSkill, setTradeSkill] = useState("All trades");
+  const [radius, setRadius] = useState("Any distance");
 
-  const handleOpenSearch = () => {
+  const handleFocusSearch = () => {
     searchInputRef.current?.focus();
   };
 
@@ -206,11 +175,23 @@ export default function WorkerJobsWebScreen() {
     router.push(`/screens/employer-details/${id}` as any);
   };
 
+  const handleOpenDetailsModal = (job: WorkerJobItem) => {
+    setSelectedJob(job);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedJob(null);
+  };
+
   const handleApply = () => {
     router.push({
       pathname: "/auth",
       params: { role: "worker", step: "register_sso" },
     });
+  };
+
+  const handleAcceptOffer = (id: string) => {
+    console.log("Accepting offer:", id);
   };
 
   const toggleFavoriteJob = (id: string) => {
@@ -222,387 +203,240 @@ export default function WorkerJobsWebScreen() {
   };
 
   const visibleJobs = useMemo(() => {
-    const source = activeMode === "browse" ? BROWSE_JOBS : OFFER_JOBS;
+    const source = activeCategory === "browse" ? BROWSE_JOBS : OFFER_JOBS;
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return source.filter((job) => {
       const matchesQuery =
         !normalizedQuery ||
-        [job.title, job.company, job.location, job.tag]
+        [job.title, job.company, job.location, job.tag, job.team]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
 
-      const matchesFilter =
-        activeFilter === "All shifts" ||
-        (activeFilter === "High pay" && Number(job.payRate) >= 85) ||
-        (activeFilter === "Urgent" && job.tag.toLowerCase().includes("fast")) ||
-        (activeFilter === "Remote" &&
-          job.location.toLowerCase().includes("remote")) ||
-        (activeFilter === "Part time" &&
-          job.duration.toLowerCase().includes("week")) ||
-        (activeFilter === "Full time" &&
-          !job.duration.toLowerCase().includes("weekend"));
+      const payRate = Number(job.payRate);
+      const matchesRate =
+        rateRange === "Any rate" ||
+        (rateRange === "0 - 100" && payRate >= 0 && payRate <= 100) ||
+        (rateRange === "100 - 200" && payRate > 100 && payRate <= 200) ||
+        (rateRange === "200 - 300" && payRate > 200 && payRate <= 300) ||
+        (rateRange === "300+" && payRate > 300);
 
-      return matchesQuery && matchesFilter;
+      const matchesTrade =
+        tradeSkill === "All trades" ||
+        job.title.toLowerCase().includes(tradeSkill.toLowerCase());
+
+      const distance = Number(job.location.match(/(\d+(\.\d+)?)\s*mi/)?.[1] ?? "0");
+      const matchesRadius =
+        radius === "Any distance" ||
+        (radius === "1 - 10 miles" && distance <= 10) ||
+        (radius === "10 - 25 miles" && distance > 10 && distance <= 25) ||
+        (radius === "25 - 50 miles" && distance > 25 && distance <= 50) ||
+        (radius === "50+ miles" && distance > 50);
+
+      return matchesQuery && matchesRate && matchesTrade && matchesRadius;
     });
-  }, [activeFilter, activeMode, searchQuery]);
+  }, [activeCategory, radius, rateRange, searchQuery, tradeSkill]);
+
+  const resultLabel =
+    activeCategory === "browse" ? "Active Opportunities" : "Available Offers";
 
   return (
-    <View className="flex-1 bg-neutral-50">
-      <View
+    <ScreenWrapper>
+      <ScrollView
         className="flex-1"
-        style={{ paddingBottom: 96 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 112 }}
       >
-        <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
+        <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
-            {/* Top Section */}
-            <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
-              <View className="flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <View className="max-w-3xl gap-4">
-                  <View className="flex-row flex-wrap items-center gap-2">
-                    <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
-                      <Sparkles size={14} color={Colors.common.BRAND} />
-                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
-                        Worker jobs
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
-                      <View className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <Text className="text-xs font-semibold text-neutral-600">
-                        24 active listings
-                      </Text>
-                    </View>
+            <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
+              <View className="relative px-5 py-6 md:px-8 md:py-8">
+                <View
+                  className="absolute -top-14 right-0 h-36 w-36 rounded-full opacity-80"
+                  style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
+                />
+                <View className="absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-neutral-100" />
+
+                <View className="relative gap-4">
+                  <View className="rounded-full bg-orange-50 px-3 py-1.5 self-start">
+                    <Text className="text-xs font-bold uppercase text-neutral-900">
+                      Worker jobs
+                    </Text>
                   </View>
 
                   <View className="gap-2">
-                    <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
-                      Find the right shift faster.
+                    <Text className="max-w-3xl text-2xl font-bold tracking-tight text-neutral-950 md:text-[32px]">
+                      Browse open work in a desktop-friendly layout.
                     </Text>
-                    <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
-                      Search jobs, narrow results, and switch between browsing
-                      and offers without leaving the page. This view stays
-                      desktop-first on web and leaves the mobile screen
-                      untouched.
+                    <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
+                      Search and filter directly on this page, then switch
+                      between opportunities and favourites without leaving the
+                      web view.
                     </Text>
                   </View>
-                </View>
 
-                <View className="flex-row flex-wrap gap-3">
                   <TouchableOpacity
-                    onPress={handleOpenSearch}
+                    onPress={handleFocusSearch}
                     activeOpacity={0.9}
-                    className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
+                    className="flex-row items-center gap-2 self-start rounded-2xl bg-neutral-950 px-5 py-3.5"
                   >
                     <Search size={18} color="#FFFFFF" />
-                    <Text className="text-sm font-semibold text-white">
-                      Open search
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push("/tabs/(worker-tabs)/my-jobs" as any)
-                    }
-                    activeOpacity={0.88}
-                    className="flex-row items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3.5"
-                  >
-                    <BriefcaseBusiness size={18} color="#111827" />
-                    <Text className="text-sm font-semibold text-neutral-900">
-                      My jobs
+                    <Text className="text-sm font-bold text-white">
+                      Search jobs
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <View className="flex-col gap-6 xl:flex-row">
-              <View className="flex-[1.65] gap-6">
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                  <View className="flex-col gap-3 lg:flex-row lg:items-center">
-                    <View className="flex-1 flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
-                      <Search size={18} color="#A3A3A3" />
-                      <TextInput
-                        ref={searchInputRef}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholder="Search offers, companies, locations"
-                        placeholderTextColor="#A3A3A3"
-                        className="flex-1 text-sm text-neutral-900 focus:outline-none"
-                      />
-                    </View>
-                  </View>
-
-                  <View className="mt-5 flex-row flex-wrap gap-2.5">
-                    {FILTERS.map((filter) => (
-                      <FilterPill
-                        key={filter}
-                        label={filter}
-                        active={activeFilter === filter}
-                        onPress={() => setActiveFilter(filter)}
-                      />
-                    ))}
-                  </View>
-
-                  <View className="mt-6 flex-row flex-wrap gap-3">
-                    <TouchableOpacity
-                      onPress={() => setActiveMode("browse")}
-                      className={`flex-1 min-w-[180px] rounded-2xl px-4 py-3.5 ${
-                        activeMode === "browse"
-                          ? "bg-neutral-950"
-                          : "bg-neutral-100"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm font-semibold ${
-                          activeMode === "browse"
-                            ? "text-white"
-                            : "text-neutral-700"
-                        } text-center`}
-                      >
-                        Browse opportunities
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => setActiveMode("offers")}
-                      className={`flex-1 min-w-[180px] rounded-2xl px-4 py-3.5 ${
-                        activeMode === "offers"
-                          ? "bg-neutral-950"
-                          : "bg-neutral-100"
-                      }`}
-                    >
-                      <Text
-                        className={`text-sm font-semibold ${
-                          activeMode === "offers"
-                            ? "text-white"
-                            : "text-neutral-700"
-                        } text-center`}
-                      >
-                        Favourites
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View className="gap-4">
-                  <SectionLabel
-                    title={
-                      activeMode === "browse"
-                        ? "Active opportunities"
-                        : "Available offers"
-                    }
-                    action="See all"
-                    onAction={handleOpenSearch}
+            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+              <View className="mt-1 flex-row items-center gap-2">
+                <View className="flex-1 flex-row items-center rounded-xl border border-neutral-200/80 bg-white px-4 py-3">
+                  <Search size={18} color="#A3A3A3" />
+                  <TextInput
+                    ref={searchInputRef}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Search jobs, companies, or locations"
+                    placeholderTextColor="#A3A3A3"
+                    className="flex-1 px-3 text-sm font-medium text-neutral-800"
                   />
-
-                  <View className="flex-row flex-wrap gap-4">
-                    {visibleJobs.map((job) => (
-                      <View
-                        key={job.id}
-                        style={{ flexBasis: "48%", minWidth: 320, flexGrow: 1 }}
-                      >
-                        {activeMode === "browse" ? (
-                          <LabourerCard
-                            job={job}
-                            handleViewDetails={handleViewDetails}
-                            handleApply={handleApply}
-                            isFavorite={favoriteJobIds.includes(job.id)}
-                            onToggleFavorite={toggleFavoriteJob}
-                          />
-                        ) : (
-                          <View className="rounded-2xl border border-neutral-200 bg-white p-5">
-                            <View className="flex-row items-start justify-between gap-4">
-                              <View className="flex-1 flex-row items-center gap-3">
-                                <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
-                                  <BriefcaseBusiness
-                                    size={20}
-                                    color="#FFFFFF"
-                                  />
-                                </View>
-                                <View className="flex-1">
-                                  <Text className="text-base font-semibold text-neutral-950">
-                                    {job.title}
-                                  </Text>
-                                  <Text className="text-sm font-semibold text-neutral-500">
-                                    {job.company}
-                                  </Text>
-                                </View>
-                              </View>
-
-                              <View className="items-end gap-2">
-                                <TouchableOpacity
-                                  onPress={() => toggleFavoriteJob(job.id)}
-                                  activeOpacity={0.8}
-                                  accessibilityRole="button"
-                                  accessibilityLabel={
-                                    favoriteJobIds.includes(job.id)
-                                      ? "Remove from favourites"
-                                      : "Add to favourites"
-                                  }
-                                  className={`h-10 w-10 items-center justify-center rounded-full border ${
-                                    favoriteJobIds.includes(job.id)
-                                      ? "border-orange-200 bg-orange-50"
-                                      : "border-neutral-200 bg-white"
-                                  }`}
-                                >
-                                  <Bookmark
-                                    size={18}
-                                    color={
-                                      favoriteJobIds.includes(job.id)
-                                        ? Colors.common.BRAND
-                                        : "#737373"
-                                    }
-                                    fill={
-                                      favoriteJobIds.includes(job.id)
-                                        ? Colors.common.BRAND
-                                        : "transparent"
-                                    }
-                                  />
-                                </TouchableOpacity>
-                                <View className="rounded-xl bg-orange-50 px-3 py-1.5">
-                                  <Text className="text-xs font-semibold text-neutral-900">
-                                    {job.tag}
-                                  </Text>
-                                </View>
-                              </View>
-                            </View>
-
-                            <View className="mt-4 gap-2.5 border-y border-neutral-100 py-4">
-                              <View className="flex-row items-center gap-2">
-                                <MapPin size={15} color="#737373" />
-                                <Text className="text-sm text-neutral-600">
-                                  {job.location}
-                                </Text>
-                              </View>
-                              <View className="flex-row items-center gap-2">
-                                <Users size={15} color="#737373" />
-                                <Text className="text-sm text-neutral-600">
-                                  {job.team}
-                                </Text>
-                              </View>
-                              <View className="flex-row items-center gap-2">
-                                <CalendarDays size={15} color="#737373" />
-                                <Text className="text-sm text-neutral-600">
-                                  {job.duration}
-                                </Text>
-                              </View>
-                            </View>
-
-                            <View className="mt-4 flex-row items-center justify-between gap-3">
-                              <Text className="text-xs font-medium text-neutral-400">
-                                {job.time}
-                              </Text>
-                              <View className="flex-row items-center gap-2">
-                                <TouchableOpacity
-                                  onPress={() => handleViewDetails(job.id)}
-                                  className="rounded-xl bg-neutral-100 px-4 py-2.5"
-                                >
-                                  <Text className="text-xs font-semibold text-neutral-700">
-                                    View Details
-                                  </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  onPress={handleApply}
-                                  className="rounded-xl bg-neutral-950 px-4 py-2.5"
-                                >
-                                  <Text className="text-xs font-semibold text-white">
-                                    Apply
-                                  </Text>
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              </View>
-
-              <View className="flex-1 gap-4">
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
-                  <View className="flex-row items-center justify-between gap-3">
-                    <View>
-                      <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
-                        Match overview
-                      </Text>
-                      <Text className="mt-1 text-2xl font-semibold tracking-tight text-neutral-950">
-                        12 new matches
-                      </Text>
-                    </View>
-                    <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
-                      <Star size={20} color={Colors.common.BRAND} />
-                    </View>
-                  </View>
-
-                  <View className="mt-4 gap-3">
-                    <SideStat
-                      icon={<Sparkles size={18} color={Colors.common.BRAND} />}
-                      label="Today"
-                      value="4 fresh listings"
-                    />
-                    <SideStat
-                      icon={<MapPin size={18} color={Colors.common.BRAND} />}
-                      label="Nearby"
-                      value="8 within 5 miles"
-                    />
-                    <SideStat
-                      icon={<Users size={18} color={Colors.common.BRAND} />}
-                      label="Best fit"
-                      value="3 strong matches"
-                    />
-                  </View>
-                </View>
-
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
-                  <SectionLabel
-                    title="Search tips"
-                    action="Expand"
-                    onAction={handleOpenSearch}
-                  />
-
-                  <View className="mt-4 gap-3">
-                    <View className="rounded-2xl bg-neutral-100 p-4">
-                      <Text className="text-sm font-semibold text-neutral-900">
-                        Narrow by pay rate
-                      </Text>
-                      <Text className="mt-1 text-sm leading-6 text-neutral-600">
-                        Use the filter pills to focus on better-paying shifts.
-                      </Text>
-                    </View>
-                    <View className="rounded-2xl bg-neutral-100 p-4">
-                      <Text className="text-sm font-semibold text-neutral-900">
-                        Prioritize location
-                      </Text>
-                      <Text className="mt-1 text-sm leading-6 text-neutral-600">
-                        Keep nearby listings near the top when you are comparing
-                        options.
-                      </Text>
-                    </View>
-                  </View>
                 </View>
 
                 <TouchableOpacity
-                  onPress={handleOpenSearch}
-                  activeOpacity={0.9}
-                  className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
+                  onPress={() => setShowFilters((current) => !current)}
+                  activeOpacity={0.85}
+                  className="flex-row items-center gap-2 rounded-xl border border-neutral-200/80 bg-white px-4 py-3"
                 >
-                  <View className="flex-1 pr-3">
-                    <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
-                      Need more results?
-                    </Text>
-                    <Text className="mt-2 text-lg font-semibold tracking-tight text-white">
-                      Open advanced search
-                    </Text>
-                  </View>
-                  <ChevronRight size={20} color="#FFFFFF" />
+                  <SlidersHorizontal size={16} color="#525252" />
+                  <Text className="text-sm font-bold text-neutral-700">
+                    Filters
+                  </Text>
+                  <ChevronDown
+                    size={16}
+                    color="#525252"
+                    style={{
+                      transform: [{ rotate: showFilters ? "180deg" : "0deg" }],
+                    }}
+                  />
                 </TouchableOpacity>
               </View>
+
+              {showFilters ? (
+                <View className="mt-5 gap-5 rounded-2xl border border-neutral-200/80 bg-neutral-50 p-4 md:p-5">
+                  <FilterGroup
+                    label="Rate"
+                    options={RATE_OPTIONS}
+                    value={rateRange}
+                    onChange={setRateRange}
+                  />
+                  <FilterGroup
+                    label="Trade / Skill"
+                    options={TRADE_OPTIONS}
+                    value={tradeSkill}
+                    onChange={setTradeSkill}
+                  />
+                  <FilterGroup
+                    label="Radius"
+                    options={RADIUS_OPTIONS}
+                    value={radius}
+                    onChange={setRadius}
+                  />
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setRateRange("Any rate");
+                      setTradeSkill("All trades");
+                      setRadius("Any distance");
+                    }}
+                    activeOpacity={0.85}
+                    className="self-start rounded-xl bg-white px-4 py-2.5"
+                  >
+                    <Text className="text-sm font-bold text-neutral-700">
+                      Reset filters
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <CategoryToggles
+                activeCategory={activeCategory}
+                setActiveCategory={setActiveCategory}
+              />
+            </View>
+
+            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+              <View className="mb-5 flex-row items-center justify-between gap-4">
+                <View>
+                  <Text className="text-lg font-bold tracking-tight text-neutral-900">
+                    {resultLabel}
+                  </Text>
+                  <Text className="mt-1 text-sm text-neutral-500">
+                    {visibleJobs.length} result{visibleJobs.length === 1 ? "" : "s"}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleFocusSearch}
+                  activeOpacity={0.85}
+                  className="flex-row items-center"
+                >
+                  <Text
+                    style={{ color: Colors.common.BRAND }}
+                    className="mr-1 text-xs font-bold"
+                  >
+                    Refine Search
+                  </Text>
+                  <ChevronRight size={16} color={Colors.common.BRAND} />
+                </TouchableOpacity>
+              </View>
+
+              {visibleJobs.length > 0 ? (
+                activeCategory === "browse" ? (
+                  <VerticalJobListings
+                    jobs={visibleJobs}
+                    handleViewDetails={handleViewDetails}
+                    handleApply={handleApply}
+                    favoriteJobIds={favoriteJobIds}
+                    onToggleFavorite={toggleFavoriteJob}
+                    onOpenDetails={handleOpenDetailsModal}
+                  />
+                ) : (
+                  <VerticalOfferListings
+                    offers={visibleJobs}
+                    handleViewDetails={handleViewDetails}
+                    handleAcceptOffer={handleAcceptOffer}
+                    favoriteJobIds={favoriteJobIds}
+                    onToggleFavorite={toggleFavoriteJob}
+                    onOpenDetails={handleOpenDetailsModal}
+                  />
+                )
+              ) : (
+                <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
+                  <Text className="text-base font-bold text-neutral-900">
+                    No matching jobs found
+                  </Text>
+                  <Text className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600">
+                    Try a different search term or reset the current filters to
+                    see more opportunities.
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+
+      <JobDetailsBottomSheet
+        job={selectedJob}
+        visible={!!selectedJob}
+        onClose={handleCloseDetailsModal}
+        onPrimaryAction={() => {
+          handleCloseDetailsModal();
+          handleApply();
+        }}
+      />
+    </ScreenWrapper>
   );
 }

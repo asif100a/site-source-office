@@ -77,7 +77,7 @@ function getNativeMapComponents(): NativeMapComponents | null {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+    <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
       {children}
     </Text>
   );
@@ -88,7 +88,7 @@ function TradeSkillSection({ value }: { value: string }) {
     <View className="mb-6">
       <SectionLabel>Trade / Skill</SectionLabel>
       <View className="rounded-xl border border-neutral-200/80 bg-white px-4 py-3.5">
-        <Text className="text-sm font-semibold text-neutral-800">{value}</Text>
+        <Text className="text-sm font-bold text-neutral-800">{value}</Text>
       </View>
     </View>
   );
@@ -97,7 +97,7 @@ function TradeSkillSection({ value }: { value: string }) {
 function RequirementsSection({ value }: { value: string }) {
   return (
     <View className="rounded-2xl border border-neutral-200/80 bg-white p-4">
-      <Text className="mb-3 text-base font-semibold text-neutral-900">
+      <Text className="mb-3 text-base font-bold text-neutral-900">
         Requirements
       </Text>
       <Text className="text-sm font-medium leading-relaxed text-neutral-600">
@@ -119,31 +119,31 @@ function JobHighlights({
   onApply: () => void;
 }) {
   return (
-    <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
+    <View className="overflow-hidden rounded-[28px] border border-neutral-200/80 bg-white shadow-sm">
+      <View className="relative px-6 py-6 md:px-8 md:py-8">
+        <View
+          className="absolute -top-16 right-0 h-40 w-40 rounded-full opacity-80"
+          style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
+        />
+        <View className="absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-neutral-100" />
+
+        <View className="relative">
       <View className="flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <View className="max-w-3xl gap-4">
-          <View className="flex-row flex-wrap items-center gap-2">
-            <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
-              <MapPin size={14} color={Colors.common.BRAND} />
-              <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-900">
-                Employer details
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
-              <View className="h-2 w-2 rounded-full bg-emerald-500" />
-              <Text className="text-xs font-semibold text-neutral-600">
-                Desktop layout
-              </Text>
-            </View>
+          <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5 self-start">
+            <MapPin size={14} color={Colors.common.BRAND} />
+            <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+              Employer details
+            </Text>
           </View>
 
           <View className="gap-2">
-            <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
+            <Text className="text-3xl md:text-4xl font-bold tracking-tight text-neutral-950">
               {jobDetails.title} at {jobDetails.company}
             </Text>
             <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
-              Review the job summary, overview, requirements, and location from
-              a desktop page that keeps the mobile experience intact.
+              Review the same job summary, overview, requirements, and location
+              in a layout that is easier to scan on desktop.
             </Text>
           </View>
         </View>
@@ -155,7 +155,7 @@ function JobHighlights({
             className="flex-row items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3.5"
           >
             <ArrowLeft size={18} color="#111827" />
-            <Text className="text-sm font-semibold text-neutral-900">
+            <Text className="text-sm font-bold text-neutral-900">
               Back
             </Text>
           </TouchableOpacity>
@@ -165,33 +165,33 @@ function JobHighlights({
             activeOpacity={0.9}
             className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
           >
-            <Text className="text-sm font-semibold text-white">Apply</Text>
+            <Text className="text-sm font-bold text-white">Apply</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View className="mt-6 flex-row flex-wrap gap-3">
         <View className="rounded-2xl bg-neutral-950 px-5 py-3.5">
-          <Text className="text-xs font-semibold uppercase tracking-[0px] text-white/60">
+          <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
             Pay
           </Text>
-          <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
+          <Text className="mt-1 text-lg font-bold tracking-tight text-white">
             GBP {jobDetails.payRate}/hour
           </Text>
         </View>
         <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-          <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
+          <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
             Duration
           </Text>
-          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
+          <Text className="mt-1 text-lg font-bold tracking-tight text-neutral-950">
             {jobDetails.jobDuration}
           </Text>
         </View>
         <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-3.5">
-          <Text className="text-xs font-semibold uppercase tracking-[0px] text-neutral-500">
+          <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-500">
             Location
           </Text>
-          <Text className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
+          <Text className="mt-1 text-lg font-bold tracking-tight text-neutral-950">
             {jobDetails.location}
           </Text>
         </View>
@@ -202,11 +202,13 @@ function JobHighlights({
         activeOpacity={0.88}
         className="mt-5 flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
       >
-        <Text className="text-sm font-semibold text-neutral-700">
+        <Text className="text-sm font-bold text-neutral-700">
           Open in Google Maps
         </Text>
         <ExternalLink size={16} color="#6B7280" />
       </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -268,7 +270,7 @@ export default function EmployerDetailsWebScreen() {
 
           <View className="flex-col gap-6 xl:flex-row">
             <View className="flex-[1.45] gap-6">
-              <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+              <View className="rounded-[24px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
                 <JobSummaryCard jobDetails={jobDetails} />
                 <TradeSkillSection value={jobDetails.tradeSkill} />
                 <JobOverviewSection jobDetails={jobDetails} />
@@ -277,7 +279,7 @@ export default function EmployerDetailsWebScreen() {
             </View>
 
             <View className="flex-1 gap-4">
-              <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+              <View className="rounded-[24px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
                 <SectionLabel>Location</SectionLabel>
                 <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-slate-100">
                   <View className="h-72 w-full">
@@ -306,7 +308,7 @@ export default function EmployerDetailsWebScreen() {
                           activeOpacity={0.9}
                           className="flex-row items-center gap-2 rounded-full border border-neutral-100 bg-white/95 px-3 py-2 shadow-lg"
                         >
-                          <Text className="text-xs font-semibold text-neutral-900">
+                          <Text className="text-xs font-bold text-neutral-900">
                             Open in Google Maps
                           </Text>
                           <ExternalLink size={14} color="#6B7280" />
@@ -314,38 +316,6 @@ export default function EmployerDetailsWebScreen() {
                       </View>
                     </View>
                   </View>
-                </View>
-              </View>
-
-              <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                <Text className="text-sm font-semibold uppercase tracking-[0px] text-neutral-500">
-                  Quick actions
-                </Text>
-                <Text className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
-                  Apply or go back
-                </Text>
-                <Text className="mt-2 text-sm leading-6 text-neutral-600">
-                  The bottom sticky action from mobile becomes a desktop card so
-                  the page stays balanced on wider screens.
-                </Text>
-
-                <View className="mt-5 gap-3">
-                  <TouchableOpacity
-                    onPress={handleApplyPress}
-                    activeOpacity={0.9}
-                    className="flex-row items-center justify-center rounded-2xl bg-neutral-950 px-4 py-4"
-                  >
-                    <Text className="text-sm font-semibold text-white">Apply</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleBackPress}
-                    activeOpacity={0.88}
-                    className="flex-row items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-4"
-                  >
-                    <Text className="text-sm font-semibold text-neutral-900">
-                      Back
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             </View>

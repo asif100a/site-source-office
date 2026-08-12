@@ -31,6 +31,11 @@ const NAV_LINKS = [
     label: "Profile",
     activePaths: ["/tabs/profile"],
   },
+  {
+    href: "/screens/common/Notifications",
+    label: "Notifications",
+    activePaths: ["/tabs/profile"],
+  },
 ];
 
   function isActiveNavPath(pathname: string, link: (typeof NAV_LINKS)[number]) {
