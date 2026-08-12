@@ -47,7 +47,7 @@ export default function EmployerHomeScreen() {
         </TouchableOpacity>
 
         {/* Market Rate */}
-        <MarketRate />
+        {/* <MarketRate /> */}
 
         {/* Job Requests */}
         <JobRequests openWorkerDetails={openWorkerDetails} />

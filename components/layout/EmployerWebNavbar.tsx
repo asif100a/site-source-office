@@ -12,12 +12,12 @@ const NAV_LINKS = [
   },
   {
     href: "/tabs/workers",
-    label: "Workers",
+    label: "Applicants",
     activePaths: ["/tabs/workers"],
   },
   {
     href: "/tabs/my-jobs",
-    label: "My Jobs",
+    label: "Projects",
     activePaths: ["/tabs/my-jobs"],
   },
   {

@@ -78,7 +78,7 @@ export default function MyJobsScreen() {
         />
       </ScrollView>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => {
           setSupportModalState("form");
           setShowSupportModal(true);
@@ -87,15 +87,15 @@ export default function MyJobsScreen() {
         className="absolute bottom-8 right-6 w-14 h-14 rounded-full items-center justify-center active:opacity-90 z-20"
       >
         <Headphones size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Message Support Modal */}
-      <MessageSupportModal
+      {/* <MessageSupportModal
         showSupportModal={showSupportModal}
         setShowSupportModal={setShowSupportModal}
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
-      />
+      /> */}
     </ScreenWrapper>
   );
 }

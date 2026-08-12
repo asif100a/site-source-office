@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useForm } from "react-hook-form";
 import { ChevronDown } from "lucide-react-native";
@@ -13,6 +13,10 @@ import {
   profilePhoto,
   ScreenShell,
 } from "./_components";
+import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import { safeGetWebStorageItem } from "@/constants/webStorage";
+
+const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
 type EditProfileFormValues = {
   fullName: string;
@@ -20,10 +24,12 @@ type EditProfileFormValues = {
 };
 
 export default function EditProfileScreenWeb() {
+  const [userRole, setUserRole] = useState<UserRole>("worker");
   const [profileImageFile, setProfileImageFile] = useState<UploadedFile | null>(
     null,
   );
   const [certificate, setCertificate] = useState<UploadedFile | null>(null);
+  const isWorker = userRole === "worker";
 
   const { control } = useForm<EditProfileFormValues>({
     defaultValues: {
@@ -31,6 +37,14 @@ export default function EditProfileScreenWeb() {
       email: "",
     },
   });
+
+  useEffect(() => {
+    setUserRole(
+      normalizeUserRole(
+        safeGetWebStorageItem(WEB_ROLE_STORAGE_KEY) ?? undefined,
+      ),
+    );
+  }, []);
 
   return (
     <ScreenShell
@@ -77,8 +91,8 @@ export default function EditProfileScreenWeb() {
                       Update your public profile
                     </Text>
                     <Text className="mt-1 text-sm leading-6 text-neutral-600">
-                      Keep your name, contact details, skills, and documents
-                      current so your worker profile stays accurate.
+                      Keep your name, contact details, and profile image
+                      current so your profile stays accurate.
                     </Text>
                   </View>
                 </View>
@@ -118,45 +132,49 @@ export default function EditProfileScreenWeb() {
                       optional
                     />
 
-                    <View className="mb-1">
-                      <Text className="mb-2 text-xs font-semibold text-neutral-500">
-                        Trade / Skill
-                      </Text>
-                      <View className="flex-row h-14 items-center justify-between rounded-xl border border-neutral-200 bg-white px-4">
-                        <Text className="text-sm font-semibold text-neutral-400">
-                          Groundworker
-                        </Text>
-                        <ChevronDown size={17} color="#171717" />
-                      </View>
-                    </View>
+                    {!isWorker ? (
+                      <>
+                        <View className="mb-1">
+                          <Text className="mb-2 text-xs font-semibold text-neutral-500">
+                            Trade / Skill
+                          </Text>
+                          <View className="flex-row h-14 items-center justify-between rounded-xl border border-neutral-200 bg-white px-4">
+                            <Text className="text-sm font-semibold text-neutral-400">
+                              Groundworker
+                            </Text>
+                            <ChevronDown size={17} color="#171717" />
+                          </View>
+                        </View>
 
-                    <StandardFileUploadBox
-                      label="Upload Certificate"
-                      file={certificate}
-                      setFile={setCertificate}
-                      mode="pdf"
-                      title="Upload Certificate"
-                      description="PDF files (max 10MB)"
-                      optional
-                    />
+                        <StandardFileUploadBox
+                          label="Upload Certificate"
+                          file={certificate}
+                          setFile={setCertificate}
+                          mode="pdf"
+                          title="Upload Certificate"
+                          description="PDF files (max 10MB)"
+                          optional
+                        />
 
-                    <View className="gap-2">
-                      <Text className="text-xs font-semibold text-neutral-500">
-                        Uploaded files
-                      </Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{
-                          gap: 10,
-                          paddingRight: 20,
-                        }}
-                      >
-                        <FileChip />
-                        <FileChip />
-                        <FileChip />
-                      </ScrollView>
-                    </View>
+                        <View className="gap-2">
+                          <Text className="text-xs font-semibold text-neutral-500">
+                            Uploaded files
+                          </Text>
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{
+                              gap: 10,
+                              paddingRight: 20,
+                            }}
+                          >
+                            <FileChip />
+                            <FileChip />
+                            <FileChip />
+                          </ScrollView>
+                        </View>
+                      </>
+                    ) : null}
                   </View>
                 </View>
               </View>

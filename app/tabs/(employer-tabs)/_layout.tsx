@@ -20,14 +20,14 @@ export default function EmployerTabsLayout() {
       <Tabs.Screen
         name="workers"
         options={{
-          title: "Workers",
+          title: "Applicants",
           tabBarIcon: ({ color, size }) => <TabIcons.PeopleIcon color={color} size={size} />,
         }}
       />
       <Tabs.Screen
         name="my-jobs"
         options={{
-          title: "My Jobs",
+          title: "Projects",
           tabBarIcon: ({ color, size }) => <TabIcons.BagIcon color={color} size={size} />,
         }}
       />
