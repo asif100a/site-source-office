@@ -254,10 +254,9 @@ export default function EmployerDetailsWebScreen() {
   };
 
   return (
-    <ScrollView
+    <View
       className="flex-1 bg-neutral-50"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 120 }}
+      style={{ paddingBottom: 120 }}
     >
       <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
         <View className="mx-auto w-full max-w-7xl gap-6">
@@ -322,7 +321,7 @@ export default function EmployerDetailsWebScreen() {
           </View>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 

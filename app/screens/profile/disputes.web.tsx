@@ -106,7 +106,7 @@ export default function DisputesScreenWeb() {
                   </View>
                 </View>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   onPress={() => router.push("/screens/profile/contact" as any)}
                   activeOpacity={0.9}
                   className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
@@ -115,11 +115,11 @@ export default function DisputesScreenWeb() {
                   <Text className="text-sm font-semibold text-white">
                     Contact support
                   </Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
 
-            <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+            {/* <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
               <View className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
                 <Search size={18} color="#A3A3A3" />
                 <TextInput
@@ -128,7 +128,7 @@ export default function DisputesScreenWeb() {
                   className="flex-1 text-sm text-neutral-900"
                 />
               </View>
-            </View>
+            </View> */}
 
             <View className="gap-4">
               {DISPUTES.map((item) => (

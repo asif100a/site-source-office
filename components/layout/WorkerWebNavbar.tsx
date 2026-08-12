@@ -34,7 +34,7 @@ const NAV_LINKS = [
   {
     href: "/screens/common/Notifications",
     label: "Notifications",
-    activePaths: ["/tabs/profile"],
+    activePaths: ["/screens/common/Notifications"],
   },
 ];
 

@@ -450,17 +450,6 @@ export default function WebChatWorkspace({
                       </Text>
                     </View>
                   </View>
-
-                  <TouchableOpacity
-                    onPress={openDetailRoute}
-                    activeOpacity={0.88}
-                    className="flex-row items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white px-4 py-2.5"
-                  >
-                    <Text className="text-sm font-semibold text-neutral-900">
-                      Details
-                    </Text>
-                    <ArrowRight size={15} color="#737373" />
-                  </TouchableOpacity>
                 </View>
 
                 <ScrollView
@@ -480,7 +469,7 @@ export default function WebChatWorkspace({
                 </ScrollView>
 
                 <View className="border-t border-neutral-200 bg-white p-4">
-                  <View className="flex-row items-end gap-3 rounded-[24px] border border-neutral-200 bg-neutral-50 px-4 py-3">
+                  <View className="flex-row items-center gap-3 rounded-[24px] border border-neutral-200 bg-neutral-50 px-4 py-3">
                     <TouchableOpacity
                       activeOpacity={0.85}
                       className="h-10 w-10 items-center justify-center rounded-full bg-white"
