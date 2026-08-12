@@ -14,6 +14,7 @@ type LabourerCardProps = {
   handleApply?: (id: string) => void;
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
+  onOpenDetails?: (job: any) => void;
 };
 
 export default function LabourerCard({
@@ -22,9 +23,14 @@ export default function LabourerCard({
   handleApply,
   isFavorite = false,
   onToggleFavorite,
+  onOpenDetails,
 }: LabourerCardProps) {
   return (
-    <View className="rounded-2xl border border-neutral-100/85 bg-white p-5">
+    <TouchableOpacity
+      activeOpacity={0.92}
+      onPress={() => onOpenDetails?.(job)}
+      className="rounded-2xl border border-neutral-100/85 bg-white p-5"
+    >
       <View className="mb-4 flex-row items-start justify-between">
         <View className="flex-row items-center gap-3">
           <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
@@ -42,7 +48,10 @@ export default function LabourerCard({
 
         <View className="items-end gap-2">
           <TouchableOpacity
-            onPress={() => onToggleFavorite?.(job.id)}
+            onPress={(event) => {
+              event.stopPropagation();
+              onToggleFavorite?.(job.id);
+            }}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={
@@ -94,7 +103,15 @@ export default function LabourerCard({
 
         <View className="flex-row gap-2">
           <TouchableOpacity
-            onPress={() => handleViewDetails(job.id)}
+            onPress={(event) => {
+              event.stopPropagation();
+              if (onOpenDetails) {
+                onOpenDetails(job);
+                return;
+              }
+
+              handleViewDetails(job.id);
+            }}
             className="rounded-md bg-neutral-100 px-4 py-2 active:opacity-70"
             style={{ minWidth: 82 }}
           >
@@ -103,7 +120,10 @@ export default function LabourerCard({
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => handleApply?.(job.id)}
+            onPress={(event) => {
+              event.stopPropagation();
+              handleApply?.(job.id);
+            }}
             style={{ backgroundColor: Colors.common.GRAY_DARK, minWidth: 132 }}
             className="rounded-md px-4 py-2 shadow-sm active:opacity-90"
           >
@@ -113,6 +133,6 @@ export default function LabourerCard({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }

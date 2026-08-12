@@ -19,12 +19,14 @@ export default function VerticalJobListings({
   handleApply,
   favoriteJobIds = [],
   onToggleFavorite,
+  onOpenDetails,
   jobs,
 }: {
   handleViewDetails: (id: string) => void;
   handleApply: () => void;
   favoriteJobIds?: string[];
   onToggleFavorite?: (id: string) => void;
+  onOpenDetails?: (job: WorkerJobItem) => void;
   jobs?: WorkerJobItem[];
 }) {
   const source =
@@ -63,6 +65,7 @@ export default function VerticalJobListings({
           handleApply={handleApply}
           isFavorite={favoriteJobIds.includes(job.id)}
           onToggleFavorite={onToggleFavorite}
+          onOpenDetails={onOpenDetails}
         />
       ))}
     </View>

@@ -16,7 +16,7 @@ export default function TappableSearchTriggerBar({
       >
         <Search size={18} color="#A3A3A3" className="mr-3" />
         <Text className="flex-1 text-neutral-400 text-sm font-medium">
-          Search Offers
+          Search Jobs
         </Text>
       </TouchableOpacity>
 

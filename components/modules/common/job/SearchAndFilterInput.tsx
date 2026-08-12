@@ -17,7 +17,7 @@ export default function SearchAndFilterInput({
         <Search size={18} color="#A3A3A3" className="mr-2" />
         <TextInput
           className="flex-1 text-neutral-800 text-sm font-medium py-0"
-          placeholder="Search Offers"
+          placeholder="Search Jobs"
           placeholderTextColor="#A3A3A3"
           value={searchQuery}
           onChangeText={setSearchQuery}

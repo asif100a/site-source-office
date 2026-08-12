@@ -15,12 +15,14 @@ export default function VerticalOfferListings({
   handleAcceptOffer,
   favoriteJobIds = [],
   onToggleFavorite,
+  onOpenDetails,
   offers,
 }: {
   handleViewDetails: (id: string) => void;
   handleAcceptOffer: (id: string) => void;
   favoriteJobIds?: string[];
   onToggleFavorite?: (id: string) => void;
+  onOpenDetails?: (job: WorkerJobItem) => void;
   offers?: WorkerJobItem[];
 }) {
   const source =
@@ -55,8 +57,10 @@ export default function VerticalOfferListings({
         const isFavorite = favoriteJobIds.includes(offer.id);
 
         return (
-          <View
+          <TouchableOpacity
             key={offer.id}
+            activeOpacity={0.92}
+            onPress={() => onOpenDetails?.(offer)}
             className="rounded-2xl border border-neutral-100/85 bg-white p-5"
           >
             <View className="mb-4 flex-row items-start justify-between gap-4">
@@ -76,7 +80,10 @@ export default function VerticalOfferListings({
 
               <View className="items-end gap-2">
                 <TouchableOpacity
-                  onPress={() => onToggleFavorite?.(offer.id)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    onToggleFavorite?.(offer.id);
+                  }}
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -133,7 +140,15 @@ export default function VerticalOfferListings({
 
               <View className="flex-row gap-2">
                 <TouchableOpacity
-                  onPress={() => handleViewDetails(offer.id)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    if (onOpenDetails) {
+                      onOpenDetails(offer);
+                      return;
+                    }
+
+                    handleViewDetails(offer.id);
+                  }}
                   className="rounded-md bg-neutral-100 px-4 py-2 active:opacity-70"
                   style={{ minWidth: 82 }}
                 >
@@ -142,7 +157,10 @@ export default function VerticalOfferListings({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleAcceptOffer?.(offer.id)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    handleAcceptOffer?.(offer.id);
+                  }}
                   style={{
                     backgroundColor: Colors.common.GRAY_DARK,
                     minWidth: 132,
@@ -155,7 +173,7 @@ export default function VerticalOfferListings({
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       })}
     </View>

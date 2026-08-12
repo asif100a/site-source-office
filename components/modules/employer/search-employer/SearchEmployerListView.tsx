@@ -1,59 +1,60 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import React from "react";
+import { ScrollView, Text, View } from "react-native";
+import LabourerCard from "@/components/card/LabourerCard";
 import { Colors } from "@/constants/Colors";
-import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
+import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
 
-// Mock listings data
-const MOCK_JOBS = [
+const MOCK_JOBS: WorkerJobItem[] = [
   {
-    id: '3',
-    title: 'Labourer',
-    company: 'Tech Innovators Inc.',
-    payRate: '120',
-    tag: 'Market Rate',
-    location: 'Shoreditch • 1.2 mi away',
-    team: '2 developers, 1 designer',
-    duration: '12 Jun • 1 month',
-    time: '2 hours ago',
+    id: "3",
+    title: "Labourer",
+    company: "Tech Innovators Inc.",
+    payRate: "120",
+    tag: "Market Rate",
+    location: "Shoreditch - 1.2 mi away",
+    team: "2 developers, 1 designer",
+    duration: "12 Jun - 1 month",
+    time: "2 hours ago",
   },
   {
-    id: '4',
-    title: 'Labourer',
-    company: 'Tech Innovators Inc.',
-    payRate: '80',
-    tag: 'Market Rate',
-    location: 'Shoreditch • 1.2 mi away',
-    team: '2 developers, 1 designer',
-    duration: '12 Jun • 1 month',
-    time: '2 hours ago',
+    id: "4",
+    title: "Labourer",
+    company: "Tech Innovators Inc.",
+    payRate: "80",
+    tag: "Market Rate",
+    location: "Shoreditch - 1.2 mi away",
+    team: "2 developers, 1 designer",
+    duration: "12 Jun - 1 month",
+    time: "2 hours ago",
   },
   {
-    id: '5',
-    title: 'Graphic Designer',
-    company: 'Creative Studios',
-    payRate: '90',
-    tag: 'Competitive Rate',
-    location: 'Soho • 2.5 mi away',
-    team: '1 designer',
-    duration: '15 Jun • 2 weeks',
-    time: '4 hours ago',
+    id: "5",
+    title: "Graphic Designer",
+    company: "Creative Studios",
+    payRate: "90",
+    tag: "Competitive Rate",
+    location: "Soho - 2.5 mi away",
+    team: "1 designer",
+    duration: "15 Jun - 2 weeks",
+    time: "4 hours ago",
   },
 ];
 
 export default function SearchEmployerListView({
   handleViewDetails,
+  onOpenDetails,
 }: {
   handleViewDetails: (id: string) => void;
+  onOpenDetails?: (job: WorkerJobItem) => void;
 }) {
   return (
     <ScrollView
-      className="flex-1 px-5 pt-2 bg-neutral-50"
+      className="flex-1 bg-neutral-50 px-5 pt-2"
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 100 }}
     >
-      {/* Results Count */}
-      <View className="flex-row justify-between items-center my-4">
-        <Text className="text-neutral-900 font-extrabold text-base tracking-tight">
+      <View className="my-4 flex-row items-center justify-between">
+        <Text className="text-base font-extrabold tracking-tight text-neutral-900">
           Search Result
         </Text>
         <Text
@@ -64,85 +65,15 @@ export default function SearchEmployerListView({
         </Text>
       </View>
 
-      {/* Job Listings */}
       <View className="gap-4">
         {MOCK_JOBS.map((job) => (
-          <View
+          <LabourerCard
             key={job.id}
-            className="bg-white rounded-2xl p-5"
-          >
-            {/* Job Header */}
-            <View className="flex-row justify-between items-start mb-4">
-              <View className="flex-row items-center gap-3">
-                <View className="w-12 h-12 bg-blue-600 rounded-xl items-center justify-center">
-                  <Briefcase size={22} color="#FFFFFF" />
-                </View>
-                <View>
-                  <Text className="text-neutral-950 font-extrabold text-base">
-                    {job.title}
-                  </Text>
-                  <Text className="text-neutral-500 text-xs font-semibold">
-                    {job.company}
-                  </Text>
-                </View>
-              </View>
-
-              <View className="items-end">
-                <Text className="min-w-20 text-neutral-900 font-extrabold text-sm" style={{ textAlign: "right" }}>
-                  £{job.payRate}/hour
-                </Text>
-              </View>
-            </View>
-
-            {/* Specs */}
-            <View className="gap-2.5 py-3 border-y border-neutral-50 mb-4">
-              <View className="flex-row items-center gap-2">
-                <MapPin size={15} color="#858585" />
-                <Text className="text-neutral-500 text-xs font-semibold">
-                  {job.location}
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <Users size={15} color="#858585" />
-                <Text className="text-neutral-500 text-xs font-semibold">
-                  {job.team}
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <Calendar size={15} color="#858585" />
-                <Text className="text-neutral-500 text-xs font-semibold">
-                  {job.duration}
-                </Text>
-              </View>
-            </View>
-
-            {/* Footer and Buttons */}
-            <View className="flex-row justify-between items-center">
-              <Text className="text-neutral-400 text-xs font-medium">
-                {job.time}
-              </Text>
-
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => handleViewDetails(job.id)}
-                  className="px-4 py-2 bg-neutral-100 rounded-xl active:opacity-70"
-                >
-                  <Text className="min-w-20 text-neutral-600 font-bold text-xs">
-                    View Details
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleViewDetails(job.id)}
-                  style={{ backgroundColor: Colors.common.GRAY_DARK }}
-                  className="px-4 py-2 rounded-xl active:opacity-90 shadow-sm"
-                >
-                  <Text className="min-w-20 text-white font-bold text-xs">
-                    Send Request
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+            job={job}
+            handleViewDetails={handleViewDetails}
+            handleApply={handleViewDetails}
+            onOpenDetails={onOpenDetails}
+          />
         ))}
       </View>
     </ScrollView>

@@ -14,6 +14,8 @@ import SearchEmployerListView from "@/components/modules/employer/search-employe
 import SearchEmployerMapView from "@/components/modules/employer/search-employer/SearchEmployerMapView";
 import SearchEmployerFilterModal from "@/components/modules/employer/search-employer/SearchEmployerFilterModal";
 import LogoWhite from "@/assets/icons/LogoWhite";
+import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
+import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
 
 export default function WorkerSearchScreen() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function WorkerSearchScreen() {
   const [viewType, setViewType] = useState<"list" | "map">("list");
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
 
   // Filter States
   const [rateRange, setRateRange] = useState("");
@@ -32,17 +35,23 @@ export default function WorkerSearchScreen() {
     router.push(`/screens/employer-details/${id}`);
   };
 
+  const handleOpenDetailsModal = (job: WorkerJobItem) => {
+    setSelectedJob(job);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedJob(null);
+  };
+
+  const handleSendRequest = () => {
+    handleCloseDetailsModal();
+    router.push({
+      pathname: "/auth",
+      params: { role: "worker", step: "register_sso" },
+    });
+  };
+
   const goBackToOrigin = () => {
-    // if (originRoute === "worker") {
-    //   router.replace("/tabs/(worker-tabs)/jobs");
-    //   return;
-    // }
-
-    // if (originRoute === "employer") {
-    //   router.replace("/tabs/(employer-tabs)/workers");
-    //   return;
-    // }
-
     router.back();
   };
 
@@ -89,7 +98,7 @@ export default function WorkerSearchScreen() {
             <Search size={18} color="#A3A3A3" className="mr-2" />
             <TextInput
               className="flex-1 py-0 text-sm font-medium text-neutral-800"
-              placeholder="Search Offers"
+              placeholder="Search Jobs"
               placeholderTextColor="#A3A3A3"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -108,7 +117,10 @@ export default function WorkerSearchScreen() {
       {/* Content render based on toggle */}
       {viewType === "list" ? (
         /* LIST VIEW */
-        <SearchEmployerListView handleViewDetails={handleViewDetails} />
+        <SearchEmployerListView
+          handleViewDetails={handleViewDetails}
+          onOpenDetails={handleOpenDetailsModal}
+        />
       ) : (
         /* MAP VIEW */
         <SearchEmployerMapView
@@ -116,6 +128,7 @@ export default function WorkerSearchScreen() {
           searchQuery={searchQuery}
           onChangeSearchQuery={setSearchQuery}
           onOpenFilters={() => setShowFilters(true)}
+          onOpenDetails={handleOpenDetailsModal}
         />
       )}
 
@@ -129,6 +142,14 @@ export default function WorkerSearchScreen() {
         setRadius={setRadius}
         tradeSkill={tradeSkill}
         setTradeSkill={setTradeSkill}
+      />
+
+      <JobDetailsBottomSheet
+        job={selectedJob}
+        visible={!!selectedJob}
+        primaryActionLabel="Send Request"
+        onClose={handleCloseDetailsModal}
+        onPrimaryAction={handleSendRequest}
       />
     </SafeAreaView>
   );

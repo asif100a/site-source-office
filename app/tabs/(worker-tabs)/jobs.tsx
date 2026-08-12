@@ -6,9 +6,12 @@ import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import TappableSearchTriggerBar from "@/components/modules/worker/offers/TappableSearchTriggerBar";
 import CategoryToggles from "@/components/modules/worker/offers/CategoryToggles";
-import VerticalJobListings from "@/components/modules/worker/offers/VerticalJobListings";
+import VerticalJobListings, {
+  type WorkerJobItem,
+} from "@/components/modules/worker/offers/VerticalJobListings";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import VerticalOfferListings from "@/components/modules/worker/offers/VerticalOfferListings";
+import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
 
 export default function WorkerJobsTabLanding() {
   const router = useRouter();
@@ -16,6 +19,7 @@ export default function WorkerJobsTabLanding() {
     "browse",
   );
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
 
   const handleOpenSearch = () => {
     router.push({
@@ -26,6 +30,14 @@ export default function WorkerJobsTabLanding() {
 
   const handleViewDetails = (id: string) => {
     router.push(`/screens/employer-details/${id}` as any);
+  };
+
+  const handleOpenDetailsModal = (job: WorkerJobItem) => {
+    setSelectedJob(job);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setSelectedJob(null);
   };
 
   const handleApply = () => {
@@ -92,6 +104,7 @@ export default function WorkerJobsTabLanding() {
             handleApply={handleApply}
             favoriteJobIds={favoriteJobIds}
             onToggleFavorite={toggleFavoriteJob}
+            onOpenDetails={handleOpenDetailsModal}
           />
         ) : (
           <VerticalOfferListings
@@ -99,9 +112,19 @@ export default function WorkerJobsTabLanding() {
             handleAcceptOffer={handleAcceptOffer}
             favoriteJobIds={favoriteJobIds}
             onToggleFavorite={toggleFavoriteJob}
+            onOpenDetails={handleOpenDetailsModal}
           />
         )}
       </ScrollView>
+      <JobDetailsBottomSheet
+        job={selectedJob}
+        visible={!!selectedJob}
+        onClose={handleCloseDetailsModal}
+        onPrimaryAction={() => {
+          handleCloseDetailsModal();
+          handleApply();
+        }}
+      />
     </ScreenWrapper>
   );
 }

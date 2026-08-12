@@ -18,6 +18,7 @@ import {
 import { Colors } from "@/constants/Colors";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
 
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
@@ -47,7 +48,7 @@ const MOCK_MAP_JOBS = [
       longitude: -0.0031,
     },
   },
-] as const;
+];
 
 function getNativeMapComponents(): NativeMapComponents | null {
   if (Platform.OS === "web") {
@@ -68,11 +69,13 @@ export default function SearchEmployerMapView({
   searchQuery,
   onChangeSearchQuery,
   onOpenFilters,
+  onOpenDetails,
 }: {
   handleViewDetails: (id: string) => void;
   searchQuery: string;
   onChangeSearchQuery: (value: string) => void;
   onOpenFilters: () => void;
+  onOpenDetails?: (job: WorkerJobItem) => void;
 }) {
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
@@ -166,8 +169,10 @@ export default function SearchEmployerMapView({
 
       <View className="absolute bottom-16 left-5 right-5">
         {MOCK_MAP_JOBS.map((job) => (
-          <View
+          <TouchableOpacity
             key={job.id}
+            activeOpacity={0.92}
+            onPress={() => onOpenDetails?.(job)}
             className="rounded-3xl border border-neutral-100/90 bg-white p-5 shadow-xl"
           >
             <View className="mb-4 flex-row items-start justify-between">
@@ -231,7 +236,15 @@ export default function SearchEmployerMapView({
 
               <View className="flex-row gap-2">
                 <TouchableOpacity
-                  onPress={() => handleViewDetails(job.id)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    if (onOpenDetails) {
+                      onOpenDetails(job);
+                      return;
+                    }
+
+                    handleViewDetails(job.id);
+                  }}
                   className="rounded-xl bg-neutral-100 px-4 py-2 active:opacity-70"
                 >
                   <Text className="min-w-20 text-xs font-bold text-neutral-600">
@@ -239,7 +252,15 @@ export default function SearchEmployerMapView({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleViewDetails(job.id)}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    if (onOpenDetails) {
+                      onOpenDetails(job);
+                      return;
+                    }
+
+                    handleViewDetails(job.id);
+                  }}
                   style={{ backgroundColor: Colors.common.GRAY_DARK }}
                   className="rounded-xl px-4 py-2 shadow-sm active:opacity-90"
                 >
@@ -249,7 +270,7 @@ export default function SearchEmployerMapView({
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </SafeAreaView>
