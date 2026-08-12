@@ -79,7 +79,7 @@ export default function DisputeDetailScreenWeb() {
                       </View>
                     </View>
                     <Text className="text-slate-900 font-extrabold text-base">
-                      Dispute Resolved
+                      Support Resolved
                     </Text>
                     <Text className="text-neutral-500 text-sm text-center mt-2 leading-5">
                       After reviewing the case, the admin approved the invoice
@@ -90,7 +90,7 @@ export default function DisputeDetailScreenWeb() {
                   <>
                     <Card className="p-4">
                       <Text className="text-slate-900 font-extrabold text-base mb-3">
-                        Dispute Information
+                        Support Information
                       </Text>
                       <View className="gap-3">
                         <View className="flex-row justify-between">

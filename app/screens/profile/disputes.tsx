@@ -9,7 +9,7 @@ export default function DisputesScreen() {
   const items = Array.from({ length: 6 });
 
   return (
-    <ScreenShell title="My Supports">
+    <ScreenShell title="Profile">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
         <View className="gap-4">
           {items.map((_, index) => (

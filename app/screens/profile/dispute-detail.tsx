@@ -30,7 +30,7 @@ export default function DisputeDetailScreen() {
                 <Check size={25} color="#FFFFFF" strokeWidth={3} />
               </View>
             </View>
-            <Text className="text-slate-900 font-extrabold text-base">Dispute Resolved</Text>
+            <Text className="text-slate-900 font-extrabold text-base">Support Resolved</Text>
             <Text className="text-neutral-500 text-sm text-center mt-2 leading-5">
               After Reviewing The Case, The Admin Approved Your Invoice Payment. Your Payment Has Been Released Successfully.
             </Text>
@@ -38,7 +38,7 @@ export default function DisputeDetailScreen() {
         ) : (
           <>
             <Card className="p-4 mb-4">
-              <Text className="text-slate-900 font-extrabold text-base mb-3">Dispute Information</Text>
+              <Text className="text-slate-900 font-extrabold text-base mb-3">Support Information</Text>
               <View className="gap-3">
                 <View className="flex-row justify-between">
                   <Text className="text-neutral-500 text-xs">Raised By</Text>

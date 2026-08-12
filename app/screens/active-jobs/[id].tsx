@@ -189,6 +189,7 @@ export default function ActiveJobDetailScreen() {
       <RequestApprovalModal
         showApprovalModal={showApprovalModal}
         setShowApprovalModal={setShowApprovalModal}
+        scheduleStartDate={jobDetails.startDate}
       />
     </ScreenWrapper>
   );

@@ -5,22 +5,18 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Platform,
 } from "react-native";
-import React, { useMemo, useState } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Calendar, X } from "lucide-react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { ChevronDown, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
-type DatePickerTarget = "start" | "end" | null;
-
-const MAX_RANGE_DAYS = 7;
-
-const startOfDay = (date: Date) => {
-  const nextDate = new Date(date);
-  nextDate.setHours(0, 0, 0, 0);
-  return nextDate;
+type TimesheetWeekOption = {
+  id: string;
+  label: string;
+  startDate: Date;
 };
+
+const WEEKS_TO_SHOW = 3;
 
 const addDays = (date: Date, days: number) => {
   const nextDate = new Date(date);
@@ -28,125 +24,79 @@ const addDays = (date: Date, days: number) => {
   return nextDate;
 };
 
-const getDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+const getOrdinalSuffix = (day: number) => {
+  if (day >= 11 && day <= 13) return "th";
 
-  return `${year}-${month}-${day}`;
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
 };
 
-const formatDate = (date: Date | null) => {
-  if (!date) return "";
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+const formatWeekStartDate = (date: Date) => {
+  const day = date.getDate();
+  const month = date.toLocaleDateString("en-US", { month: "long" });
+
+  return `${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
-const formatDayLabel = (date: Date) => {
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-};
+const parseScheduleDate = (dateLabel: string) => {
+  const parsedDate = new Date(dateLabel);
 
-const getRangeDates = (startDate: Date | null, endDate: Date | null) => {
-  if (!startDate || !endDate) return [];
-
-  const normalizedStartDate = startOfDay(startDate);
-  const normalizedEndDate = startOfDay(endDate);
-
-  if (normalizedEndDate < normalizedStartDate) return [];
-
-  const dates: Date[] = [];
-  let currentDate = normalizedStartDate;
-
-  while (currentDate <= normalizedEndDate && dates.length < MAX_RANGE_DAYS) {
-    dates.push(currentDate);
-    currentDate = addDays(currentDate, 1);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate;
   }
 
-  return dates;
+  return new Date();
+};
+
+const getTimesheetWeeks = (scheduleStartDate: string) => {
+  const startDate = parseScheduleDate(scheduleStartDate);
+
+  return Array.from({ length: WEEKS_TO_SHOW }, (_, index) => {
+    const weekStartDate = addDays(startDate, index * 7);
+
+    return {
+      id: `week-${index + 1}`,
+      label: `Week ${index + 1} - ${formatWeekStartDate(weekStartDate)}`,
+      startDate: weekStartDate,
+    };
+  });
 };
 
 export default function RequestApprovalModal({
   showApprovalModal,
   setShowApprovalModal,
+  scheduleStartDate,
 }: {
   showApprovalModal: boolean;
   setShowApprovalModal: React.Dispatch<React.SetStateAction<boolean>>;
+  scheduleStartDate: string;
 }) {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [datePickerTarget, setDatePickerTarget] =
-    useState<DatePickerTarget>(null);
-  const [hoursByDate, setHoursByDate] = useState<Record<string, string>>({});
-
-  const selectedDates = useMemo(
-    () => getRangeDates(startDate, endDate),
-    [startDate, endDate],
+  const weekOptions = useMemo(
+    () => getTimesheetWeeks(scheduleStartDate),
+    [scheduleStartDate],
   );
+  const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id);
+  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
+  const [totalHours, setTotalHours] = useState("");
 
-  const rangeLabel =
-    startDate && endDate
-      ? `${formatDate(startDate)} - ${formatDate(endDate)}`
-      : "Select date range";
+  const selectedWeek =
+    weekOptions.find((week) => week.id === selectedWeekId) ?? weekOptions[0];
 
-  const pickerValue =
-    datePickerTarget === "end"
-      ? endDate || startDate || new Date()
-      : startDate || new Date();
-
-  const handleDateChange = (_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setDatePickerTarget(null);
+  useEffect(() => {
+    if (showApprovalModal) {
+      setSelectedWeekId(weekOptions[0]?.id);
+      setIsWeekDropdownOpen(false);
+      setTotalHours("");
     }
-
-    if (!selectedDate || !datePickerTarget) return;
-
-    const normalizedDate = startOfDay(selectedDate);
-
-    if (datePickerTarget === "start") {
-      setStartDate(normalizedDate);
-
-      if (!endDate || startOfDay(endDate) < normalizedDate) {
-        setEndDate(normalizedDate);
-        return;
-      }
-
-      const maxEndDate = addDays(normalizedDate, MAX_RANGE_DAYS - 1);
-      if (startOfDay(endDate) > maxEndDate) {
-        setEndDate(maxEndDate);
-      }
-
-      return;
-    }
-
-    if (!startDate) {
-      setStartDate(normalizedDate);
-      setEndDate(normalizedDate);
-      return;
-    }
-
-    if (normalizedDate < startOfDay(startDate)) {
-      setStartDate(normalizedDate);
-      setEndDate(normalizedDate);
-      return;
-    }
-
-    const maxEndDate = addDays(startOfDay(startDate), MAX_RANGE_DAYS - 1);
-    setEndDate(normalizedDate > maxEndDate ? maxEndDate : normalizedDate);
-  };
-
-  const handleHoursChange = (date: Date, value: string) => {
-    const dateKey = getDateKey(date);
-    setHoursByDate((currentHours) => ({
-      ...currentHours,
-      [dateKey]: value,
-    }));
-  };
+  }, [showApprovalModal, weekOptions]);
 
   return (
     <Modal
@@ -155,119 +105,112 @@ export default function RequestApprovalModal({
       visible={showApprovalModal}
       onRequestClose={() => setShowApprovalModal(false)}
     >
-      <View className="flex-1 bg-neutral-500/50 justify-end">
-        <View className="bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100">
-          <View className="flex-row justify-between items-center mb-6">
-            <Text className="text-neutral-900 font-extrabold text-lg tracking-tight">
+      <View className="flex-1 justify-end bg-neutral-500/50">
+        <View className="rounded-t-4xl border-t border-neutral-100 bg-white p-6 pb-12 shadow-2xl">
+          <View className="mb-6 flex-row items-center justify-between">
+            <Text className="text-lg font-extrabold tracking-tight text-neutral-900">
               Submit Timesheet
             </Text>
             <TouchableOpacity
               onPress={() => setShowApprovalModal(false)}
-              className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center active:opacity-75"
+              className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 active:opacity-75"
             >
               <X size={16} color="#333333" />
             </TouchableOpacity>
           </View>
 
           <ScrollView
-            className="max-h-100 mb-6"
+            className="mb-6 max-h-100"
             showsVerticalScrollIndicator={false}
           >
             <View className="gap-4.5 pr-1">
               <View>
-                <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
+                <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
                   Week
                 </Text>
-                <View className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3.5">
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-neutral-800 text-sm font-semibold">
-                        {rangeLabel}
+                <TouchableOpacity
+                  onPress={() =>
+                    setIsWeekDropdownOpen((currentValue) => !currentValue)
+                  }
+                  className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3.5 active:opacity-85"
+                >
+                  <View className="flex-row items-center justify-between gap-3">
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-neutral-800">
+                        {selectedWeek?.label ?? "Select week"}
                       </Text>
-                      <Text className="text-neutral-400 text-[11px] font-medium mt-1">
-                        Select 1 to {MAX_RANGE_DAYS} days
+                      <Text className="mt-1 text-[11px] font-medium text-neutral-400">
+                        Pulled from schedule start date: {scheduleStartDate}
                       </Text>
                     </View>
-                    <Calendar size={18} color="#737373" />
-                  </View>
-
-                  <View className="flex-row gap-3 mt-4">
-                    <TouchableOpacity
-                      onPress={() => setDatePickerTarget("start")}
-                      className="flex-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 active:opacity-85"
-                    >
-                      <Text className="text-neutral-400 text-[10px] font-bold uppercase mb-1">
-                        Start
-                      </Text>
-                      <Text className="text-neutral-800 text-xs font-semibold">
-                        {formatDate(startDate) || "Choose date"}
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => setDatePickerTarget("end")}
-                      className="flex-1 rounded-xl border border-neutral-200 bg-white px-3 py-3 active:opacity-85"
-                    >
-                      <Text className="text-neutral-400 text-[10px] font-bold uppercase mb-1">
-                        End
-                      </Text>
-                      <Text className="text-neutral-800 text-xs font-semibold">
-                        {formatDate(endDate) || "Choose date"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {datePickerTarget ? (
-                    <DateTimePicker
-                      value={pickerValue}
-                      mode="date"
-                      display={Platform.OS === "ios" ? "spinner" : "default"}
-                      onChange={handleDateChange}
+                    <ChevronDown
+                      size={18}
+                      color="#737373"
+                      style={{
+                        transform: [
+                          { rotate: isWeekDropdownOpen ? "180deg" : "0deg" },
+                        ],
+                      }}
                     />
-                  ) : null}
-                </View>
+                  </View>
+                </TouchableOpacity>
+
+                {isWeekDropdownOpen ? (
+                  <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
+                    {weekOptions.map((week) => {
+                      const isSelected = week.id === selectedWeek?.id;
+
+                      return (
+                        <TouchableOpacity
+                          key={week.id}
+                          onPress={() => {
+                            setSelectedWeekId(week.id);
+                            setIsWeekDropdownOpen(false);
+                          }}
+                          className={`px-4 py-3 active:opacity-80 ${
+                            isSelected ? "bg-orange-50" : "bg-white"
+                          }`}
+                        >
+                          <Text
+                            className={`text-sm font-semibold ${
+                              isSelected
+                                ? "text-neutral-950"
+                                : "text-neutral-600"
+                            }`}
+                          >
+                            {week.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ) : null}
               </View>
 
-              {selectedDates.length ? (
-                selectedDates.map((date) => {
-                  const dateKey = getDateKey(date);
-
-                  return (
-                    <View key={dateKey}>
-                      <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
-                        {formatDayLabel(date)}
-                      </Text>
-                      <View className="bg-neutral-50 border border-neutral-200/60 rounded-2xl px-4 py-3 flex-row items-center">
-                        <TextInput
-                          className="flex-1 text-neutral-800 text-sm font-semibold py-0"
-                          placeholder="Enter total working hours"
-                          placeholderTextColor="#A3A3A3"
-                          keyboardType="numeric"
-                          value={hoursByDate[dateKey] || ""}
-                          onChangeText={(value) =>
-                            handleHoursChange(date, value)
-                          }
-                        />
-                      </View>
-                    </View>
-                  );
-                })
-              ) : (
-                <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-5">
-                  <Text className="text-center text-neutral-400 text-xs font-semibold leading-5">
-                    Select a date range to add daily working hours.
-                  </Text>
+              <View>
+                <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
+                  Total working hours
+                </Text>
+                <View className="flex-row items-center rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
+                  <TextInput
+                    className="flex-1 py-0 text-sm font-semibold text-neutral-800"
+                    placeholder="Enter total hours for the selected week"
+                    placeholderTextColor="#A3A3A3"
+                    keyboardType="numeric"
+                    value={totalHours}
+                    onChangeText={setTotalHours}
+                  />
                 </View>
-              )}
+              </View>
             </View>
           </ScrollView>
 
           <TouchableOpacity
             onPress={() => setShowApprovalModal(false)}
             style={{ backgroundColor: Colors.common.GRAY_DARK }}
-            className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90 mb-3"
+            className="mb-3 w-full items-center justify-center rounded-2xl py-4 active:opacity-90"
           >
-            <Text className="text-white font-extrabold text-sm">Submit</Text>
+            <Text className="text-sm font-extrabold text-white">Submit</Text>
           </TouchableOpacity>
         </View>
       </View>
