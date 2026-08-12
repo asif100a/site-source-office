@@ -1,0 +1,954 @@
+import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  Briefcase,
+  Calendar,
+  Clock3,
+  Headphones,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react-native";
+import {
+  Linking,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Colors } from "@/constants/Colors";
+import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
+
+type WorkerTab = "schedule" | "timesheet" | "policy";
+
+type JobDetails = {
+  title: string;
+  company: string;
+  statusBadge: string;
+  location: string;
+  team: string;
+  duration: string;
+  contactName: string;
+  contactTitle: string;
+  contactEmail: string;
+  contactPhone: string;
+  startDate: string;
+  endDate: string;
+  hours: string;
+  daysPerWeek: string;
+  nextInvoice: string;
+};
+
+const JOB_DETAILS: JobDetails = {
+  title: "Labourer",
+  company: "Tech Innovators Inc.",
+  statusBadge: "Day 3 of 20",
+  location: "Shoreditch - 1.2 mi away",
+  team: "2 developers, 1 designer",
+  duration: "12 Jun - 1 month",
+  contactName: "James Hartley",
+  contactTitle: "Director - Hartley Construction",
+  contactEmail: "olivia@untitledui.com",
+  contactPhone: "+44 723 456 7891",
+  startDate: "3 Jun 2026",
+  endDate: "28 Jun 2026",
+  hours: "07:30 - 17:00",
+  daysPerWeek: "5 Days",
+  nextInvoice: "Friday 7 Jun",
+};
+
+const EMPLOYER_WORKERS = [
+  { id: "1", name: "James Hartley", progress: "Day 3 of 20" },
+  { id: "2", name: "James Hartley", progress: "Day 3 of 20" },
+  { id: "3", name: "James Hartley", progress: "Day 3 of 20" },
+];
+
+const EMPLOYER_APPLICANTS = [
+  {
+    id: "1",
+    name: "Michael Turner",
+    role: "Labour",
+    location: "Shoreditch - 1.2 mi away",
+    availability: "Available 8am - 5pm",
+    experience: "8 Years Experience",
+  },
+  {
+    id: "2",
+    name: "Michael Turner",
+    role: "Labour",
+    location: "Shoreditch - 1.2 mi away",
+    availability: "Available 8am - 5pm",
+    experience: "8 Years Experience",
+  },
+  {
+    id: "3",
+    name: "Michael Turner",
+    role: "Labour",
+    location: "Shoreditch - 1.2 mi away",
+    availability: "Available 8am - 5pm",
+    experience: "8 Years Experience",
+  },
+];
+
+const WORK_SUMMARY_ROWS = [
+  { week: "Week 1", dates: "12th - 16th July", status: "Completed" },
+  { week: "Week 2", dates: "19th - 23rd July", status: "Approved" },
+  { week: "Week 3", dates: "26th - 30th July", status: "Approved" },
+  { week: "Week 4", dates: "2nd - 6th August", status: "Approved" },
+];
+
+function SectionTitle({
+  title,
+  detail,
+}: {
+  title: string;
+  detail?: string;
+}) {
+  return (
+    <View className="mb-3 flex-row items-center justify-between gap-4">
+      <Text className="text-base font-extrabold text-neutral-900">{title}</Text>
+      {detail ? (
+        <Text className="text-xs font-medium text-neutral-400">{detail}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function Hero({
+  title,
+  subtitle,
+  statusLabel,
+  onBack,
+}: {
+  title: string;
+  subtitle: string;
+  statusLabel: string;
+  onBack: () => void;
+}) {
+  return (
+    <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
+      <View className="flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <View className="max-w-3xl gap-4">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <View className="flex-row items-center gap-2 rounded-full bg-orange-50 px-3 py-1.5">
+              <Sparkles size={14} color={Colors.common.BRAND} />
+              <Text className="text-xs font-bold uppercase tracking-[0px] text-neutral-900">
+                Active job
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
+              <View className="h-2 w-2 rounded-full bg-emerald-500" />
+              <Text className="text-xs font-semibold text-neutral-600">
+                {statusLabel}
+              </Text>
+            </View>
+          </View>
+
+          <View className="gap-2">
+            <Text className="text-3xl md:text-4xl font-black tracking-tight text-neutral-950">
+              {title}
+            </Text>
+            <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
+              {subtitle}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={onBack}
+          activeOpacity={0.88}
+          className="flex-row items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3.5"
+        >
+          <ArrowLeft size={18} color="#111827" />
+          <Text className="text-sm font-semibold text-neutral-900">Back</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function JobSummaryCard({
+  showRate,
+  statusRoute,
+}: {
+  showRate: boolean;
+  statusRoute?: string;
+}) {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <View className="mb-4 flex-row items-start justify-between">
+        <View className="flex-row items-center gap-3">
+          <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
+            <Briefcase size={22} color="#FFFFFF" />
+          </View>
+          <View>
+            <Text className="text-base font-extrabold text-neutral-950">
+              {JOB_DETAILS.title}
+            </Text>
+            <Text className="text-xs font-semibold text-neutral-500">
+              {JOB_DETAILS.company}
+            </Text>
+          </View>
+        </View>
+
+        {showRate ? (
+          <View className="items-end">
+            <Text className="text-sm font-extrabold text-neutral-900">
+              GBP 80 - 120/hour
+            </Text>
+            <Text
+              style={{ color: Colors.common.BRAND }}
+              className="mt-0.5 text-xs font-medium"
+            >
+              Market Rate
+            </Text>
+          </View>
+        ) : (
+          <View className="rounded-lg bg-orange-50 px-2.5 py-1">
+            <Text
+              style={{ color: Colors.common.BRAND }}
+              className="text-[10px] font-bold"
+            >
+              {statusRoute === "upcoming" ? "Upcoming" : JOB_DETAILS.statusBadge}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View className="gap-2.5 border-t border-neutral-100 pt-3">
+        <View className="flex-row items-center gap-2">
+          <MapPin size={14} color="#C81E1E" />
+          <Text className="text-xs text-neutral-500">{JOB_DETAILS.location}</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <Users size={14} color="#737373" />
+          <Text className="text-xs text-neutral-500">{JOB_DETAILS.team}</Text>
+        </View>
+        <View className="flex-row items-center gap-2">
+          <Calendar size={14} color="#737373" />
+          <Text className="text-xs text-neutral-500">{JOB_DETAILS.duration}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function EmployerWorkersCard({
+  openWorkerDetails,
+}: {
+  openWorkerDetails: (workerId: string) => void;
+}) {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Workers" />
+      <View className="gap-3">
+        {EMPLOYER_WORKERS.map((worker) => (
+          <TouchableOpacity
+            key={worker.id}
+            onPress={() => openWorkerDetails(worker.id)}
+            activeOpacity={0.9}
+            className="rounded-xl border border-neutral-200/80 bg-white px-3 py-3.5"
+          >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+                  <Text className="text-xs font-bold text-neutral-700">JH</Text>
+                </View>
+                <View>
+                  <Text className="text-sm font-bold text-neutral-900">
+                    {worker.name}
+                  </Text>
+                  <Text className="mt-0.5 text-xs text-neutral-400">
+                    {worker.progress}
+                  </Text>
+                </View>
+              </View>
+
+              <Text className="text-xs font-medium text-neutral-500">
+                Update Timesheet
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function EmployerUpcomingApplicantsCard({
+  openWorkerDetails,
+}: {
+  openWorkerDetails: (workerId: string) => void;
+}) {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Applicants" detail="Upcoming job" />
+      <View className="gap-4">
+        {EMPLOYER_APPLICANTS.map((applicant) => (
+          <View
+            key={applicant.id}
+            className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white"
+          >
+            <View className="px-4 pb-3 pt-4">
+              <View className="flex-row items-start justify-between">
+                <View className="flex-1 flex-row items-center gap-3 pr-3">
+                  <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral-100">
+                    <Text className="text-xs font-bold text-neutral-700">MT</Text>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-base font-bold text-neutral-950">
+                      {applicant.name}
+                    </Text>
+                    <Text className="text-sm text-neutral-500">
+                      {applicant.role}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View className="mt-4 gap-2.5 border-t border-neutral-100 pt-4">
+                <View className="flex-row items-center gap-2">
+                  <MapPin size={14} color="#C81E1E" />
+                  <Text className="text-xs text-neutral-500">
+                    {applicant.location}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Clock3 size={14} color="#737373" />
+                  <Text className="text-xs text-neutral-500">
+                    {applicant.availability}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View className="flex-row items-center justify-between px-4 pb-4">
+              <View className="rounded-md bg-orange-50 px-3 py-1.5">
+                <Text
+                  style={{ color: Colors.common.BRAND }}
+                  className="text-xs font-medium"
+                >
+                  {applicant.experience}
+                </Text>
+              </View>
+
+              <View className="flex-row items-center gap-3">
+                <TouchableOpacity onPress={() => openWorkerDetails(applicant.id)}>
+                  <Text className="text-xs font-medium text-neutral-700">
+                    View Details
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => openWorkerDetails(applicant.id)}
+                  style={{ backgroundColor: Colors.common.GRAY_DARK }}
+                  className="rounded-md px-4 py-2 active:opacity-90"
+                >
+                  <Text className="text-xs font-medium text-white">Accept</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ProjectScheduleCard() {
+  const rows = [
+    { label: "Start Date", value: JOB_DETAILS.startDate },
+    { label: "End date", value: JOB_DETAILS.endDate },
+    { label: "Hours", value: JOB_DETAILS.hours },
+    { label: "Per Week", value: JOB_DETAILS.daysPerWeek },
+  ];
+
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Project Schedule" />
+      <View className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white">
+        {rows.map((item, index) => (
+          <View
+            key={item.label}
+            className={`flex-row items-center justify-between px-4 py-4 ${
+              index < rows.length - 1 ? "border-b border-neutral-100" : ""
+            }`}
+          >
+            <Text className="text-sm text-neutral-600">{item.label}</Text>
+            <Text className="text-sm font-medium text-neutral-700">
+              {item.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function WorkerEmployerContactCard() {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Employer" />
+      <View className="mb-4 flex-row items-center gap-3">
+        <View className="h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-slate-100">
+          <Text className="text-sm font-extrabold text-slate-700">JH</Text>
+        </View>
+        <View>
+          <Text className="text-sm font-extrabold text-neutral-900">
+            {JOB_DETAILS.contactName}
+          </Text>
+          <Text className="text-xs font-semibold text-neutral-400">
+            {JOB_DETAILS.contactTitle}
+          </Text>
+        </View>
+      </View>
+
+      <View className="gap-3 border-t border-neutral-100 pt-4">
+        <View className="flex-row items-center gap-2.5">
+          <Mail size={15} color="#858585" />
+          <Text className="text-xs font-semibold text-neutral-500">
+            {JOB_DETAILS.contactEmail}
+          </Text>
+        </View>
+        <View className="flex-row items-center gap-2.5">
+          <Phone size={15} color="#858585" />
+          <Text className="text-xs font-semibold text-neutral-500">
+            {JOB_DETAILS.contactPhone}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function WorkerTabs({
+  activeSubTab,
+  setActiveSubTab,
+}: {
+  activeSubTab: WorkerTab;
+  setActiveSubTab: (tab: WorkerTab) => void;
+}) {
+  const tabs = [
+    { key: "schedule" as const, label: "Schedule" },
+    { key: "timesheet" as const, label: "Timesheet" },
+    { key: "policy" as const, label: "Worker Policy" },
+  ];
+
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      {tabs.map((tab) => {
+        const isActive = activeSubTab === tab.key;
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            onPress={() => setActiveSubTab(tab.key)}
+            activeOpacity={0.88}
+            className={`rounded-lg px-4 py-2 ${
+              isActive ? "bg-neutral-900" : "border border-neutral-200 bg-white"
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                isActive ? "text-white" : "text-neutral-500"
+              }`}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function WorkerScheduleCard() {
+  const rows = [
+    { label: "Start Date", value: JOB_DETAILS.startDate },
+    { label: "End date", value: JOB_DETAILS.endDate },
+    { label: "Hours", value: JOB_DETAILS.hours },
+    { label: "Per Week", value: JOB_DETAILS.daysPerWeek },
+    { label: "Next invoice", value: JOB_DETAILS.nextInvoice },
+  ];
+
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Project Schedule" />
+      <View className="overflow-hidden rounded-xl border border-neutral-200/80 bg-white">
+        {rows.map((item, index) => (
+          <View
+            key={item.label}
+            className={`flex-row items-center justify-between px-4 py-4 ${
+              index < rows.length - 1 ? "border-b border-neutral-50" : ""
+            }`}
+          >
+            <Text className="text-sm font-semibold text-neutral-400">
+              {item.label}
+            </Text>
+            <Text className="text-sm font-extrabold text-neutral-800">
+              {item.value}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function WorkerTimesheetCard({
+  onShowApproval,
+}: {
+  onShowApproval: () => void;
+}) {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Timesheet" />
+      <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white">
+        {WORK_SUMMARY_ROWS.map((item, index) => (
+          <View
+            key={`${item.week}-${index}`}
+            className={`flex-row items-center justify-between p-4 ${
+              index < WORK_SUMMARY_ROWS.length - 1 ? "border-b border-neutral-50" : ""
+            }`}
+          >
+            <View>
+              <Text className="text-sm font-extrabold text-neutral-800">
+                {item.week}
+              </Text>
+              <Text className="mt-0.5 text-xs font-semibold text-neutral-400">
+                {item.dates}
+              </Text>
+            </View>
+
+            {item.status === "Approved" ? (
+              <View className="rounded-full bg-green-50 px-3 py-1">
+                <Text className="text-[10px] font-extrabold text-green-600">
+                  Approved
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={onShowApproval}
+                style={{ borderColor: Colors.common.BRAND }}
+                className="rounded-full border bg-white px-3 py-1 active:opacity-75"
+              >
+                <Text
+                  style={{ color: Colors.common.BRAND }}
+                  className="text-[10px] font-extrabold"
+                >
+                  Submit Timesheet
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function WorkerPolicyCard() {
+  const policies = [
+    {
+      title: "Free cancellation",
+      detail: "More than 48 hours before start",
+      classes: "bg-emerald-50/60 border-emerald-100/55",
+      dot: "bg-emerald-500",
+      text: "text-emerald-700",
+      subtext: "text-emerald-600",
+    },
+    {
+      title: "50% charge",
+      detail: "Between 48-24 hours before start",
+      classes: "bg-amber-50/60 border-amber-100/55",
+      dot: "bg-amber-500",
+      text: "text-amber-700",
+      subtext: "text-amber-600",
+    },
+    {
+      title: "Full charge",
+      detail: "Within 24 hours of start",
+      classes: "bg-red-50/60 border-red-100/55",
+      dot: "bg-red-500",
+      text: "text-red-700",
+      subtext: "text-red-600",
+    },
+  ];
+
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Work Policy" />
+      <View className="gap-3.5">
+        {policies.map((policy) => (
+          <View
+            key={policy.title}
+            className={`flex-row items-start gap-3 rounded-2xl border p-4 ${policy.classes}`}
+          >
+            <View className={`mt-1.5 h-2.5 w-2.5 rounded-full ${policy.dot}`} />
+            <View>
+              <Text className={`text-sm font-extrabold ${policy.text}`}>
+                {policy.title}
+              </Text>
+              <Text className={`mt-0.5 text-xs font-semibold ${policy.subtext}`}>
+                {policy.detail}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ActionCard({
+  title,
+  description,
+  primaryLabel,
+  secondaryLabel,
+  onPrimary,
+  onSecondary,
+}: {
+  title: string;
+  description: string;
+  primaryLabel: string;
+  secondaryLabel: string;
+  onPrimary: () => void;
+  onSecondary: () => void;
+}) {
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <Text className="text-sm font-bold uppercase tracking-[0px] text-neutral-500">
+        Quick actions
+      </Text>
+      <Text className="mt-2 text-2xl font-black tracking-tight text-neutral-950">
+        {title}
+      </Text>
+      <Text className="mt-2 text-sm leading-6 text-neutral-600">
+        {description}
+      </Text>
+
+      <View className="mt-5 gap-3">
+        <TouchableOpacity
+          onPress={onPrimary}
+          style={{ backgroundColor: Colors.common.GRAY_DARK }}
+          className="items-center justify-center rounded-2xl py-4 active:opacity-90"
+        >
+          <Text className="text-sm font-semibold text-white">{primaryLabel}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onSecondary}
+          className="items-center justify-center rounded-2xl border border-neutral-200 bg-white py-4 active:opacity-75"
+        >
+          <Text className="text-sm font-medium text-neutral-700">
+            {secondaryLabel}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function ApprovalPanel({
+  scheduleStartDate,
+  onClose,
+}: {
+  scheduleStartDate: string;
+  onClose: () => void;
+}) {
+  const weeks = [
+    `Week 1 - ${scheduleStartDate}`,
+    "Week 2 - 10 June",
+    "Week 3 - 17 June",
+  ];
+  const [selectedWeek, setSelectedWeek] = useState(weeks[0]);
+  const [totalHours, setTotalHours] = useState("");
+
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <SectionTitle title="Submit Timesheet" />
+      <View className="gap-4">
+        <View>
+          <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
+            Week
+          </Text>
+          <View className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
+            {weeks.map((week, index) => (
+              <TouchableOpacity
+                key={week}
+                onPress={() => setSelectedWeek(week)}
+                className={`px-4 py-3 active:opacity-85 ${
+                  selectedWeek === week ? "bg-orange-50" : "bg-white"
+                } ${index < weeks.length - 1 ? "border-b border-neutral-100" : ""}`}
+              >
+                <Text
+                  className={`text-sm font-semibold ${
+                    selectedWeek === week ? "text-neutral-950" : "text-neutral-600"
+                  }`}
+                >
+                  {week}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
+            Total working hours
+          </Text>
+          <View className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
+            <TextInput
+              className="py-0 text-sm font-semibold text-neutral-800"
+              placeholder="Enter total hours for the selected week"
+              placeholderTextColor="#A3A3A3"
+              keyboardType="numeric"
+              value={totalHours}
+              onChangeText={setTotalHours}
+            />
+          </View>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        onPress={onClose}
+        style={{ backgroundColor: Colors.common.GRAY_DARK }}
+        className="mt-5 items-center justify-center rounded-2xl py-4 active:opacity-90"
+      >
+        <Text className="text-sm font-extrabold text-white">Submit</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+export default function ActiveJobDetailWebScreen() {
+  const router = useRouter();
+  const { origin, status } = useLocalSearchParams<{
+    id?: string;
+    origin?: string;
+    status?: string;
+  }>();
+  const originRoute = Array.isArray(origin) ? origin[0] : origin;
+  const statusRoute = Array.isArray(status) ? status[0] : status;
+  const employerJobStatus = statusRoute === "upcoming" ? "upcoming" : "active";
+
+  const [activeSubTab, setActiveSubTab] = useState<WorkerTab>("schedule");
+  const [showApprovalPanel, setShowApprovalPanel] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportModalState, setSupportModalState] = useState<"form" | "submitted">(
+    "form",
+  );
+
+  const openWorkerDetails = (workerId: string) => {
+    router.push({
+      pathname: "/screens/worker-details/[id]",
+      params: { id: workerId, origin: "employer" },
+    });
+  };
+
+  const handleNavigateBack = () => {
+    router.back();
+  };
+
+  if (originRoute === "employer") {
+    return (
+      <View className="flex-1 bg-neutral-50">
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 64 }}
+        >
+          <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
+            <View className="mx-auto w-full max-w-7xl gap-6">
+              <Hero
+                title={
+                  employerJobStatus === "upcoming" ? "Upcoming Job" : "Active Job"
+                }
+                subtitle={
+                  employerJobStatus === "upcoming"
+                    ? "Review the upcoming role and current applicants from a desktop layout."
+                    : "Manage the active role, assigned workers, and schedule in a wider employer-focused layout."
+                }
+                statusLabel={
+                  employerJobStatus === "upcoming" ? "Upcoming role" : "In progress"
+                }
+                onBack={handleNavigateBack}
+              />
+
+              <View className="flex-col gap-6 xl:flex-row">
+                <View className="flex-[1.45] gap-4">
+                  <JobSummaryCard
+                    showRate={employerJobStatus === "upcoming"}
+                    statusRoute={statusRoute}
+                  />
+                  {employerJobStatus === "active" ? (
+                    <>
+                      <EmployerWorkersCard openWorkerDetails={openWorkerDetails} />
+                      <ProjectScheduleCard />
+                    </>
+                  ) : (
+                    <EmployerUpcomingApplicantsCard
+                      openWorkerDetails={openWorkerDetails}
+                    />
+                  )}
+                </View>
+
+                <View className="flex-1 gap-4">
+                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                    <View className="flex-row items-center gap-3">
+                      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
+                        <ShieldCheck size={18} color={Colors.common.BRAND} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-sm font-semibold text-neutral-900">
+                          Employer dashboard view
+                        </Text>
+                        <Text className="mt-1 text-sm leading-6 text-neutral-600">
+                          This web page keeps the job state and the most relevant
+                          people around it visible at the same time.
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {employerJobStatus === "active" ? (
+                    <ActionCard
+                      title="Cancel or dispute"
+                      description="The mobile footer actions are moved into a desktop action card here."
+                      primaryLabel="Cancel Job"
+                      secondaryLabel="Dispute"
+                      onPrimary={handleNavigateBack}
+                      onSecondary={handleNavigateBack}
+                    />
+                  ) : (
+                    <ActionCard
+                      title="Review applicants"
+                      description="Use the applicant list to inspect profiles and accept candidates."
+                      primaryLabel="Back"
+                      secondaryLabel="Open Maps"
+                      onPrimary={handleNavigateBack}
+                      onSecondary={() => {
+                        void Linking.openURL(
+                          "https://www.google.com/maps/search/?api=1&query=Shoreditch",
+                        );
+                      }}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-neutral-50">
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 64 }}
+      >
+        <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
+          <View className="mx-auto w-full max-w-7xl gap-6">
+            <Hero
+              title="Active Job"
+              subtitle="Track the current role, employer contact, schedule, timesheets, and policy from a web layout that keeps the mobile route untouched."
+              statusLabel={JOB_DETAILS.statusBadge}
+              onBack={handleNavigateBack}
+            />
+
+            <View className="flex-col gap-6 xl:flex-row">
+              <View className="flex-[1.45] gap-4">
+                <JobSummaryCard showRate={false} />
+                <WorkerEmployerContactCard />
+                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                  <SectionTitle title="Job workspace" />
+                  <WorkerTabs
+                    activeSubTab={activeSubTab}
+                    setActiveSubTab={setActiveSubTab}
+                  />
+                </View>
+
+                {activeSubTab === "schedule" ? <WorkerScheduleCard /> : null}
+                {activeSubTab === "timesheet" ? (
+                  <WorkerTimesheetCard
+                    onShowApproval={() => setShowApprovalPanel(true)}
+                  />
+                ) : null}
+                {activeSubTab === "policy" ? <WorkerPolicyCard /> : null}
+              </View>
+
+              <View className="flex-1 gap-4">
+                {showApprovalPanel ? (
+                  <ApprovalPanel
+                    scheduleStartDate={JOB_DETAILS.startDate}
+                    onClose={() => setShowApprovalPanel(false)}
+                  />
+                ) : (
+                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                    <View className="flex-row items-center gap-3">
+                      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
+                        <ShieldCheck size={18} color={Colors.common.BRAND} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-sm font-semibold text-neutral-900">
+                          Worker view
+                        </Text>
+                        <Text className="mt-1 text-sm leading-6 text-neutral-600">
+                          The schedule, timesheet, and policy stay in the main
+                          column while support and next actions stay visible here.
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                <ActionCard
+                  title="Support and next steps"
+                  description="Open support or go back without relying on the floating controls from mobile."
+                  primaryLabel="Message Support"
+                  secondaryLabel="Back"
+                  onPrimary={() => {
+                    setSupportModalState("form");
+                    setShowSupportModal(true);
+                  }}
+                  onSecondary={handleNavigateBack}
+                />
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setSupportModalState("form");
+                    setShowSupportModal(true);
+                  }}
+                  activeOpacity={0.9}
+                  className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                      Need support?
+                    </Text>
+                    <Text className="mt-2 text-lg font-black tracking-tight text-white">
+                      Open a support ticket
+                    </Text>
+                  </View>
+                  <Headphones size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      <MessageSupportModal
+        showSupportModal={showSupportModal}
+        setShowSupportModal={setShowSupportModal}
+        supportModalState={supportModalState}
+        setSupportModalState={setSupportModalState}
+      />
+    </View>
+  );
+}

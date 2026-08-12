@@ -61,27 +61,6 @@ export default function CompletedJobDetailScreen() {
   };
 
   const handleNavigateBack = () => {
-    // if (originRoute === "employer") {
-    //   router.replace({
-    //     pathname: "/tabs/(employer-tabs)/my-jobs",
-    //     params: { tab: statusRoute ?? "completed" },
-    //   });
-    //   return;
-    // }
-
-    // if (originRoute === "worker") {
-    //   router.replace({
-    //     pathname: "/tabs/(worker-tabs)/my-jobs",
-    //     params: { tab: statusRoute ?? "completed" },
-    //   });
-    //   return;
-    // }
-
-    // if (originRoute) {
-    //   router.replace(getDashboardRouteForRole(normalizeUserRole(originRoute)));
-    //   return;
-    // }
-
     router.back();
   };
 
