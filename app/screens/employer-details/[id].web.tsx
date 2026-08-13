@@ -254,7 +254,7 @@ export default function EmployerDetailsWebScreen() {
   };
 
   return (
-    <View
+    <ScrollView
       className="flex-1 bg-neutral-50"
       style={{ paddingBottom: 120 }}
     >
@@ -321,7 +321,7 @@ export default function EmployerDetailsWebScreen() {
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
