@@ -1,8 +1,26 @@
 import { ChevronDownIcon } from "lucide-react-native";
 import { Control, Controller, FieldPath, FieldValues } from "react-hook-form";
 import { Text } from "react-native";
-import { FormControl, FormControlError, FormControlErrorText, FormControlLabel, FormControlLabelText } from "@/components/ui/form-control";
-import { Select, SelectBackdrop, SelectContent, SelectDragIndicator, SelectDragIndicatorWrapper, SelectIcon, SelectInput, SelectItem, SelectPortal, SelectTrigger } from "@/components/ui/select";
+import {
+  FormControl,
+  FormControlError,
+  FormControlErrorText,
+  FormControlLabel,
+  FormControlLabelText,
+} from "@/components/ui/form-control";
+import {
+  Select,
+  SelectBackdrop,
+  SelectContent,
+  SelectDragIndicator,
+  SelectDragIndicatorWrapper,
+  SelectIcon,
+  SelectInput,
+  SelectItem,
+  SelectPortal,
+  SelectTrigger,
+} from "@/components/ui/select";
+import { InputField } from "@/components/ui/input";
 
 type SelectOption = {
   label: string;
@@ -42,7 +60,7 @@ export default function StandardSelectField<T extends FieldValues>({
               className="text-sm font-semibold text-[#333]"
               accessibilityLabel={label}
             >
-              {label} {asterisk && <Text style={{ color: '#ef4444' }}>*</Text>}
+              {label} {asterisk && <Text style={{ color: "#ef4444" }}>*</Text>}
             </FormControlLabelText>
           </FormControlLabel>
 
@@ -54,8 +72,9 @@ export default function StandardSelectField<T extends FieldValues>({
             <SelectTrigger
               variant="outline"
               size="xl"
-              className={`rounded-xl border bg-transparent px-1 justify-between ${error ? "border-[#d92d20]" : "border-[#e8e8e8]"
-                }`}
+              className={`rounded-xl border bg-transparent px-1 justify-between ${
+                error ? "border-[#d92d20]" : "border-[#e8e8e8]"
+              }`}
               style={{ height: 50 }}
             >
               <SelectInput
