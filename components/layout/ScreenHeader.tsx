@@ -23,7 +23,7 @@ export default function ScreenHeader() {
   return (
     <View
       style={{ backgroundColor: Colors.common.BRAND }}
-      className="px-6 pt-12 pb-3"
+      className="px-6 pt-8 pb-3"
     >
       <View className="flex-row items-end justify-between">
         <Pressable
@@ -45,7 +45,7 @@ export default function ScreenHeader() {
         </Pressable>
 
         <View className="-mb-3">
-          <LogoWhite size={{ width: "100", height: "72" }} />
+          <LogoWhite size={{ width: "124", height: "84" }} />
         </View>
 
         <View className="flex-row items-center gap-3">

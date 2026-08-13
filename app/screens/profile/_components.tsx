@@ -41,15 +41,6 @@ export function ProfileHeader({
       navigateBack();
       return;
     }
-    // if (originRoute === "employer") {
-    //   router.replace("/tabs/(employer-tabs)/profile");
-    //   return;
-    // }
-
-    // if (originRoute === "worker") {
-    //   router.replace("/tabs/(worker-tabs)/profile");
-    //   return;
-    // }
 
     router.back();
   };
@@ -57,7 +48,7 @@ export function ProfileHeader({
   return (
     <View
       style={{ backgroundColor: Colors.common.BRAND }}
-      className="pt-12 pb-3 px-5"
+      className="pt-8 pb-3 px-5"
     >
       <View className="flex-row justify-between items-end">
         <TouchableOpacity
@@ -71,7 +62,7 @@ export function ProfileHeader({
         </TouchableOpacity>
 
         <View className="-mb-3 mr-10">
-          <LogoWhite size={{ width: "100", height: "72" }} />
+          <LogoWhite size={{ width: "124", height: "84" }} />
         </View>
 
         <TouchableOpacity className="w-11 h-11 rounded-full bg-white/15 items-center justify-center active:opacity-75">
