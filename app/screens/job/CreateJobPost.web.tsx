@@ -333,7 +333,7 @@ export default function CreateJobPostWebScreen() {
               </View>
             </View>
 
-            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6 w-fit mx-auto">
+            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6 max-w-4xl w-full mx-auto">
               <View className="mx-auto w-full max-w-4xl">
                 <StandardInputField
                   label="Job Title"
