@@ -183,7 +183,7 @@
       "routeKeys": {}
     },
     {
-      "file": "./screens/job/CreateJobPost.tsx",
+      "file": "./screens/job/CreateJobPost.web.tsx",
       "page": "/screens/job/CreateJobPost",
       "namedRegex": "^/screens/job/CreateJobPost(?:/)?$",
       "routeKeys": {}
@@ -201,7 +201,7 @@
       "routeKeys": {}
     },
     {
-      "file": "./screens/common/Notifications.tsx",
+      "file": "./screens/common/Notifications.web.tsx",
       "page": "/screens/common/Notifications",
       "namedRegex": "^/screens/common/Notifications(?:/)?$",
       "routeKeys": {}
@@ -267,7 +267,7 @@
       "routeKeys": {}
     },
     {
-      "file": "./screens/worker-details/[id].tsx",
+      "file": "./screens/worker-details/[id].web.tsx",
       "page": "/screens/worker-details/[id]",
       "namedRegex": "^/screens/worker\\-details/(?<id>[^/]+?)(?:/)?$",
       "routeKeys": {
@@ -283,7 +283,7 @@
       }
     },
     {
-      "file": "./screens/completed-jobs/[id].tsx",
+      "file": "./screens/completed-jobs/[id].web.tsx",
       "page": "/screens/completed-jobs/[id]",
       "namedRegex": "^/screens/completed\\-jobs/(?<id>[^/]+?)(?:/)?$",
       "routeKeys": {
@@ -307,7 +307,7 @@
       }
     },
     {
-      "file": "./screens/active-jobs/[id].tsx",
+      "file": "./screens/active-jobs/[id].web.tsx",
       "page": "/screens/active-jobs/[id]",
       "namedRegex": "^/screens/active\\-jobs/(?<id>[^/]+?)(?:/)?$",
       "routeKeys": {

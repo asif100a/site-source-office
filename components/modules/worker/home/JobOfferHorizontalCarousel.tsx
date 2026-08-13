@@ -1,28 +1,40 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ViewStyle,
+} from "react-native";
 import React from "react";
 import { ArrowRight, Briefcase, Sparkles } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
 const MOCK_JOB_OFFERS = [
   {
-    id: '1',
-    title: 'Labourer',
-    company: 'London builder limited',
-    payRate: '120',
-    tag: 'Market Rate',
+    id: "1",
+    title: "Labourer",
+    company: "London builder limited",
+    payRate: "120",
+    tag: "Market Rate",
   },
   {
-    id: '2',
-    title: 'Labourer',
-    company: 'London builder limited',
-    payRate: '120',
-    tag: 'Market Rate',
+    id: "2",
+    title: "Labourer",
+    company: "London builder limited",
+    payRate: "120",
+    tag: "Market Rate",
   },
 ];
 
-export default function JobOfferHorizontalCarousel({ handleViewDetails }: { handleViewDetails: (id: string) => void }) {
+export default function JobOfferHorizontalCarousel({
+  handleViewDetails,
+  containerStyle = {},
+}: {
+  handleViewDetails: (id: string) => void;
+  containerStyle?: ViewStyle;
+}) {
   return (
-    <View className="mt-8">
+    <View className="mt-8" style={containerStyle}>
       <View className="flex-row justify-between items-center mb-4 px-5">
         <View className="flex-row items-center gap-2">
           <Sparkles size={18} color={Colors.common.BRAND} />

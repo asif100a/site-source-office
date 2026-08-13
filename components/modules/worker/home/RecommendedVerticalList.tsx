@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ViewStyle } from "react-native";
 import React from "react";
 import {
   ArrowRight,
@@ -38,8 +38,10 @@ const MOCK_RECOMMENDED = [
 
 export default function RecommendedVerticalList({
   handleViewDetails,
+  containerStyle,
 }: {
   handleViewDetails: (id: string) => void;
+  containerStyle?: ViewStyle;
 }) {
   const handleApply = () => {
     router.push({
@@ -49,7 +51,7 @@ export default function RecommendedVerticalList({
   };
 
   return (
-    <View className="mt-8">
+    <View className="mt-8" style={containerStyle}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-neutral-900 font-extrabold text-lg tracking-tight">
           Recommended
