@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ViewStyle } from "react-native";
 import React from "react";
 import { ArrowRight, Bookmark, Clock, MapPin } from "lucide-react-native";
 import { Image } from "expo-image";
@@ -25,11 +25,13 @@ const JOB_REQUESTS = [
 
 export default function JobRequests({
   openWorkerDetails,
+  containerStyle,
 }: {
   openWorkerDetails: (id: string) => void;
+  containerStyle?: ViewStyle;
 }) {
   return (
-    <View className="mt-8">
+    <View className="mt-8" style={containerStyle}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-neutral-950 text-[18px] font-semibold">
           Job Requests
