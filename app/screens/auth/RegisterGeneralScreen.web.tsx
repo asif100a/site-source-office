@@ -115,14 +115,6 @@ export default function RegisterGeneralScreenWeb({
             placeholder="Select availability"
             required
           />
-
-          <StandardInputField
-            label="Address"
-            id="address"
-            control={control}
-            required
-            placeholder="Enter address"
-          />
         </View>
 
         <View className="mt-6 gap-4">

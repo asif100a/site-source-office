@@ -120,15 +120,6 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
             required={true}
           />
 
-          {/* Address */}
-          <StandardInputField
-            label="Address"
-            id="address"
-            control={control}
-            required={true}
-            placeholder="Enter Address"
-          />
-
           {/* Continue Button */}
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}

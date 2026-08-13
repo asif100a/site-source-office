@@ -24,6 +24,7 @@ export default function RegisterSsoScreen({
     defaultValues: {
       name: "",
       email: "",
+      address: "",
     },
   });
 
@@ -65,12 +66,21 @@ export default function RegisterSsoScreen({
             />
 
             <StandardInputField
-              label="Email Address"
+              label="Email"
               id="email"
               type="email"
               control={control}
               required={true}
               placeholder="Enter your email"
+            />
+
+            {/* Address */}
+            <StandardInputField
+              label="Address"
+              id="address"
+              control={control}
+              required={true}
+              placeholder="Enter your Address"
             />
 
             <TouchableOpacity
