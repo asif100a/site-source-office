@@ -57,7 +57,7 @@ export function CustomTabBar({
 
       if (isProtectedWorkerRoute && !isUserAuthenticated()) {
         router.push(
-          getWorkerLoginRoute(`/tabs/(worker-tabs)/${route.name}`),
+          getWorkerLoginRoute(`/tabs/(worker-tabs)/${route.name}`) as any,
         );
         return;
       }

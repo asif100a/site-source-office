@@ -4,6 +4,17 @@ export type WorkerHomeFilter =
   | "Highest paid"
   | "Nearby";
 
+export type WorkerHomeStartFilter = "Tomorrow" | "This week" | "Anytime";
+
+export const WORKER_HOME_TRADE_OPTIONS = [
+  "Labourer",
+  "Groundworker",
+  "Carpenter",
+  "Scaffolder",
+  "Bricklayer",
+  "Plant op",
+] as const;
+
 export type WorkerHomeJob = {
   id: string;
   title: string;
@@ -121,6 +132,58 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     },
   },
 ];
+
+export type WorkerHomeModalFilters = {
+  trades: string[];
+  maxDistanceMiles: number;
+  minRatePerDay: number;
+  startFilter: WorkerHomeStartFilter;
+  sortBy: WorkerHomeFilter;
+};
+
+const START_FILTER_MATCHES: Record<WorkerHomeStartFilter, string[]> = {
+  Tomorrow: ["tomorrow"],
+  "This week": ["today", "tomorrow", "mon", "week"],
+  Anytime: [],
+};
+
+function matchesTrade(job: WorkerHomeJob, trades: string[]) {
+  if (trades.length === 0) {
+    return true;
+  }
+
+  const normalizedTitle = job.title.toLowerCase();
+
+  return trades.some((trade) => normalizedTitle.includes(trade.toLowerCase()));
+}
+
+function matchesStart(job: WorkerHomeJob, startFilter: WorkerHomeStartFilter) {
+  if (startFilter === "Anytime") {
+    return true;
+  }
+
+  const normalizedStart = job.startLabel.toLowerCase();
+
+  return START_FILTER_MATCHES[startFilter].some((token) =>
+    normalizedStart.includes(token),
+  );
+}
+
+export function filterWorkerHomeJobs(
+  jobs: WorkerHomeJob[],
+  filters: WorkerHomeModalFilters,
+) {
+  const nextJobs = jobs.filter((job) => {
+    return (
+      matchesTrade(job, filters.trades) &&
+      job.distanceMiles <= filters.maxDistanceMiles &&
+      job.payRatePerDay >= filters.minRatePerDay &&
+      matchesStart(job, filters.startFilter)
+    );
+  });
+
+  return sortWorkerHomeJobs(nextJobs, filters.sortBy);
+}
 
 export function sortWorkerHomeJobs(
   jobs: WorkerHomeJob[],
