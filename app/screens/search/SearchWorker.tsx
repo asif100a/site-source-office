@@ -1,9 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-} from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { Colors } from "@/constants/Colors";
@@ -21,9 +17,15 @@ type WorkerCard = {
   location: string;
   availability: string;
   experience: string;
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
 };
 
 type FilterValues = {
+  project: string;
+  jobPosting: string;
   tradeSkill: string;
   radius: string;
   availableTime: string;
@@ -37,22 +39,34 @@ const WORKERS: WorkerCard[] = [
     location: "Shoreditch • 1.2 mi away",
     availability: "Available 8am - 5pm",
     experience: "8 Years Experience",
+    coordinate: {
+      latitude: 51.5295,
+      longitude: -0.056,
+    },
   },
   {
     id: "2",
-    name: "Michael Turner",
-    role: "Labour",
-    location: "Shoreditch • 1.2 mi away",
-    availability: "Available 8am - 5pm",
-    experience: "8 Years Experience",
+    name: "Daniel Foster",
+    role: "Carpenter",
+    location: "Bethnal Green • 1.4 mi away",
+    availability: "Available 7am - 4pm",
+    experience: "6 Years Experience",
+    coordinate: {
+      latitude: 51.5332,
+      longitude: -0.0474,
+    },
   },
   {
     id: "3",
-    name: "Michael Turner",
-    role: "Labour",
-    location: "Shoreditch • 1.2 mi away",
+    name: "Aaron Hughes",
+    role: "Electrician",
+    location: "Old Street • 1.8 mi away",
     availability: "Available 8am - 5pm",
-    experience: "8 Years Experience",
+    experience: "9 Years Experience",
+    coordinate: {
+      latitude: 51.5248,
+      longitude: -0.0641,
+    },
   },
 ];
 
@@ -66,6 +80,8 @@ export default function SearchWorkerScreen() {
 
   const { control } = useForm<FilterValues>({
     defaultValues: {
+      project: "hoxton-refurb",
+      jobPosting: "labourer-hoxton",
       tradeSkill: "groundworker",
       radius: "1-10",
       availableTime: "8-5",
@@ -80,16 +96,7 @@ export default function SearchWorkerScreen() {
   };
 
   const goBackToOrigin = () => {
-    // if (originRoute === "employer") {
-    //   router.replace("/tabs/(employer-tabs)/workers");
-    //   return;
-    // }
-
-    // if (originRoute === "worker") {
-    //   router.replace("/tabs/(worker-tabs)/jobs");
-    //   return;
-    // }
-
+    void originRoute;
     router.back();
   };
 
@@ -101,7 +108,6 @@ export default function SearchWorkerScreen() {
         viewType={viewType}
       />
 
-      {/* Search Bar */}
       <SearchWorkerSearchBar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -110,12 +116,12 @@ export default function SearchWorkerScreen() {
 
       {viewType === "list" ? (
         <ScrollView
-          className="flex-1 px-5 pt-2 bg-neutral-50"
+          className="flex-1 bg-neutral-50 px-5 pt-2"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          <View className="flex-row justify-between items-center my-4">
-            <Text className="text-neutral-900 font-extrabold text-base tracking-tight">
+          <View className="my-4 flex-row items-center justify-between">
+            <Text className="text-base font-extrabold tracking-tight text-neutral-900">
               Search Result
             </Text>
             <Text

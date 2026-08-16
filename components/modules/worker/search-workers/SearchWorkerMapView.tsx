@@ -1,88 +1,119 @@
-import { View, Text } from "react-native";
 import React from "react";
-import { Briefcase } from "lucide-react-native";
+import { Platform, Text, View } from "react-native";
+import type { Region } from "react-native-maps";
+import { MapPin } from "lucide-react-native";
+import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import WorkerSearchCardRow from "./WorkerSearchCardRow";
+import { Colors } from "@/constants/Colors";
+
+type WorkerMapItem = {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  availability: string;
+  experience: string;
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+type NativeMapComponents = {
+  MapView: typeof import("react-native-maps").default;
+  Marker: typeof import("react-native-maps").Marker;
+};
+
+const MAP_REGION: Region = {
+  latitude: 51.5295,
+  longitude: -0.056,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
+function getNativeMapComponents(): NativeMapComponents | null {
+  if (Platform.OS === "web") {
+    return null;
+  }
+
+  try {
+    const maps =
+      require("react-native-maps") as typeof import("react-native-maps");
+    return { MapView: maps.default, Marker: maps.Marker };
+  } catch {
+    return null;
+  }
+}
+
+function WorkerMarkerBubble({ label }: { label: string }) {
+  return (
+    <View className="rounded-full border border-neutral-200 bg-white px-3 py-2 shadow-sm">
+      <View className="flex-row items-center gap-2">
+        <View
+          className="h-5 w-5 items-center justify-center rounded-full"
+          style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
+        >
+          <MapPin size={11} color={Colors.common.BRAND} />
+        </View>
+        <Text className="text-[11px] font-bold text-neutral-900">{label}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function SearchWorkerMapView({
   WORKERS,
   openWorkerDetails,
 }: {
-  WORKERS: any[];
+  WORKERS: WorkerMapItem[];
   openWorkerDetails: (id: string) => void;
 }) {
+  const nativeMapComponents = getNativeMapComponents();
+  const NativeMapView = nativeMapComponents?.MapView;
+  const NativeMarker = nativeMapComponents?.Marker;
+  const featuredWorker = WORKERS[0];
+
   return (
-    <View className="flex-1 bg-neutral-100 relative overflow-hidden">
+    <View className="flex-1 overflow-hidden bg-neutral-100">
       <View className="absolute inset-0">
-        <View className="absolute top-[12%] left-0 w-full h-[3px] bg-white rotate-6" />
-        <View className="absolute top-[28%] left-0 w-full h-[3.5px] bg-white -rotate-12" />
-        <View className="absolute top-[46%] left-0 w-full h-[3px] bg-white rotate-3" />
-        <View className="absolute bottom-[26%] left-0 w-full h-[4px] bg-white -rotate-6" />
-        <View className="absolute left-[26%] top-0 w-[3px] h-full bg-white rotate-[35deg]" />
-        <View className="absolute left-[60%] top-0 w-[3.5px] h-full bg-white -rotate-[25deg]" />
-        <View className="absolute left-[84%] top-0 w-[3px] h-full bg-white rotate-[40deg]" />
-
-        <Text className="absolute text-[8px] text-neutral-400 font-bold rotate-6 top-[10%] left-[8%]">
-          Weston Dr
-        </Text>
-        <Text className="absolute text-[8px] text-neutral-400 font-bold -rotate-12 top-[26%] left-[45%]">
-          Kenton Ln
-        </Text>
-        <Text className="absolute text-[8px] text-neutral-400 font-bold rotate-3 top-[44%] right-[15%]">
-          Newton Ln
-        </Text>
-        <Text className="absolute text-[8px] text-neutral-400 font-bold -rotate-6 bottom-[28%] left-[30%]">
-          Culver Grove
-        </Text>
-
-        <View className="absolute top-[18%] left-[20%] w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-        <View className="absolute top-[44%] left-[72%] w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-        <View className="absolute bottom-[30%] left-[28%] w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-
-        <View className="absolute top-[22%] left-[58%] items-center">
-          <View className="bg-white/95 rounded-xl p-3 border border-neutral-100 shadow-lg mb-2 items-center flex-row gap-2.5">
-            <View className="w-8 h-8 bg-blue-600 rounded-lg items-center justify-center">
-              <Briefcase size={14} color="#FFFFFF" />
-            </View>
-            <View>
-              <Text className="text-neutral-900 font-extrabold text-[10px]">
-                Michael Turner
-              </Text>
-              <Text className="text-neutral-500 text-[8px] font-semibold">
-                Labour
-              </Text>
-              <Text className="text-neutral-900 font-bold text-[8px] mt-0.5">
-                1.2 mi away
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="absolute top-[56%] left-[24%] items-center">
-          <View className="bg-white/95 rounded-xl p-3 border border-neutral-100 shadow-lg mb-2 items-center flex-row gap-2.5">
-            <View className="w-8 h-8 bg-blue-600 rounded-lg items-center justify-center">
-              <Briefcase size={14} color="#FFFFFF" />
-            </View>
-            <View>
-              <Text className="text-neutral-900 font-extrabold text-[10px]">
-                Michael Turner
-              </Text>
-              <Text className="text-neutral-500 text-[8px] font-semibold">
-                Labour
-              </Text>
-              <Text className="text-neutral-900 font-bold text-[8px] mt-0.5">
-                1.2 mi away
-              </Text>
-            </View>
-          </View>
-        </View>
+        {NativeMapView && NativeMarker ? (
+          <NativeMapView
+            style={{ flex: 1 }}
+            initialRegion={MAP_REGION}
+            mapType="standard"
+            loadingEnabled
+            loadingBackgroundColor="#E5E7EB"
+            moveOnMarkerPress={false}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsCompass={false}
+            toolbarEnabled={false}
+          >
+            {WORKERS.map((worker) => (
+              <NativeMarker
+                key={worker.id}
+                coordinate={worker.coordinate}
+                title={worker.name}
+                description={worker.role}
+                onPress={() => openWorkerDetails(worker.id)}
+              >
+                <WorkerMarkerBubble label={worker.name.split(" ")[0]} />
+              </NativeMarker>
+            ))}
+          </NativeMapView>
+        ) : (
+          <MapFallback />
+        )}
       </View>
 
-      <View className="absolute bottom-6 left-5 right-5">
-        <WorkerSearchCardRow
-          worker={WORKERS[0]}
-          onPress={() => openWorkerDetails(WORKERS[0].id)}
-        />
-      </View>
+      {featuredWorker ? (
+        <View className="absolute bottom-6 left-5 right-5">
+          <WorkerSearchCardRow
+            worker={featuredWorker}
+            onPress={() => openWorkerDetails(featuredWorker.id)}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

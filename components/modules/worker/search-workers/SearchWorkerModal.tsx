@@ -5,7 +5,12 @@ import { Controller } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import { Colors } from "@/constants/Colors";
 
-type FilterFieldId = "tradeSkill" | "radius" | "availableTime";
+type FilterFieldId =
+  | "project"
+  | "jobPosting"
+  | "tradeSkill"
+  | "radius"
+  | "availableTime";
 
 type SelectOption = {
   label: string;
@@ -17,6 +22,18 @@ const TRADE_OPTIONS = [
   { label: "Labourer", value: "labourer" },
   { label: "Electrician", value: "electrician" },
   { label: "Carpenter", value: "carpenter" },
+];
+
+const PROJECT_OPTIONS = [
+  { label: "Hoxton Street Refurb", value: "hoxton-refurb" },
+  { label: "Shoreditch Office Fit-out", value: "shoreditch-office" },
+  { label: "Camden Retail Build", value: "camden-retail" },
+];
+
+const JOB_POSTING_OPTIONS = [
+  { label: "Labourer - Hoxton", value: "labourer-hoxton" },
+  { label: "Carpenter - First fix", value: "carpenter-first-fix" },
+  { label: "Electrician - Site setup", value: "electrician-site-setup" },
 ];
 
 const RADIUS_OPTIONS = [
@@ -151,6 +168,26 @@ export default function SearchWorkerModal({
           </View>
 
           <View className="gap-3 mb-8">
+            <FilterSelectField
+              label="Project"
+              id="project"
+              control={control}
+              options={PROJECT_OPTIONS}
+              placeholder="Select project"
+              openField={openField}
+              setOpenField={setOpenField}
+            />
+
+            <FilterSelectField
+              label="Job posting"
+              id="jobPosting"
+              control={control}
+              options={JOB_POSTING_OPTIONS}
+              placeholder="Select job posting"
+              openField={openField}
+              setOpenField={setOpenField}
+            />
+
             <FilterSelectField
               label="Trade / Skill"
               id="tradeSkill"
