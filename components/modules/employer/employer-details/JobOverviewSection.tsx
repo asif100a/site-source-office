@@ -34,7 +34,7 @@ export default function JobOverviewSection({ jobDetails }: { jobDetails: Employe
       ))}
 
       <View className="flex-row items-center justify-between py-2">
-        <Text className="text-sm font-semibold text-neutral-500">Pay range</Text>
+        <Text className="text-sm font-semibold text-neutral-500">Rate</Text>
 
         <View className="items-end gap-2">
           <Text className="text-sm font-extrabold text-neutral-900">£{jobDetails.payRate}</Text>

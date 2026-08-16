@@ -10,11 +10,35 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
+type WeekdayKey =
+  | "Sunday"
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday";
+
+type WeekdayField = {
+  key: WeekdayKey;
+  date: Date;
+};
+
 type TimesheetWeekOption = {
   id: string;
   label: string;
   startDate: Date;
 };
+
+const WEEKDAY_ORDER: WeekdayKey[] = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 const WEEKS_TO_SHOW = 3;
 
@@ -22,6 +46,21 @@ const addDays = (date: Date, days: number) => {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + days);
   return nextDate;
+};
+
+const parseScheduleDate = (dateLabel: string) => {
+  const parsedDate = new Date(dateLabel);
+
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate;
+  }
+
+  return new Date();
+};
+
+const getWeekStart = (date: Date) => {
+  const startDate = new Date(date);
+  return addDays(startDate, -startDate.getDay());
 };
 
 const getOrdinalSuffix = (day: number) => {
@@ -39,35 +78,43 @@ const getOrdinalSuffix = (day: number) => {
   }
 };
 
-const formatWeekStartDate = (date: Date) => {
+const formatWeekdayLabel = (date: Date) => {
+  const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+  const dayNumber = date.getDate();
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+
+  return `${dayName} - ${dayNumber} ${month}`;
+};
+
+const formatWeekSummary = (date: Date) => {
   const day = date.getDate();
   const month = date.toLocaleDateString("en-US", { month: "long" });
 
   return `${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
-const parseScheduleDate = (dateLabel: string) => {
-  const parsedDate = new Date(dateLabel);
-
-  if (!Number.isNaN(parsedDate.getTime())) {
-    return parsedDate;
-  }
-
-  return new Date();
-};
-
-const getTimesheetWeeks = (scheduleStartDate: string) => {
-  const startDate = parseScheduleDate(scheduleStartDate);
+const getTimesheetWeeks = (scheduleStartDate: string): TimesheetWeekOption[] => {
+  const scheduleDate = parseScheduleDate(scheduleStartDate);
+  const firstWeekStart = getWeekStart(scheduleDate);
 
   return Array.from({ length: WEEKS_TO_SHOW }, (_, index) => {
-    const weekStartDate = addDays(startDate, index * 7);
+    const weekStartDate = addDays(firstWeekStart, index * 7);
 
     return {
       id: `week-${index + 1}`,
-      label: `Week ${index + 1} - ${formatWeekStartDate(weekStartDate)}`,
+      label: `Week ${index + 1} - ${formatWeekSummary(weekStartDate)}`,
       startDate: weekStartDate,
     };
   });
+};
+
+const createWeekFields = (weekStartDate: Date): WeekdayField[] => {
+  const weekStart = getWeekStart(weekStartDate);
+
+  return WEEKDAY_ORDER.map((key, index) => ({
+    key,
+    date: addDays(weekStart, index),
+  }));
 };
 
 export default function RequestApprovalModal({
@@ -85,16 +132,44 @@ export default function RequestApprovalModal({
   );
   const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
-  const [totalHours, setTotalHours] = useState("");
-
   const selectedWeek =
     weekOptions.find((week) => week.id === selectedWeekId) ?? weekOptions[0];
+  const weekFields = useMemo(
+    () => createWeekFields(selectedWeek?.startDate ?? new Date()),
+    [selectedWeek],
+  );
+  const [dailyHours, setDailyHours] = useState<Record<WeekdayKey, string>>({
+    Sunday: "",
+    Monday: "",
+    Tuesday: "",
+    Wednesday: "",
+    Thursday: "",
+    Friday: "",
+    Saturday: "",
+  });
+
+  const totalHours = useMemo(
+    () =>
+      Object.values(dailyHours).reduce((sum, value) => {
+        const hours = Number.parseFloat(value);
+        return sum + (Number.isFinite(hours) ? hours : 0);
+      }, 0),
+    [dailyHours],
+  );
 
   useEffect(() => {
     if (showApprovalModal) {
       setSelectedWeekId(weekOptions[0]?.id);
       setIsWeekDropdownOpen(false);
-      setTotalHours("");
+      setDailyHours({
+        Sunday: "",
+        Monday: "",
+        Tuesday: "",
+        Wednesday: "",
+        Thursday: "",
+        Friday: "",
+        Saturday: "",
+      });
     }
   }, [showApprovalModal, weekOptions]);
 
@@ -132,15 +207,15 @@ export default function RequestApprovalModal({
                   onPress={() =>
                     setIsWeekDropdownOpen((currentValue) => !currentValue)
                   }
-                  className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3.5 active:opacity-85"
+                  className="rounded-2xl border border-neutral-200/70 bg-white px-4 py-4 active:opacity-85"
                 >
-                  <View className="flex-row items-center justify-between gap-3">
-                    <View className="flex-1">
-                      <Text className="text-sm font-semibold text-neutral-800">
-                        {selectedWeek?.label ?? "Select week"}
-                      </Text>
+                    <View className="flex-row items-center justify-between gap-3">
+                      <View className="flex-1">
+                        <Text className="text-sm font-semibold text-neutral-950">
+                          {selectedWeek?.label}
+                        </Text>
                       <Text className="mt-1 text-[11px] font-medium text-neutral-400">
-                        Pulled from schedule start date: {scheduleStartDate}
+                        Fill in the hours worked for each day of the week.
                       </Text>
                     </View>
                     <ChevronDown
@@ -154,11 +229,10 @@ export default function RequestApprovalModal({
                     />
                   </View>
                 </TouchableOpacity>
-
                 {isWeekDropdownOpen ? (
                   <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
                     {weekOptions.map((week) => {
-                      const isSelected = week.id === selectedWeek?.id;
+                      const isSelected = week.id === selectedWeekId;
 
                       return (
                         <TouchableOpacity
@@ -185,21 +259,43 @@ export default function RequestApprovalModal({
                     })}
                   </View>
                 ) : null}
-              </View>
+                <View className="mt-3 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
+                  {weekFields.map((field, index) => {
+                    const isLast = index === weekFields.length - 1;
 
-              <View>
-                <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
-                  Total working hours
-                </Text>
-                <View className="flex-row items-center rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
-                  <TextInput
-                    className="flex-1 py-0 text-sm font-semibold text-neutral-800"
-                    placeholder="Enter total hours for the selected week"
-                    placeholderTextColor="#A3A3A3"
-                    keyboardType="numeric"
-                    value={totalHours}
-                    onChangeText={setTotalHours}
-                  />
+                    return (
+                      <View
+                        key={field.key}
+                        className={`px-4 py-3 ${
+                          isLast ? "pb-4" : ""
+                        } ${index === 0 ? "pt-4" : ""} ${
+                          !isLast ? "border-b border-neutral-100" : ""
+                        }`}
+                      >
+                        <Text className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                          {formatWeekdayLabel(field.date)}
+                        </Text>
+                        <View className="flex-row items-center rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
+                          <TextInput
+                            className="flex-1 py-0 text-sm font-semibold text-neutral-800"
+                            placeholder="Enter hours"
+                            placeholderTextColor="#A3A3A3"
+                            keyboardType="numeric"
+                            value={dailyHours[field.key]}
+                            onChangeText={(value) =>
+                              setDailyHours((current) => ({
+                                ...current,
+                                [field.key]: value,
+                              }))
+                            }
+                          />
+                          <Text className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                            hrs
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             </View>

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  ChevronDown,
   Clock3,
   Headphones,
   Mail,
@@ -658,13 +659,122 @@ function ApprovalPanel({
   scheduleStartDate: string;
   onClose: () => void;
 }) {
-  const weeks = [
-    `Week 1 - ${scheduleStartDate}`,
-    "Week 2 - 10 June",
-    "Week 3 - 17 June",
-  ];
-  const [selectedWeek, setSelectedWeek] = useState(weeks[0]);
-  const [totalHours, setTotalHours] = useState("");
+  const weekOptions = useMemo(() => {
+    const addDays = (date: Date, days: number) => {
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + days);
+      return nextDate;
+    };
+
+    const parseScheduleDate = (dateLabel: string) => {
+      const parsedDate = new Date(dateLabel);
+
+      if (!Number.isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+
+      return new Date();
+    };
+
+    const getOrdinalSuffix = (day: number) => {
+      if (day >= 11 && day <= 13) return "th";
+
+      switch (day % 10) {
+        case 1:
+          return "st";
+        case 2:
+          return "nd";
+        case 3:
+          return "rd";
+        default:
+          return "th";
+      }
+    };
+
+    const parsedScheduleDate = parseScheduleDate(scheduleStartDate);
+    const weekStart = addDays(
+      parsedScheduleDate,
+      -parsedScheduleDate.getDay(),
+    );
+
+    return Array.from({ length: 3 }, (_, index) => {
+      const nextWeekStart = addDays(weekStart, index * 7);
+      const day = nextWeekStart.getDate();
+      const month = nextWeekStart.toLocaleDateString("en-US", {
+        month: "long",
+      });
+
+      return {
+        id: `week-${index + 1}`,
+        label: `Week ${index + 1} - ${day}${getOrdinalSuffix(day)} ${month}`,
+        startDate: nextWeekStart,
+      };
+    });
+  }, [scheduleStartDate]);
+  const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id);
+  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
+  const selectedWeek =
+    weekOptions.find((week) => week.id === selectedWeekId) ?? weekOptions[0];
+  const weekFields = useMemo(() => {
+    const addDays = (date: Date, days: number) => {
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + days);
+      return nextDate;
+    };
+
+    const formatWeekdayLabel = (date: Date) => {
+      const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
+      const dayNumber = date.getDate();
+      const month = date.toLocaleDateString("en-US", { month: "short" });
+
+      return `${dayName} - ${dayNumber} ${month}`;
+    };
+
+    return [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ].map((day, index) => ({
+      key: day,
+      date: addDays(selectedWeek?.startDate ?? new Date(), index),
+      label: formatWeekdayLabel(
+        addDays(selectedWeek?.startDate ?? new Date(), index),
+      ),
+    }));
+  }, [selectedWeek]);
+
+  const [dailyHours, setDailyHours] = useState<Record<string, string>>({
+    Sunday: "",
+    Monday: "",
+    Tuesday: "",
+    Wednesday: "",
+    Thursday: "",
+    Friday: "",
+    Saturday: "",
+  });
+
+  const totalHours = Object.values(dailyHours).reduce((sum, value) => {
+    const hours = Number.parseFloat(value);
+    return sum + (Number.isFinite(hours) ? hours : 0);
+  }, 0);
+
+  useEffect(() => {
+    setSelectedWeekId(weekOptions[0]?.id);
+    setIsWeekDropdownOpen(false);
+    setDailyHours({
+      Sunday: "",
+      Monday: "",
+      Tuesday: "",
+      Wednesday: "",
+      Thursday: "",
+      Friday: "",
+      Saturday: "",
+    });
+  }, [weekOptions]);
 
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
@@ -674,23 +784,88 @@ function ApprovalPanel({
           <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
             Week
           </Text>
-          <View className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
-            {weeks.map((week, index) => (
-              <TouchableOpacity
-                key={week}
-                onPress={() => setSelectedWeek(week)}
-                className={`px-4 py-3 active:opacity-85 ${
-                  selectedWeek === week ? "bg-orange-50" : "bg-white"
-                } ${index < weeks.length - 1 ? "border-b border-neutral-100" : ""}`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    selectedWeek === week ? "text-neutral-950" : "text-neutral-600"
-                  }`}
-                >
-                  {week}
+          <TouchableOpacity
+            onPress={() => setIsWeekDropdownOpen((current) => !current)}
+            className="rounded-2xl border border-neutral-200/70 bg-white px-4 py-4 active:opacity-85"
+          >
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-neutral-950">
+                  {selectedWeek?.label}
                 </Text>
-              </TouchableOpacity>
+                <Text className="mt-1 text-[11px] font-medium text-neutral-400">
+                  Fill in the hours worked for each day of the week.
+                </Text>
+              </View>
+              <ChevronDown
+                size={18}
+                color="#737373"
+                style={{
+                  transform: [
+                    { rotate: isWeekDropdownOpen ? "180deg" : "0deg" },
+                  ],
+                }}
+              />
+            </View>
+          </TouchableOpacity>
+          {isWeekDropdownOpen ? (
+            <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
+              {weekOptions.map((week) => {
+                const isSelected = week.id === selectedWeekId;
+
+                return (
+                  <TouchableOpacity
+                    key={week.id}
+                    onPress={() => {
+                      setSelectedWeekId(week.id);
+                      setIsWeekDropdownOpen(false);
+                    }}
+                    className={`px-4 py-3 active:opacity-80 ${
+                      isSelected ? "bg-orange-50" : "bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-semibold ${
+                        isSelected ? "text-neutral-950" : "text-neutral-600"
+                      }`}
+                    >
+                      {week.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+          <View className="mt-3 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white">
+            {weekFields.map((field, index) => (
+              <View
+                key={field.key}
+                className={`px-4 py-3 ${
+                  index === 0 ? "pt-4" : ""
+                } ${index < weekFields.length - 1 ? "border-b border-neutral-100" : ""}`}
+              >
+                <Text className="mb-2 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                  {field.label}
+                </Text>
+                <View className="flex-row items-center rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
+                  <TextInput
+                    className="flex-1 py-0 text-sm font-semibold text-neutral-800"
+                    placeholder="Enter hours"
+                    placeholderTextColor="#A3A3A3"
+                    keyboardType="numeric"
+                    value={dailyHours[field.key]}
+                    onChangeText={(value) =>
+                      setDailyHours((current) => ({
+                        ...current,
+                        [field.key]: value,
+                      }))
+                    }
+                  />
+                  <Text className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                    hrs
+                  </Text>
+                </View>
+              </View>
             ))}
           </View>
         </View>
@@ -699,15 +874,13 @@ function ApprovalPanel({
           <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
             Total working hours
           </Text>
-          <View className="rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
-            <TextInput
-              className="py-0 text-sm font-semibold text-neutral-800"
-              placeholder="Enter total hours for the selected week"
-              placeholderTextColor="#A3A3A3"
-              keyboardType="numeric"
-              value={totalHours}
-              onChangeText={setTotalHours}
-            />
+          <View className="flex-row items-center justify-between rounded-2xl border border-neutral-200/60 bg-neutral-50 px-4 py-3">
+            <Text className="text-sm font-semibold text-neutral-800">
+              Weekly total
+            </Text>
+            <Text className="text-sm font-bold text-neutral-950">
+              {totalHours.toFixed(1)} hrs
+            </Text>
           </View>
         </View>
       </View>

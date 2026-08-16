@@ -81,7 +81,7 @@ export default function WorkerJobsTabLanding() {
         {/* Featured Listings Header */}
         <View className="flex-row justify-between items-center mt-8 mb-4">
           <Text className="flex-1 text-neutral-900 font-extrabold text-lg tracking-tight">
-            Active Opportunities
+            Local Jobs
           </Text>
           <TouchableOpacity
             onPress={handleOpenSearch}

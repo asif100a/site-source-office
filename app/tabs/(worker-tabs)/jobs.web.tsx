@@ -389,7 +389,7 @@ export default function WorkerJobsWebScreen() {
   }, [activeCategory, radius, rateRange, searchQuery, tradeSkill]);
 
   const resultLabel =
-    activeCategory === "browse" ? "Active Opportunities" : "Available Offers";
+    activeCategory === "browse" ? "Local Jobs" : "Favourites";
 
   return (
     <ScreenWrapper>

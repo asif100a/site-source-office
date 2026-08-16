@@ -4,8 +4,6 @@ export type WorkerHomeFilter =
   | "Highest paid"
   | "Nearby";
 
-export type WorkerHomeStartFilter = "Tomorrow" | "This week" | "Anytime";
-
 export const WORKER_HOME_TRADE_OPTIONS = [
   "Labourer",
   "Groundworker",
@@ -15,6 +13,11 @@ export const WORKER_HOME_TRADE_OPTIONS = [
   "Plant op",
 ] as const;
 
+export type WorkerHomeDateRange = {
+  from?: Date;
+  to?: Date;
+};
+
 export type WorkerHomeJob = {
   id: string;
   title: string;
@@ -23,6 +26,7 @@ export type WorkerHomeJob = {
   distanceMiles: number;
   workersNeeded: number;
   startLabel: string;
+  startDate: string;
   posted: string;
   payRatePerDay: number;
   duration: string;
@@ -55,6 +59,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     distanceMiles: 0.7,
     workersNeeded: 5,
     startLabel: "Starts tomorrow",
+    startDate: "2026-08-17",
     posted: "Posted 8 min ago",
     payRatePerDay: 260,
     duration: "1 day",
@@ -76,6 +81,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     distanceMiles: 0.8,
     workersNeeded: 4,
     startLabel: "Starts tomorrow",
+    startDate: "2026-08-17",
     posted: "Posted 12 min ago",
     payRatePerDay: 180,
     duration: "2 weeks",
@@ -97,6 +103,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     distanceMiles: 1.4,
     workersNeeded: 2,
     startLabel: "Starts Mon 24 Aug",
+    startDate: "2026-08-24",
     posted: "Posted 1 hr ago",
     payRatePerDay: 240,
     duration: "6 weeks",
@@ -118,6 +125,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     distanceMiles: 1.1,
     workersNeeded: 1,
     startLabel: "Urgent today",
+    startDate: "2026-08-16",
     posted: "Posted 25 min ago",
     payRatePerDay: 280,
     duration: "4 days",
@@ -137,14 +145,8 @@ export type WorkerHomeModalFilters = {
   trades: string[];
   maxDistanceMiles: number;
   minRatePerDay: number;
-  startFilter: WorkerHomeStartFilter;
+  dateRange: WorkerHomeDateRange;
   sortBy: WorkerHomeFilter;
-};
-
-const START_FILTER_MATCHES: Record<WorkerHomeStartFilter, string[]> = {
-  Tomorrow: ["tomorrow"],
-  "This week": ["today", "tomorrow", "mon", "week"],
-  Anytime: [],
 };
 
 function matchesTrade(job: WorkerHomeJob, trades: string[]) {
@@ -157,16 +159,39 @@ function matchesTrade(job: WorkerHomeJob, trades: string[]) {
   return trades.some((trade) => normalizedTitle.includes(trade.toLowerCase()));
 }
 
-function matchesStart(job: WorkerHomeJob, startFilter: WorkerHomeStartFilter) {
-  if (startFilter === "Anytime") {
+function toLocalDate(value: string | Date) {
+  if (value instanceof Date) {
+    return new Date(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate(),
+    );
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function matchesDateRange(job: WorkerHomeJob, dateRange: WorkerHomeDateRange) {
+  const { from, to } = dateRange;
+
+  if (!from && !to) {
     return true;
   }
 
-  const normalizedStart = job.startLabel.toLowerCase();
+  const jobStartDate = toLocalDate(job.startDate).getTime();
+  const normalizedFrom = from ? toLocalDate(from).getTime() : undefined;
+  const normalizedTo = to ? toLocalDate(to).getTime() : undefined;
 
-  return START_FILTER_MATCHES[startFilter].some((token) =>
-    normalizedStart.includes(token),
-  );
+  if (normalizedFrom !== undefined && jobStartDate < normalizedFrom) {
+    return false;
+  }
+
+  if (normalizedTo !== undefined && jobStartDate > normalizedTo) {
+    return false;
+  }
+
+  return true;
 }
 
 export function filterWorkerHomeJobs(
@@ -178,7 +203,7 @@ export function filterWorkerHomeJobs(
       matchesTrade(job, filters.trades) &&
       job.distanceMiles <= filters.maxDistanceMiles &&
       job.payRatePerDay >= filters.minRatePerDay &&
-      matchesStart(job, filters.startFilter)
+      matchesDateRange(job, filters.dateRange)
     );
   });
 

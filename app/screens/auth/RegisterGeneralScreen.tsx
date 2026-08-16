@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import LogoWhite from '@/assets/icons/LogoWhite';
 import { useForm } from 'react-hook-form';
-import StandardInputField from '@/components/standard_ui/form_fields/StandardInputField';
-import StandardSelectField from '@/components/standard_ui/form_fields/StandardSelectField';
+import { ChevronDown } from 'lucide-react-native';
 import { normalizeUserRole, UserRole } from '@/constants/Routes';
+import { useState } from 'react';
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
@@ -22,8 +22,9 @@ interface RegisterGeneralScreenProps {
 export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }: RegisterGeneralScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
+  const [openField, setOpenField] = useState<"trade" | "experience" | "availableTime" | null>(null);
 
-  const { control, handleSubmit } = useForm({
+  const { handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       trade: 'Groundworker',
       experience: '6 years',
@@ -59,6 +60,70 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
     { label: 'Night shift', value: 'Night shift' },
     { label: 'Flexible', value: 'Flexible' }
   ];
+  const selectedTrade = watch("trade");
+  const selectedExperience = watch("experience");
+  const selectedTime = watch("availableTime");
+
+  const renderDropdown = (
+    field: "trade" | "experience" | "availableTime",
+    label: string,
+    value: string,
+    options: { label: string; value: string }[],
+    placeholder: string,
+  ) => {
+    const isOpen = openField === field;
+
+    return (
+      <View className="mb-5">
+        <Text className="mb-2 text-sm font-semibold text-[#333]">{label}</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setOpenField(isOpen ? null : field)}
+          className="h-[50px] flex-row items-center justify-between rounded-xl border border-[#e8e8e8] bg-white px-4"
+        >
+          <Text className="text-sm font-medium text-[#222]">
+            {value || placeholder}
+          </Text>
+          <ChevronDown size={18} color="#999999" />
+        </TouchableOpacity>
+
+        {isOpen ? (
+          <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            {options.map((option) => {
+              const selected = value === option.value;
+
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setValue(field, option.value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    });
+                    setOpenField(null);
+                  }}
+                  className={`min-h-[48px] px-4 justify-center ${
+                    selected ? "bg-[#FFF5F2]" : "bg-white"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm ${
+                      selected
+                        ? "text-[#FF5500] font-bold"
+                        : "text-neutral-800 font-medium"
+                    }`}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
 
   const onSubmit = (data: any) => {
     if (onContinue) {
@@ -90,35 +155,29 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
 
         {/* Form Fields Section */}
         <View className="px-6 pt-6 pb-20 gap-1">
-          {/* Trade / Skill Dropdown */}
-          <StandardSelectField
-            label="Trade / Skill"
-            id="trade"
-            control={control}
-            options={trades}
-            placeholder="Select Trade / Skill"
-            required={true}
-          />
+          {renderDropdown(
+            "trade",
+            "Trade / Skill",
+            selectedTrade,
+            trades,
+            "Select trade / skill",
+          )}
 
-          {/* Experience Dropdown */}
-          <StandardSelectField
-            label="Experience"
-            id="experience"
-            control={control}
-            options={experiences}
-            placeholder="Select Experience"
-            required={true}
-          />
+          {renderDropdown(
+            "experience",
+            "Experience",
+            selectedExperience,
+            experiences,
+            "Select experience",
+          )}
 
-          {/* Available Time Dropdown */}
-          <StandardSelectField
-            label="Available times"
-            id="availableTime"
-            control={control}
-            options={times}
-            placeholder="Select Available times"
-            required={true}
-          />
+          {renderDropdown(
+            "availableTime",
+            "Available times",
+            selectedTime,
+            times,
+            "Select available times",
+          )}
 
           {/* Continue Button */}
           <TouchableOpacity

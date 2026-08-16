@@ -33,7 +33,7 @@ import {
   formatPayRate,
   WORKER_HOME_FILTERS,
   WORKER_HOME_JOBS,
-  type WorkerHomeStartFilter,
+  type WorkerHomeDateRange,
   type WorkerHomeFilter,
   type WorkerHomeJob,
 } from "@/constants/workerHome";
@@ -216,11 +216,10 @@ export default function WorkerHomeScreen() {
   const [activeFilter, setActiveFilter] = useState<WorkerHomeFilter>("All");
   const [locationQuery, setLocationQuery] = useState(DEFAULT_HOME_LOCATION);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [selectedTrade, setSelectedTrade] = useState("");
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
-  const [startFilter, setStartFilter] =
-    useState<WorkerHomeStartFilter>("Anytime");
+  const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
 
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
@@ -229,13 +228,13 @@ export default function WorkerHomeScreen() {
   const filteredJobs = useMemo(
     () =>
       filterWorkerHomeJobs(WORKER_HOME_JOBS, {
-        trades: selectedTrades,
+        trades: selectedTrade ? [selectedTrade] : [],
         maxDistanceMiles,
         minRatePerDay,
-        startFilter,
+        dateRange,
         sortBy: activeFilter,
       }),
-    [activeFilter, maxDistanceMiles, minRatePerDay, selectedTrades, startFilter],
+    [activeFilter, dateRange, maxDistanceMiles, minRatePerDay, selectedTrade],
   );
 
   const featuredJob = filteredJobs[0] ?? WORKER_HOME_JOBS[0];
@@ -450,26 +449,20 @@ export default function WorkerHomeScreen() {
       <WorkerHomeFilterModal
         visible={showFilterModal}
         onClose={() => setShowFilterModal(false)}
-        selectedTrades={selectedTrades}
-        onToggleTrade={(trade) =>
-          setSelectedTrades((current) =>
-            current.includes(trade)
-              ? current.filter((item) => item !== trade)
-              : [...current, trade],
-          )
-        }
+        selectedTrade={selectedTrade}
+        onSelectedTradeChange={setSelectedTrade}
         maxDistanceMiles={maxDistanceMiles}
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        startFilter={startFilter}
-        onStartFilterChange={setStartFilter}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
         resultCount={filteredJobs.length}
         onReset={() => {
-          setSelectedTrades([]);
+          setSelectedTrade("");
           setMaxDistanceMiles(5);
           setMinRatePerDay(120);
-          setStartFilter("Anytime");
+          setDateRange({});
         }}
       />
     </ScreenWrapper>
