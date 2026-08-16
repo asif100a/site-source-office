@@ -15,6 +15,7 @@ export default function MessageSupportModal({
   setShowSupportModal,
   supportModalState,
   setSupportModalState,
+  presentation = "sheet",
 }: {
   showSupportModal: boolean;
   setShowSupportModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -22,23 +23,31 @@ export default function MessageSupportModal({
   setSupportModalState: React.Dispatch<
     React.SetStateAction<"form" | "submitted">
   >;
+  presentation?: "sheet" | "dialog";
 }) {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
+  const isDialog = presentation === "dialog";
 
   return (
     <Modal
-      animationType="slide"
+      animationType={isDialog ? "fade" : "slide"}
       transparent={true}
       visible={showSupportModal}
       onRequestClose={() => setShowSupportModal(false)}
     >
       <View
-        className="flex-1 justify-end"
+        className={isDialog ? "flex-1 items-center justify-center px-5" : "flex-1 justify-end"}
         style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
       >
         {supportModalState === "form" ? (
-          <View className="bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100">
+          <View
+            className={
+              isDialog
+                ? "w-full max-w-[540px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl"
+                : "bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100"
+            }
+          >
             <View className="flex-row justify-between items-center mb-6">
               <Text className="text-neutral-900 font-extrabold text-lg tracking-tight">
                 Message Support
@@ -52,7 +61,7 @@ export default function MessageSupportModal({
             </View>
 
             <ScrollView
-              className="max-h-112.5 mb-6"
+              className={isDialog ? "max-h-[460px] mb-6" : "max-h-112.5 mb-6"}
               showsVerticalScrollIndicator={false}
             >
               <View className="gap-5 pr-1">
@@ -111,7 +120,13 @@ export default function MessageSupportModal({
             </TouchableOpacity>
           </View>
         ) : (
-          <View className="bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100 items-center">
+          <View
+            className={
+              isDialog
+                ? "w-full max-w-[460px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl items-center"
+                : "bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100 items-center"
+            }
+          >
             <View className="w-20 h-20 bg-green-50 rounded-full items-center justify-center mb-6 border border-green-100">
               <View className="w-14 h-14 bg-green-500 rounded-full items-center justify-center shadow-lg shadow-green-500/25">
                 <Check size={28} color="#FFFFFF" strokeWidth={3} />

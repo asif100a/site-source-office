@@ -1,8 +1,14 @@
-import React from "react";
-import { useRouter } from "expo-router";
-import { ArrowRight, AlertTriangle, Search, ShieldCheck } from "lucide-react-native";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  ArrowRight,
+  AlertTriangle,
+  Headphones,
+  MessageCircle,
+} from "lucide-react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "@/constants/Colors";
+import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import { DisputeLogo, ScreenShell, StatusPill } from "./_components";
 
 const DISPUTES = Array.from({ length: 6 }, (_, index) => ({
@@ -68,6 +74,17 @@ function DisputeRow({
 
 export default function DisputesScreenWeb() {
   const router = useRouter();
+  const { origin } = useLocalSearchParams<{ origin?: string | string[] }>();
+  const originRoute = Array.isArray(origin) ? origin[0] : origin;
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportModalState, setSupportModalState] = useState<
+    "form" | "submitted"
+  >("form");
+
+  const handleOpenSupport = () => {
+    setSupportModalState("form");
+    setShowSupportModal(true);
+  };
 
   return (
     <ScreenShell title="My Supports">
@@ -106,29 +123,44 @@ export default function DisputesScreenWeb() {
                   </View>
                 </View>
 
-                {/* <TouchableOpacity
-                  onPress={() => router.push("/screens/profile/contact" as any)}
+                <TouchableOpacity
+                  onPress={handleOpenSupport}
                   activeOpacity={0.9}
-                  className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
+                  className="flex-row items-center gap-2 self-start rounded-2xl bg-neutral-950 px-5 py-3.5 lg:self-auto"
                 >
-                  <ShieldCheck size={18} color="#FFFFFF" />
+                  <MessageCircle size={18} color="#FFFFFF" />
                   <Text className="text-sm font-semibold text-white">
-                    Contact support
+                    Message support
                   </Text>
-                </TouchableOpacity> */}
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-              <View className="flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
-                <Search size={18} color="#A3A3A3" />
-                <TextInput
-                  placeholder="Search support cases"
-                  placeholderTextColor="#A3A3A3"
-                  className="flex-1 text-sm text-neutral-900"
-                />
+            <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+              <View className="flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <View className="max-w-2xl">
+                  <Text className="text-base font-semibold text-neutral-950">
+                    Need help with a case?
+                  </Text>
+                  <Text className="mt-1 text-sm leading-6 text-neutral-600">
+                    Send a message with evidence, notes, or payment questions.
+                    Support will attach it to your case history.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleOpenSupport}
+                  activeOpacity={0.9}
+                  className="flex-row items-center justify-center gap-2 rounded-2xl px-5 py-3"
+                  style={{ backgroundColor: Colors.common.BRAND }}
+                >
+                  <Headphones size={18} color="#FFFFFF" />
+                  <Text className="text-sm font-semibold text-white">
+                    Open ticket
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </View> */}
+            </View>
 
             <View className="gap-4">
               {DISPUTES.map((item) => (
@@ -144,6 +176,7 @@ export default function DisputesScreenWeb() {
                       pathname: "/screens/profile/dispute-detail",
                       params: {
                         status: item.tone === "resolved" ? "resolved" : "review",
+                        origin: originRoute,
                       },
                     } as any)
                   }
@@ -153,6 +186,23 @@ export default function DisputesScreenWeb() {
           </View>
         </View>
       </ScrollView>
+
+      <TouchableOpacity
+        onPress={handleOpenSupport}
+        activeOpacity={0.9}
+        className="absolute bottom-8 right-8 h-14 w-14 items-center justify-center rounded-full shadow-lg"
+        style={{ backgroundColor: Colors.common.BRAND }}
+      >
+        <Headphones size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+
+      <MessageSupportModal
+        showSupportModal={showSupportModal}
+        setShowSupportModal={setShowSupportModal}
+        supportModalState={supportModalState}
+        setSupportModalState={setSupportModalState}
+        presentation="dialog"
+      />
     </ScreenShell>
   );
 }
