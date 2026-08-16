@@ -897,8 +897,48 @@ function ProjectJobModal({
                   showOutsideDays
                   calendar="gregory"
                   containerHeight={300}
+                  navigationPosition="around"
                   styles={{
                     ...calendarStyles,
+                    header: {
+                      marginBottom: 12,
+                    },
+                    month_selector_label: {
+                      color: "#111827",
+                      fontSize: 15,
+                      fontWeight: "800",
+                    },
+                    year_selector_label: {
+                      color: "#111827",
+                      fontSize: 15,
+                      fontWeight: "800",
+                    },
+                    button_prev: {
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: Colors.common.BRAND_LIGHT,
+                    },
+                    button_next: {
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: Colors.common.BRAND_LIGHT,
+                    },
+                    button_prev_image: {
+                      tintColor: Colors.common.BRAND,
+                      width: 15,
+                      height: 15,
+                    },
+                    button_next_image: {
+                      tintColor: Colors.common.BRAND,
+                      width: 15,
+                      height: 15,
+                    },
                     day_cell: {
                       minHeight: 44,
                     },
