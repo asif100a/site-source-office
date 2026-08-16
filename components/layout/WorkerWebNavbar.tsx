@@ -1,9 +1,14 @@
 import { View, Text, Pressable } from "react-native";
 import React, { useState } from "react";
 import { Image } from "expo-image";
-import { Link, usePathname, useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { ArrowRight, Menu, X } from "lucide-react-native";
+
 import Logo from "@/assets/images/app-logo.png";
+import {
+  getWorkerLoginRoute,
+  isUserAuthenticated,
+} from "@/constants/authState";
 
 const NAV_LINKS = [
   {
@@ -38,15 +43,15 @@ const NAV_LINKS = [
   },
 ];
 
-  function isActiveNavPath(pathname: string, link: (typeof NAV_LINKS)[number]) {
-    return link.activePaths.some((activePath) => {
-      if (activePath === "/tabs" || activePath === "/tabs/") {
-        return pathname === activePath;
-      }
+function isActiveNavPath(pathname: string, link: (typeof NAV_LINKS)[number]) {
+  return link.activePaths.some((activePath) => {
+    if (activePath === "/tabs" || activePath === "/tabs/") {
+      return pathname === activePath;
+    }
 
-      return pathname === activePath || pathname.startsWith(`${activePath}/`);
-    });
-  }
+    return pathname === activePath || pathname.startsWith(`${activePath}/`);
+  });
+}
 
 export default function WorkerWebNavbar() {
   const pathname = usePathname();
@@ -55,6 +60,17 @@ export default function WorkerWebNavbar() {
 
   const handleNavigate = (href: string) => {
     setMenuOpen(false);
+
+    const isProtectedLink =
+      href === "/tabs/(worker-tabs)/my-jobs" ||
+      href === "/tabs/(worker-tabs)/chats" ||
+      href === "/tabs/(worker-tabs)/profile";
+
+    if (isProtectedLink && !isUserAuthenticated()) {
+      router.push(getWorkerLoginRoute(href));
+      return;
+    }
+
     router.push(href as any);
   };
 
@@ -73,29 +89,28 @@ export default function WorkerWebNavbar() {
             const isActive = isActiveNavPath(pathname, link);
 
             return (
-              <Link
+              <Pressable
                 key={link.href}
-                href={link.href as any}
-                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-colors ${
-                  isActive
-                    ? "bg-neutral-950 text-white"
-                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
+                onPress={() => handleNavigate(link.href)}
+                className={`rounded-full px-5 py-2.5 transition-colors ${
+                  isActive ? "bg-neutral-950" : "hover:bg-neutral-100"
                 }`}
               >
-                {link.label}
-              </Link>
+                <Text
+                  className={`text-sm font-semibold ${
+                    isActive ? "text-white" : "text-neutral-600"
+                  }`}
+                >
+                  {link.label}
+                </Text>
+              </Pressable>
             );
           })}
         </View>
 
         <View className="ml-auto hidden lg:flex">
           <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/auth",
-                params: { step: "login" },
-              })
-            }
+            onPress={() => router.push(getWorkerLoginRoute())}
             className="flex-row items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 active:opacity-90"
           >
             <Text className="text-sm font-semibold text-white">Login</Text>
@@ -139,10 +154,7 @@ export default function WorkerWebNavbar() {
             <Pressable
               onPress={() => {
                 setMenuOpen(false);
-                router.push({
-                  pathname: "/auth",
-                  params: { step: "login" },
-                });
+                router.push(getWorkerLoginRoute());
               }}
               className="mt-2 flex-row items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-4 py-3.5 active:opacity-90"
             >

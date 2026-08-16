@@ -18,9 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react-native";
 import ONBOARDING_1 from "@/assets/images/onboarding/onboarding-1.png";
-import { safeSetWebStorageItem } from "@/constants/webStorage";
-
-const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
+import { clearUserAuthenticated, setActiveRole } from "@/constants/authState";
 
 const BottomFade = () => (
   <View
@@ -100,12 +98,14 @@ export default function OnboardingScreen() {
   const isDesktop = width >= 960;
 
   const navigateToWorker = () => {
-    safeSetWebStorageItem(WEB_ROLE_STORAGE_KEY, "worker");
+    clearUserAuthenticated();
+    setActiveRole("worker");
     router.replace("/tabs/(worker-tabs)" as any);
   };
 
   const navigateToEmployer = () => {
-    safeSetWebStorageItem(WEB_ROLE_STORAGE_KEY, "employer");
+    clearUserAuthenticated();
+    setActiveRole("employer");
     router.replace({
       pathname: "/auth",
       params: { role: "employer", step: "login" },

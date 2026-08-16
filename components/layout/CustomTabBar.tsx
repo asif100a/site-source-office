@@ -1,9 +1,14 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Text } from "react-native";
 import { BottomTabBarProps } from "expo-router/tabs";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/Colors";
+import {
+  getWorkerLoginRoute,
+  isUserAuthenticated,
+} from "@/constants/authState";
 
 type CustomTabBarProps = BottomTabBarProps;
 
@@ -13,6 +18,7 @@ export function CustomTabBar({
   navigation,
 }: CustomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const triggerTabHaptic = async () => {
     try {
@@ -34,6 +40,8 @@ export function CustomTabBar({
     const inactiveColor = Colors.common.GRAY_NORMAL;
     const iconColor = isFocused ? activeColor : inactiveColor;
     const labelColor = isFocused ? activeColor : inactiveColor;
+    const isProtectedWorkerRoute =
+      route.name === "my-jobs" || route.name === "chats" || route.name === "profile";
 
     const onPress = () => {
       void triggerTabHaptic();
@@ -42,7 +50,19 @@ export function CustomTabBar({
         target: route.key,
         canPreventDefault: true,
       });
-      if (!isFocused && !event.defaultPrevented) {
+
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      if (isProtectedWorkerRoute && !isUserAuthenticated()) {
+        router.push(
+          getWorkerLoginRoute(`/tabs/(worker-tabs)/${route.name}`),
+        );
+        return;
+      }
+
+      if (!isFocused) {
         navigation.navigate(route.name);
       }
     };

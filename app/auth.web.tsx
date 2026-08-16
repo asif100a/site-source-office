@@ -6,7 +6,10 @@ import {
   normalizeUserRole,
   type UserRole,
 } from "@/constants/Routes";
-import { safeSetWebStorageItem } from "@/constants/webStorage";
+import {
+  markUserAuthenticated,
+  setActiveRole,
+} from "@/constants/authState";
 
 import LoginScreen from "./screens/auth/LoginScreen";
 import RegisterGeneralScreen from "./screens/auth/RegisterGeneralScreen";
@@ -19,8 +22,6 @@ import RegisterSsoScreen from "./screens/auth/RegisterSsoScreen";
 import VerifyOtpScreen from "./screens/auth/VerifyOtpScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
-
-const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
 type AuthStep =
   | "login"
@@ -71,7 +72,8 @@ export default function AuthFlowWeb() {
   }, [params.step]);
 
   const goToRoleDashboard = () => {
-    safeSetWebStorageItem(WEB_ROLE_STORAGE_KEY, role);
+    setActiveRole(role);
+    markUserAuthenticated();
     router.replace(getDashboardRouteForRole(role));
   };
 

@@ -1,135 +1,66 @@
 import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import {
-  Pressable,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
-import { router } from "expo-router";
+import type { Region } from "react-native-maps";
 import {
   Briefcase,
+  CalendarClock,
   Filter,
+  MapPin,
   Navigation,
-  Plus,
 } from "lucide-react-native";
 
-import ScreenWrapper from "@/components/layout/ScreenWrapper";
-import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
+import ScreenWrapper from "@/components/layout/ScreenWrapper";
+import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
+import { Colors } from "@/constants/Colors";
+import {
+  getWorkerLoginRoute,
+  isUserAuthenticated,
+} from "@/constants/authState";
+import {
+  DEFAULT_HOME_LOCATION,
+  formatDistance,
+  formatNeeded,
+  formatPayRate,
+  sortWorkerHomeJobs,
+  WORKER_HOME_FILTERS,
+  WORKER_HOME_JOBS,
+  type WorkerHomeFilter,
+  type WorkerHomeJob,
+} from "@/constants/workerHome";
 
-type HomeFilter = "All" | "Urgent" | "Highest paid" | "Closest";
-
-type HomeJob = {
-  id: string;
-  title: string;
-  company: string;
-  area: string;
-  distance: string;
-  needed: string;
-  startLabel: string;
-  posted: string;
-  payRate: number;
-  length: string;
-  badgeTone: "dark" | "light" | "orange";
-  mapPrice: string;
-  mapPosition: {
-    top: number;
-    left: string;
-  };
+type NativeMapComponents = {
+  MapView: typeof import("react-native-maps").default;
+  Marker: typeof import("react-native-maps").Marker;
 };
 
-const FILTERS: HomeFilter[] = ["All", "Urgent", "Highest paid", "Closest"];
+const MAP_REGION: Region = {
+  latitude: 51.5295,
+  longitude: -0.056,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
 
-const JOBS: HomeJob[] = [
-  {
-    id: "scaffolder",
-    title: "Scaffolder",
-    company: "Eastway Access",
-    area: "Shoreditch",
-    distance: "3.0 mi",
-    needed: "5 live sites",
-    startLabel: "Starts tomorrow",
-    posted: "Tap to view",
-    payRate: 26,
-    length: "Tomorrow",
-    badgeTone: "dark",
-    mapPrice: "£26",
-    mapPosition: { top: 110, left: "66%" },
-  },
-  {
-    id: "labourer",
-    title: "Labourer",
-    company: "London Builder Ltd",
-    area: "Shoreditch",
-    distance: "0.8 mi",
-    needed: "4 needed",
-    startLabel: "Starts tomorrow",
-    posted: "Posted 12 min ago",
-    payRate: 18,
-    length: "2 weeks",
-    badgeTone: "orange",
-    mapPrice: "£30",
-    mapPosition: { top: 54, left: "30%" },
-  },
-  {
-    id: "groundworker",
-    title: "Groundworker",
-    company: "Kerigan Civils",
-    area: "Hackney Wick",
-    distance: "1.4 mi",
-    needed: "2 needed",
-    startLabel: "Starts Mon 24 Aug",
-    posted: "Posted 1 hr ago",
-    payRate: 24,
-    length: "6 weeks",
-    badgeTone: "light",
-    mapPrice: "£24",
-    mapPosition: { top: 88, left: "78%" },
-  },
-  {
-    id: "bricklayer",
-    title: "Bricklayer",
-    company: "Fieldstone Projects",
-    area: "Bethnal Green",
-    distance: "1.1 mi",
-    needed: "1 needed",
-    startLabel: "Urgent today",
-    posted: "Posted 25 min ago",
-    payRate: 28,
-    length: "4 days",
-    badgeTone: "dark",
-    mapPrice: "£28",
-    mapPosition: { top: 126, left: "47%" },
-  },
-];
+function getNativeMapComponents(): NativeMapComponents | null {
+  if (Platform.OS === "web") {
+    return null;
+  }
 
-function MapPriceTag({
-  label,
-  tone = "light",
-}: {
-  label: string;
-  tone?: "light" | "dark";
-}) {
-  const dark = tone === "dark";
-
-  return (
-    <View
-      className="rounded-full px-3 py-2 shadow-sm"
-      style={{
-        backgroundColor: dark ? "#1B1B1B" : "#FFFFFF",
-        borderWidth: dark ? 0 : 1,
-        borderColor: "#E9E9E9",
-      }}
-    >
-      <Text
-        className="text-xs font-extrabold"
-        style={{ color: dark ? "#FFFFFF" : "#111111" }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
+  try {
+    const maps =
+      require("react-native-maps") as typeof import("react-native-maps");
+    return { MapView: maps.default, Marker: maps.Marker };
+  } catch {
+    return null;
+  }
 }
 
 function FilterChip({
@@ -137,12 +68,12 @@ function FilterChip({
   active,
   onPress,
 }: {
-  label: HomeFilter;
+  label: WorkerHomeFilter;
   active: boolean;
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <TouchableOpacity
       onPress={onPress}
       className="mr-3 rounded-full px-4 py-2.5"
       style={{
@@ -157,7 +88,27 @@ function FilterChip({
       >
         {label}
       </Text>
-    </Pressable>
+    </TouchableOpacity>
+  );
+}
+
+function MarkerBubble({ label, dark = false }: { label: string; dark?: boolean }) {
+  return (
+    <View
+      className="rounded-full px-3 py-2 shadow-sm"
+      style={{
+        backgroundColor: dark ? "#111111" : "#FFFFFF",
+        borderWidth: dark ? 0 : 1,
+        borderColor: "#ECECEC",
+      }}
+    >
+      <Text
+        className="text-xs font-extrabold"
+        style={{ color: dark ? "#FFFFFF" : "#111111" }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -166,25 +117,21 @@ function JobCard({
   onDetails,
   onApply,
 }: {
-  job: HomeJob;
-  onDetails: (id: string) => void;
-  onApply: () => void;
+  job: WorkerHomeJob;
+  onDetails: (job: WorkerHomeJob) => void;
+  onApply: (job: WorkerHomeJob) => void;
 }) {
-  const metaBadgeStyles =
-    job.badgeTone === "orange"
-      ? { backgroundColor: "#FFF0E8", color: Colors.common.BRAND }
-      : job.badgeTone === "dark"
-        ? { backgroundColor: "#111111", color: "#FFFFFF" }
-        : { backgroundColor: "#F4F4F4", color: "#555555" };
+  const closingSoon =
+    new Date(job.closingAt).getTime() - Date.now() < 1000 * 60 * 60 * 30;
 
   return (
     <View className="mb-4 rounded-[24px] bg-white px-4 py-4 shadow-sm">
-      <View className="flex-row items-start justify-between">
+      <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1 flex-row items-center gap-3">
           <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#2F5BFF]">
-            <Briefcase size={21} color="#FFFFFF" />
+            <Briefcase size={20} color="#FFFFFF" />
           </View>
-          <View className="flex-1 pr-3">
+          <View className="flex-1">
             <Text className="text-[21px] font-extrabold text-neutral-950">
               {job.title}
             </Text>
@@ -196,10 +143,10 @@ function JobCard({
 
         <View className="items-end">
           <Text className="text-[16px] font-extrabold text-neutral-950">
-            £{job.payRate}/hr
+            {formatPayRate(job.payRatePerDay)}
           </Text>
           <Text className="mt-1 text-xs font-medium text-neutral-500">
-            {job.length}
+            {job.duration}
           </Text>
         </View>
       </View>
@@ -207,23 +154,27 @@ function JobCard({
       <View className="mt-4 flex-row flex-wrap gap-2">
         <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
           <Text className="text-xs font-semibold text-neutral-600">
-            {job.area} · {job.distance}
+            {job.area} - {formatDistance(job.distanceMiles)}
           </Text>
         </View>
         <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
           <Text className="text-xs font-semibold text-neutral-600">
-            {job.needed}
+            {formatNeeded(job.workersNeeded)}
           </Text>
         </View>
         <View
           className="rounded-full px-3 py-1.5"
-          style={{ backgroundColor: metaBadgeStyles.backgroundColor }}
+          style={{
+            backgroundColor: closingSoon ? "#FFF0E8" : "#F4F4F4",
+          }}
         >
           <Text
             className="text-xs font-bold"
-            style={{ color: metaBadgeStyles.color }}
+            style={{
+              color: closingSoon ? Colors.common.BRAND : "#5A5A5A",
+            }}
           >
-            {job.startLabel}
+            {closingSoon ? "Closing soon" : job.startLabel}
           </Text>
         </View>
       </View>
@@ -232,13 +183,13 @@ function JobCard({
         <Text className="text-xs font-medium text-neutral-400">{job.posted}</Text>
         <View className="flex-row gap-2">
           <TouchableOpacity
-            onPress={() => onDetails(job.id)}
+            onPress={() => onDetails(job)}
             className="rounded-xl bg-[#F5F3F3] px-4 py-2.5"
           >
             <Text className="text-sm font-bold text-neutral-700">Details</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={onApply}
+            onPress={() => onApply(job)}
             className="rounded-xl px-5 py-2.5"
             style={{ backgroundColor: "#111111" }}
           >
@@ -251,132 +202,148 @@ function JobCard({
 }
 
 export default function WorkerHomeScreen() {
-  const [activeFilter, setActiveFilter] = useState<HomeFilter>("All");
+  const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState<WorkerHomeFilter>("All");
+  const [locationQuery, setLocationQuery] = useState(DEFAULT_HOME_LOCATION);
 
-  const filteredJobs = useMemo(() => {
-    if (activeFilter === "All") {
-      return JOBS;
+  const nativeMapComponents = getNativeMapComponents();
+  const NativeMapView = nativeMapComponents?.MapView;
+  const NativeMarker = nativeMapComponents?.Marker;
+
+  const filteredJobs = useMemo(
+    () => sortWorkerHomeJobs(WORKER_HOME_JOBS, activeFilter),
+    [activeFilter],
+  );
+
+  const featuredJob = filteredJobs[0] ?? WORKER_HOME_JOBS[0];
+
+  const promptLoginIfNeeded = (returnTo: string) => {
+    if (isUserAuthenticated()) {
+      return false;
     }
 
-    if (activeFilter === "Urgent") {
-      return JOBS.filter((job) => job.startLabel.toLowerCase().includes("urgent"));
-    }
-
-    if (activeFilter === "Highest paid") {
-      return [...JOBS].sort((a, b) => b.payRate - a.payRate);
-    }
-
-    return [...JOBS].sort(
-      (a, b) => Number.parseFloat(a.distance) - Number.parseFloat(b.distance),
-    );
-  }, [activeFilter]);
-
-  const featuredJob = filteredJobs[0] ?? JOBS[0];
-
-  const handleViewDetails = (id: string) => {
-    router.push(`/screens/employer-details/${id}` as any);
+    router.push(getWorkerLoginRoute(returnTo));
+    return true;
   };
 
-  const handleApply = () => {
-    router.push({
-      pathname: "/auth",
-      params: { role: "worker", step: "register_sso" },
-    });
+  const handleViewDetails = (job: WorkerHomeJob) => {
+    const detailsRoute = `/screens/employer-details/${job.id}`;
+
+    if (promptLoginIfNeeded(detailsRoute)) {
+      return;
+    }
+
+    router.push(detailsRoute as any);
+  };
+
+  const handleApply = (job: WorkerHomeJob) => {
+    const detailsRoute = `/screens/employer-details/${job.id}`;
+
+    if (promptLoginIfNeeded(detailsRoute)) {
+      return;
+    }
+
+    router.push(detailsRoute as any);
   };
 
   return (
     <ScreenWrapper style={{ backgroundColor: "#F3F3F3" }}>
       <ScreenHeader />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <View className="px-4 pb-8 pt-4">
-          {/* Map View */}
-          <View
-            className="overflow-hidden rounded-[30px]"
-            style={{ backgroundColor: "#E8E0D3" }}
-          >
-            <View
-              className="px-4 pb-4 pt-4"
-              style={{ backgroundColor: "#E8DCC9" }}
-            >
-              <View className="flex-row items-center justify-between">
-                <MapPriceTag label="5 live sites" tone="dark" />
-                <View className="flex-row items-center gap-2 rounded-full bg-[#111111] px-4 py-3">
-                  <Filter size={16} color="#FFFFFF" />
-                  <Text className="text-sm font-bold text-white">Filters</Text>
-                  <View
-                    className="h-5 w-5 items-center justify-center rounded-full"
-                    style={{ backgroundColor: Colors.common.BRAND }}
-                  >
-                    <Text className="text-[10px] font-bold text-white">6</Text>
+          <View className="overflow-hidden rounded-[30px] bg-white shadow-sm">
+            <View className="relative h-[340px]">
+              {NativeMapView && NativeMarker ? (
+                <NativeMapView
+                  style={{ flex: 1 }}
+                  initialRegion={MAP_REGION}
+                  mapType="standard"
+                  loadingEnabled
+                  showsCompass={false}
+                  toolbarEnabled={false}
+                  showsMyLocationButton={false}
+                  moveOnMarkerPress={false}
+                >
+                  {filteredJobs.map((job, index) => (
+                    <NativeMarker
+                      key={job.id}
+                      coordinate={job.coordinate}
+                      title={job.title}
+                      description={job.company}
+                    >
+                      <MarkerBubble
+                        label={`GBP ${job.payRatePerDay}`}
+                        dark={index === 0}
+                      />
+                    </NativeMarker>
+                  ))}
+                </NativeMapView>
+              ) : (
+                <MapFallback />
+              )}
+
+              <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
+                <View className="flex-row items-center gap-3">
+                  <View className="flex-1 flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-sm">
+                    <MapPin size={17} color={Colors.common.BRAND} />
+                    <TextInput
+                      className="ml-2 flex-1 text-sm font-semibold text-neutral-800"
+                      placeholder="Enter a location"
+                      placeholderTextColor="#9CA3AF"
+                      value={locationQuery}
+                      onChangeText={setLocationQuery}
+                    />
+                  </View>
+
+                  <TouchableOpacity className="rounded-2xl bg-[#111111] px-4 py-3 shadow-sm">
+                    <View className="flex-row items-center gap-2">
+                      <Filter size={16} color="#FFFFFF" />
+                      <Text className="text-sm font-bold text-white">Filters</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View className="mt-3 flex-row items-center justify-between">
+                  <View className="rounded-full bg-[#111111] px-4 py-2">
+                    <Text className="text-xs font-extrabold text-white">
+                      {WORKER_HOME_JOBS.length} live sites nearby
+                    </Text>
+                  </View>
+                  <View className="rounded-full bg-white/95 px-4 py-2">
+                    <Text className="text-xs font-bold text-neutral-800">
+                      Search from {locationQuery || DEFAULT_HOME_LOCATION}
+                    </Text>
                   </View>
                 </View>
               </View>
-            </View>
 
-            <View className="relative h-[220px] bg-[#D9D2C7]">
-              <View className="absolute left-[-20px] top-[40px] h-20 w-[420px] rotate-[10deg] rounded-full bg-white/40" />
-              <View className="absolute left-[-30px] top-[110px] h-14 w-[420px] rotate-[-8deg] rounded-full bg-[#B9B2A6]/60" />
-              <View className="absolute left-[60px] top-[8px] h-[240px] w-10 rounded-full bg-[#C8D9B5]/65" />
-              <View className="absolute right-[32px] top-[20px] h-[180px] w-20 rounded-[28px] bg-[#C7DEB7]/75" />
-              <View className="absolute left-[24px] top-[74px] h-16 w-[340px] rotate-[26deg] rounded-full border border-white/60" />
-              <View className="absolute left-[8px] top-[142px] h-10 w-[360px] rotate-[-12deg] rounded-full border border-[#F5F5F5]/90" />
-
-              <View className="absolute left-4 top-4">
-                <MapPriceTag label="Shoreditch, E2" />
-              </View>
-
-              {JOBS.slice(0, 3).map((job, index) => (
-                <View
-                  key={job.id}
-                  className="absolute"
-                  style={{
-                    top: job.mapPosition.top,
-                    left: job.mapPosition.left as any,
-                    transform: [{ translateX: -24 }],
-                    zIndex: 5 + index,
-                  }}
-                >
-                  <MapPriceTag
-                    label={job.mapPrice}
-                    tone={index === 2 ? "dark" : "light"}
-                  />
-                </View>
-              ))}
-
-              <View className="absolute bottom-7 left-[46%] z-20">
-                <View className="relative h-8 w-8 -translate-x-1/2 rounded-full border-[5px] border-white bg-[#2F5BFF]" />
-                <View className="absolute -left-3 top-1 h-6 w-6 rounded-full border-[4px] border-white bg-[#FF5500]" />
-              </View>
-
-              <View className="absolute bottom-4 right-4 gap-2">
-                <View className="h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
+              <View className="absolute bottom-4 right-4 items-end gap-2">
+                <View className="rounded-2xl bg-white px-3 py-2 shadow-sm">
                   <Navigation size={18} color={Colors.common.BRAND} />
-                </View>
-                <View className="h-11 w-11 items-center justify-center rounded-xl bg-white shadow-sm">
-                  <Plus size={20} color="#111111" />
                 </View>
               </View>
             </View>
 
             <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => handleViewDetails(featuredJob.id)}
-              className="mx-3 mb-3 mt-[-12px] rounded-[24px] bg-white px-4 py-4 shadow-sm"
+              activeOpacity={0.92}
+              onPress={() => handleViewDetails(featuredJob)}
+              className="mx-3 mb-3 mt-[-22px] rounded-[24px] bg-white px-4 py-4 shadow-lg"
             >
-              <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center justify-between gap-3">
                 <View className="flex-1 flex-row items-center gap-3">
                   <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#2F5BFF]">
                     <Briefcase size={21} color="#FFFFFF" />
                   </View>
-                  <View className="flex-1 pr-2">
+                  <View className="flex-1">
                     <Text className="text-[22px] font-extrabold text-neutral-950">
                       {featuredJob.title}
                     </Text>
                     <Text className="text-sm font-medium text-neutral-500">
-                      {featuredJob.company} · {featuredJob.distance} ·{" "}
+                      {featuredJob.company} - {formatDistance(featuredJob.distanceMiles)} -{" "}
                       {featuredJob.startLabel}
                     </Text>
                   </View>
@@ -384,10 +351,10 @@ export default function WorkerHomeScreen() {
 
                 <View className="items-end">
                   <Text className="text-[18px] font-extrabold text-neutral-950">
-                    £{featuredJob.payRate}/hr
+                    {formatPayRate(featuredJob.payRatePerDay)}
                   </Text>
                   <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
-                    {featuredJob.posted}
+                    Tap to view
                   </Text>
                 </View>
               </View>
@@ -400,11 +367,13 @@ export default function WorkerHomeScreen() {
                 Nearby Jobs
               </Text>
               <Text className="mt-1 text-sm font-medium text-neutral-500">
-                5 within 5 mi
+                {filteredJobs.length} within 5 mi of {locationQuery || DEFAULT_HOME_LOCATION}
               </Text>
             </View>
 
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/tabs/(worker-tabs)/jobs" as any)}
+            >
               <Text
                 className="text-sm font-bold"
                 style={{ color: Colors.common.BRAND }}
@@ -419,7 +388,7 @@ export default function WorkerHomeScreen() {
             showsHorizontalScrollIndicator={false}
             className="mt-5"
           >
-            {FILTERS.map((filter) => (
+            {WORKER_HOME_FILTERS.map((filter) => (
               <FilterChip
                 key={filter}
                 label={filter}
@@ -428,6 +397,17 @@ export default function WorkerHomeScreen() {
               />
             ))}
           </ScrollView>
+
+          <View className="mt-4 rounded-[24px] bg-[#111111] px-4 py-4">
+            <View className="flex-row items-center gap-3">
+              <CalendarClock size={18} color="#FFFFFF" />
+              <Text className="flex-1 text-sm font-semibold text-white/92">
+                Most engaging now: sort by closing soon to catch jobs that shut
+                first, highest paid for best day rates, or nearby for the shortest
+                travel.
+              </Text>
+            </View>
+          </View>
 
           <View className="mt-5">
             {filteredJobs.map((job) => (

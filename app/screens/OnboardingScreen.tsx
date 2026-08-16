@@ -6,6 +6,7 @@ import { Text } from '@/components/ui/text';
 import { Box } from '@/components/ui/box';
 import { Svg, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import ONBOARDING_1 from '@/assets/images/onboarding/onboarding-1.png';
+import { clearUserAuthenticated, setActiveRole } from "@/constants/authState";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,10 +29,14 @@ export default function OnboardingScreen() {
   const router = useRouter();
 
   const navigateToWorker = () => {
+    clearUserAuthenticated();
+    setActiveRole("worker");
     router.replace('/tabs/(worker-tabs)' as any);
   };
 
   const navigateToEmployer = () => {
+    clearUserAuthenticated();
+    setActiveRole("employer");
     router.replace({
       pathname: '/auth',
       params: { role: 'employer', step: 'login' },
