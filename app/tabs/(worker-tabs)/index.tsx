@@ -288,7 +288,7 @@ export default function WorkerHomeScreen() {
 
               <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="flex-1 flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-sm">
+                  <View className="flex-1 flex-row items-center rounded-lg bg-white px-4 shadow-sm">
                     <MapPin size={17} color={Colors.common.BRAND} />
                     <TextInput
                       className="ml-2 flex-1 text-sm font-semibold text-neutral-800"
@@ -311,11 +311,6 @@ export default function WorkerHomeScreen() {
                   <View className="rounded-full bg-[#111111] px-4 py-2">
                     <Text className="text-xs font-extrabold text-white">
                       {WORKER_HOME_JOBS.length} live sites nearby
-                    </Text>
-                  </View>
-                  <View className="rounded-full bg-white/95 px-4 py-2">
-                    <Text className="text-xs font-bold text-neutral-800">
-                      Search from {locationQuery || DEFAULT_HOME_LOCATION}
                     </Text>
                   </View>
                 </View>
