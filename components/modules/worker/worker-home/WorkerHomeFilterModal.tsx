@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import {
   CalendarDays,
-  Check,
   ChevronDown,
   X,
 } from "lucide-react-native";
@@ -65,38 +64,6 @@ function formatDateRange(value: WorkerHomeDateRange) {
   }
 
   return `Until ${formatDateLabel(value.to)}`;
-}
-
-function ToggleRow({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className="flex-row items-center justify-between rounded-2xl border px-4 py-3"
-      style={{
-        backgroundColor: active ? "#FFF6F1" : "#FFFFFF",
-        borderColor: active ? "#FF5A1F" : "#E5E7EB",
-      }}
-    >
-      <Text className="text-sm font-semibold text-neutral-800">{label}</Text>
-      <View
-        className="h-5 w-5 items-center justify-center rounded-full border"
-        style={{
-          backgroundColor: active ? "#FF5A1F" : "#FFFFFF",
-          borderColor: active ? "#FF5A1F" : "#D4D4D4",
-        }}
-      >
-        {active ? <Check size={13} color="#FFFFFF" /> : null}
-      </View>
-    </TouchableOpacity>
-  );
 }
 
 function FilterBody({
@@ -198,17 +165,12 @@ function FilterBody({
               }
               className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
             >
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-neutral-800">
-                  {selectedTrade || "Select trade"}
-                </Text>
-                <Text className="mt-0.5 text-[10px] font-medium text-neutral-400">
-                  Pick a trade from the list
-                </Text>
-              </View>
+              <Text className="flex-1 text-sm font-medium text-[#222222]">
+                {selectedTrade || "Select trade / skill"}
+              </Text>
               <ChevronDown
                 size={18}
-                color="#737373"
+                color="#999999"
                 style={{
                   transform: [
                     { rotate: openPanel === "trade" ? "180deg" : "0deg" },
@@ -218,20 +180,54 @@ function FilterBody({
             </TouchableOpacity>
 
             {openPanel === "trade" ? (
-              <View className="mt-2 gap-2 rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
-                <ToggleRow
-                  label="All trades"
-                  active={selectedTrade === ""}
-                  onPress={() => onSelectedTradeChange("")}
-                />
-                {WORKER_HOME_TRADE_OPTIONS.map((trade) => (
-                  <ToggleRow
-                    key={trade}
-                    label={trade}
-                    active={selectedTrade === trade}
-                    onPress={() => onSelectedTradeChange(trade)}
-                  />
-                ))}
+              <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    onSelectedTradeChange("");
+                    setOpenPanel(null);
+                  }}
+                  className={`min-h-[48px] justify-center px-4 ${
+                    selectedTrade === "" ? "bg-[#FFF5F2]" : "bg-white"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm ${
+                      selectedTrade === ""
+                        ? "font-bold text-[#FF5500]"
+                        : "font-medium text-neutral-800"
+                    }`}
+                  >
+                    All trades
+                  </Text>
+                </TouchableOpacity>
+                {WORKER_HOME_TRADE_OPTIONS.map((trade) => {
+                  const selected = selectedTrade === trade;
+
+                  return (
+                    <TouchableOpacity
+                      key={trade}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        onSelectedTradeChange(trade);
+                        setOpenPanel(null);
+                      }}
+                      className={`min-h-[48px] justify-center px-4 ${
+                        selected ? "bg-[#FFF5F2]" : "bg-white"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm ${
+                          selected
+                            ? "font-bold text-[#FF5500]"
+                            : "font-medium text-neutral-800"
+                        }`}
+                      >
+                        {trade}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ) : null}
           </View>
