@@ -1160,6 +1160,7 @@ function ProjectDateInput({
           borderColor: "#E5E5E5",
           fontSize: 14,
           fontWeight: "600",
+          paddingHorizontal: 12
         }}
       />
     </View>

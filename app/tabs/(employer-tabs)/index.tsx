@@ -11,53 +11,94 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import {
+  CalendarDays,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   MapPin,
   Minus,
   Plus,
 } from "lucide-react-native";
+import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
 
-const CALENDAR_DAYS = [
-  { value: 10, active: true },
-  { value: 11, highlighted: true },
-  { value: 12, highlighted: true },
-  { value: 13, highlighted: true },
-  { value: 14, highlighted: true },
-  { value: 15, highlighted: true },
-  { value: 16, highlighted: true },
-  { value: 17, highlighted: true },
-  { value: 18, highlighted: true },
-  { value: 19, highlighted: true },
-  { value: 20, highlighted: true },
-  { value: 21, active: true },
-  { value: 22 },
-  { value: 23 },
-  { value: 24 },
-  { value: 25 },
-  { value: 26 },
-  { value: 27 },
-  { value: 28 },
-  { value: 29 },
-  { value: 30 },
-  { value: 31 },
-];
-
 const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
 
 type MustHaveOption = (typeof MUST_HAVE_OPTIONS)[number];
+type JobDateRange = {
+  from?: Date;
+  to?: Date;
+};
+
+const formatJobDate = (date?: Date) => {
+  if (!date) {
+    return "--";
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
+};
+
+const formatJobDateRange = (range: JobDateRange) => {
+  if (!range.from && !range.to) {
+    return "Select job dates";
+  }
+
+  if (range.from && !range.to) {
+    return formatJobDate(range.from);
+  }
+
+  if (!range.from && range.to) {
+    return formatJobDate(range.to);
+  }
+
+  return `${formatJobDate(range.from)} - ${formatJobDate(range.to)}`;
+};
+
+const countWeekdaysInRange = (range: JobDateRange) => {
+  if (!range.from || !range.to) {
+    return 0;
+  }
+
+  const start = new Date(range.from);
+  const end = new Date(range.to);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  if (start > end) {
+    return 0;
+  }
+
+  let count = 0;
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    const day = cursor.getDay();
+
+    if (day !== 0 && day !== 6) {
+      count += 1;
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+};
 
 export default function EmployerHomeScreen() {
   const router = useRouter();
+  const calendarStyles = useDefaultStyles();
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [weekendWork, setWeekendWork] = useState(false);
+  const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
+    from: new Date(2026, 7, 18),
+    to: new Date(2026, 7, 21),
+  });
   const [notes, setNotes] = useState(
     "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
   );
@@ -65,10 +106,15 @@ export default function EmployerHomeScreen() {
     ["CSCS card"],
   );
 
-  const totalEstimate = useMemo(() => hourlyRate * 9 * 10 * workersNeeded, [
-    hourlyRate,
-    workersNeeded,
-  ]);
+  const workingDays = useMemo(
+    () => countWeekdaysInRange(jobDateRange),
+    [jobDateRange],
+  );
+
+  const totalEstimate = useMemo(
+    () => hourlyRate * 9 * Math.max(workingDays, 1) * workersNeeded,
+    [hourlyRate, workersNeeded, workingDays],
+  );
 
   const handleCreateJobPost = () => {
     router.push({
@@ -108,7 +154,7 @@ export default function EmployerHomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 44 }}
       >
-        <View className="bg-[#DDD8D2] px-4 pt-4 pb-5">
+        <View className="bg-[#DDD8D2] px-5 pt-4 pb-5">
           <View className="flex-row items-start justify-between">
             <View className="rounded-full bg-white px-4 py-2 shadow-sm">
               <View className="flex-row items-center gap-2">
@@ -174,7 +220,7 @@ export default function EmployerHomeScreen() {
           </View>
         </View>
 
-        <View className="px-4 pt-3">
+        <View className="px-5 pt-3">
           <Text className="text-[20px] font-black tracking-[-0.3px] text-[#121212]">
             Post a job
           </Text>
@@ -213,80 +259,166 @@ export default function EmployerHomeScreen() {
           <FormSectionLabel label="Job dates" />
           <View className="mt-3 rounded-[24px] bg-white px-3 py-4">
             <View className="flex-row gap-3">
-              <DateCard label="Start" value="10 Aug" active />
-              <DateCard label="Finish" value="21 Aug" />
+              <DateCard label="Start" value={formatJobDate(jobDateRange.from)} active />
+              <DateCard label="Finish" value={formatJobDate(jobDateRange.to)} />
             </View>
 
-            <View className="mt-5 flex-row items-center justify-between">
-              <TouchableOpacity
-                activeOpacity={0.85}
-                className="h-9 w-9 items-center justify-center rounded-full bg-[#F3F3F3]"
-              >
-                <ChevronLeft size={18} color="#282828" />
-              </TouchableOpacity>
-              <Text className="text-[13px] font-bold text-[#222222]">
-                August 2026
-              </Text>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                className="h-9 w-9 items-center justify-center rounded-full bg-[#F3F3F3]"
-              >
-                <ChevronRight size={18} color="#282828" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="mt-4 flex-row justify-between px-1">
-              {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-                <Text
-                  key={`${day}-${index}`}
-                  className="w-10 text-center text-[10px] font-bold text-[#8A8A8A]"
-                >
-                  {day}
-                </Text>
-              ))}
-            </View>
-
-            <View className="mt-3 flex-row flex-wrap justify-between gap-y-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((day) => (
-                <Text
-                  key={day}
-                  className="w-10 text-center text-[12px] font-semibold text-[#C7C7C7]"
-                >
-                  {day}
-                </Text>
-              ))}
-
-              {CALENDAR_DAYS.map((day) => (
-                <View
-                  key={day.value}
-                  className={`h-10 w-10 items-center justify-center rounded-2xl ${
-                    day.active
-                      ? "bg-[#FF5A1F]"
-                      : day.highlighted
-                        ? "bg-[#FFF1EA]"
-                        : "bg-transparent"
-                  }`}
-                >
-                  <Text
-                    className={`text-[12px] font-bold ${
-                      day.active
-                        ? "text-white"
-                        : day.highlighted
-                          ? "text-[#FF5A1F]"
-                          : "text-[#252525]"
-                    }`}
-                  >
-                    {day.value}
+            <View className="mt-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3">
+              <View className="mb-3 flex-row items-center justify-between gap-3">
+                <View className="flex-1 flex-row items-center gap-2">
+                  <CalendarDays size={15} color="#737373" />
+                  <Text className="flex-1 text-xs font-semibold text-neutral-600">
+                    {formatJobDateRange(jobDateRange)}
                   </Text>
                 </View>
-              ))}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setJobDateRange({})}
+                >
+                  <Text className="text-xs font-bold text-[#FF5500]">
+                    Clear
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <DateTimePicker
+                mode="range"
+                startDate={jobDateRange.from}
+                endDate={jobDateRange.to}
+                onChange={({ startDate, endDate }) =>
+                  setJobDateRange({
+                    from: startDate ? new Date(startDate as any) : undefined,
+                    to: endDate ? new Date(endDate as any) : undefined,
+                  })
+                }
+                containerStyle={{ width: "100%" }}
+                style={{ width: "100%" }}
+                className="w-full rounded-2xl bg-neutral-50"
+                minDate={new Date()}
+                firstDayOfWeek={1}
+                showOutsideDays
+                calendar="gregory"
+                containerHeight={300}
+                navigationPosition="around"
+                styles={{
+                  ...calendarStyles,
+                  header: {
+                    marginBottom: 12,
+                  },
+                  month_selector_label: {
+                    color: "#111827",
+                    fontSize: 15,
+                    fontWeight: "800",
+                  },
+                  year_selector_label: {
+                    color: "#111827",
+                    fontSize: 15,
+                    fontWeight: "800",
+                  },
+                  button_prev: {
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: Colors.common.BRAND_LIGHT,
+                  },
+                  button_next: {
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: Colors.common.BRAND_LIGHT,
+                  },
+                  button_prev_image: {
+                    tintColor: Colors.common.BRAND,
+                    width: 15,
+                    height: 15,
+                  },
+                  button_next_image: {
+                    tintColor: Colors.common.BRAND,
+                    width: 15,
+                    height: 15,
+                  },
+                  day_cell: {
+                    minHeight: 44,
+                  },
+                  day_label: {
+                    color: "#262626",
+                    fontWeight: "600",
+                  },
+                  outside_label: {
+                    color: "#A3A3A3",
+                  },
+                  disabled_label: {
+                    color: "#D4D4D4",
+                  },
+                  weekday_label: {
+                    color: "#8A8A8A",
+                    fontSize: 11,
+                    fontWeight: "700",
+                  },
+                  selected: {
+                    backgroundColor: Colors.common.BRAND,
+                    borderRadius: 12,
+                  },
+                  selected_label: { color: "#FFFFFF", fontWeight: "800" },
+                  range_start: {
+                    backgroundColor: Colors.common.BRAND,
+                    borderRadius: 12,
+                  },
+                  range_start_label: {
+                    color: "#FFFFFF",
+                    fontWeight: "800",
+                  },
+                  range_end: {
+                    backgroundColor: Colors.common.BRAND,
+                    borderRadius: 12,
+                  },
+                  range_end_label: {
+                    color: "#FFFFFF",
+                    fontWeight: "800",
+                  },
+                  range_middle: {
+                    backgroundColor: "transparent",
+                    borderRadius: 0,
+                  },
+                  range_middle_label: {
+                    color: Colors.common.BRAND,
+                    fontWeight: "700",
+                  },
+                  range_fill: {
+                    backgroundColor: "#FFE4D6",
+                  },
+                  range_fill_weekstart: {
+                    borderTopLeftRadius: 12,
+                    borderBottomLeftRadius: 12,
+                  },
+                  range_fill_weekend: {
+                    borderTopRightRadius: 12,
+                    borderBottomRightRadius: 12,
+                  },
+                  today: {
+                    borderColor: Colors.common.BRAND,
+                    borderWidth: 1,
+                  },
+                  today_label: {
+                    color: Colors.common.BRAND,
+                    fontWeight: "800",
+                  },
+                }}
+              />
             </View>
 
             <View className="mt-4 flex-row items-center justify-between">
               <Text className="text-[12px] font-medium text-[#555555]">
-                10 working days on site
+                {workingDays || 0} working days on site
               </Text>
-              <TouchableOpacity activeOpacity={0.85}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setJobDateRange({})}
+              >
                 <Text
                   className="text-[12px] font-bold"
                   style={{ color: Colors.common.BRAND }}
@@ -383,7 +515,7 @@ export default function EmployerHomeScreen() {
               </View>
 
               <Text className="max-w-[150px] text-right text-[12px] font-semibold leading-4 text-[#C9C9C9]">
-                {workersNeeded} x labourer · 10 days · 9 hr shifts
+                {workersNeeded} x labourer · {workingDays || 0} days · 9 hr shifts
               </Text>
             </View>
           </View>
@@ -404,7 +536,9 @@ export default function EmployerHomeScreen() {
         </View>
 
         {/* Job Requests */}
-        <JobRequests openWorkerDetails={handleWorkerDetails} />
+        <JobRequests openWorkerDetails={handleWorkerDetails} containerStyle={{
+          paddingHorizontal: 20
+        }} />
       </ScrollView>
     </ScreenWrapper>
   );
