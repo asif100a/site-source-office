@@ -50,12 +50,6 @@
       "routeKeys": {}
     },
     {
-      "file": "./tabs/(employer-tabs)/chats.web.tsx",
-      "page": "/tabs/(employer-tabs)/chats",
-      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/chats(?:/)?$",
-      "routeKeys": {}
-    },
-    {
       "file": "./screens/profile/terms.web.tsx",
       "page": "/screens/profile/terms",
       "namedRegex": "^/screens/profile/terms(?:/)?$",
@@ -117,6 +111,12 @@
       "generated": true
     },
     {
+      "file": "./tabs/(employer-tabs)/approvals.web.tsx",
+      "page": "/tabs/(employer-tabs)/approvals",
+      "namedRegex": "^/tabs(?:/\\(employer\\-tabs\\))?/approvals(?:/)?$",
+      "routeKeys": {}
+    },
+    {
       "file": "./screens/profile/_components.tsx",
       "page": "/screens/profile/_components",
       "namedRegex": "^/screens/profile/_components(?:/)?$",
@@ -150,6 +150,12 @@
       "file": "./screens/profile/change-password.web.tsx",
       "page": "/screens/profile/change-password",
       "namedRegex": "^/screens/profile/change\\-password(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "./screens/chats/chats.web.tsx",
+      "page": "/screens/chats/chats",
+      "namedRegex": "^/screens/chats/chats(?:/)?$",
       "routeKeys": {}
     },
     {
