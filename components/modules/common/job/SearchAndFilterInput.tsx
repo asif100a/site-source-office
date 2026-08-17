@@ -14,7 +14,7 @@ export default function SearchAndFilterInput({
   searchContainerStyle?: ViewStyle;
 }) {
   return (
-    <View className="flex-row gap-3 mb-6">
+    <View className="flex-row gap-3">
       <View className="flex-1 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-4 py-0" style={searchContainerStyle}>
         <Search size={18} color="#A3A3A3" className="mr-2" />
         <TextInput

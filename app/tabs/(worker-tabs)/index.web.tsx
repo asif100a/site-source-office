@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ScrollView,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import type { Region } from "react-native-maps";
 import {
   Briefcase,
   CalendarClock,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
-import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { Colors } from "@/constants/Colors";
 import {
   getWorkerLoginRoute,
@@ -37,32 +35,25 @@ import {
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
 
-type NativeMapComponents = {
-  MapView: typeof import("react-native-maps").default;
-  Marker: typeof import("react-native-maps").Marker;
-  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
+type MapRegion = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
 };
 
-const MAP_REGION: Region = {
+const MAP_REGION: MapRegion = {
   latitude: 51.5295,
   longitude: -0.056,
   latitudeDelta: 0.05,
   longitudeDelta: 0.05,
 };
 
-function getNativeMapComponents(): NativeMapComponents | null {
-  try {
-    const maps =
-      require("react-native-maps") as typeof import("react-native-maps");
-    return {
-      MapView: maps.default,
-      Marker: maps.Marker,
-      ProviderGoogle: maps.PROVIDER_GOOGLE,
-    };
-  } catch {
-    return null;
-  }
-}
+const getGoogleMapEmbedUrl = (region: MapRegion) => {
+  const query = encodeURIComponent(`${region.latitude},${region.longitude}`);
+
+  return `https://maps.google.com/maps?q=${query}&z=14&output=embed`;
+};
 
 function FilterChip({
   label,
@@ -215,10 +206,7 @@ export default function WorkerHomeScreen() {
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
-  const nativeMapComponents = useMemo(() => getNativeMapComponents(), []);
-  const NativeMapView = nativeMapComponents?.MapView;
-  const NativeMarker = nativeMapComponents?.Marker;
-  const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
+  const mapEmbedUrl = useMemo(() => getGoogleMapEmbedUrl(MAP_REGION), []);
 
   const filteredJobs = useMemo(
     () =>
@@ -274,35 +262,26 @@ export default function WorkerHomeScreen() {
           <View className="mx-auto w-full max-w-7xl gap-6">
             <View className="overflow-hidden rounded-lg">
               <View className="relative h-[430px]">
-                {NativeMapView && NativeMarker ? (
-                  <NativeMapView
-                    style={{ flex: 1 }}
-                    provider={NativeProviderGoogle}
-                    initialRegion={MAP_REGION}
-                    mapType="standard"
-                    loadingEnabled
-                    showsCompass={false}
-                    toolbarEnabled={false}
-                    showsMyLocationButton={false}
-                    moveOnMarkerPress={false}
+                <WebGoogleMap sourceUrl={mapEmbedUrl} />
+
+                {filteredJobs.map((job, index) => (
+                  <TouchableOpacity
+                    key={job.id}
+                    activeOpacity={0.9}
+                    onPress={() => handleViewDetails(job)}
+                    className="absolute z-10"
+                    style={{
+                      top: job.mapPosition.top,
+                      left: job.mapPosition.left,
+                      transform: [{ translateX: -28 }],
+                    }}
                   >
-                    {filteredJobs.map((job, index) => (
-                      <NativeMarker
-                        key={job.id}
-                        coordinate={job.coordinate}
-                        title={job.title}
-                        description={job.company}
-                      >
-                        <MarkerBubble
-                          label={`GBP ${job.payRatePerDay}`}
-                          dark={index === 0}
-                        />
-                      </NativeMarker>
-                    ))}
-                  </NativeMapView>
-                ) : (
-                  <MapFallback />
-                )}
+                    <MarkerBubble
+                      label={`GBP ${job.payRatePerDay}`}
+                      dark={index === 0}
+                    />
+                  </TouchableOpacity>
+                ))}
 
                 <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
                   <View className="flex-row items-center gap-3">
@@ -462,4 +441,19 @@ export default function WorkerHomeScreen() {
       />
     </ScreenWrapper>
   );
+}
+
+function WebGoogleMap({ sourceUrl }: { sourceUrl: string }) {
+  return React.createElement("iframe", {
+    title: "Nearby jobs map",
+    src: sourceUrl,
+    loading: "lazy",
+    referrerPolicy: "no-referrer-when-downgrade",
+    style: {
+      width: "100%",
+      height: "100%",
+      border: 0,
+      display: "block",
+    },
+  });
 }

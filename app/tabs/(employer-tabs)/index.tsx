@@ -27,6 +27,15 @@ import JobRequests from "@/components/modules/employer/home/JobRequests";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 
 const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
+const TRADE_OPTIONS = [
+  { label: "Groundworker", value: "Groundworker" },
+  { label: "Carpenter", value: "Carpenter" },
+  { label: "Electrician", value: "Electrician" },
+  { label: "Plumber", value: "Plumber" },
+  { label: "Bricklayer", value: "Bricklayer" },
+  { label: "Painter", value: "Painter" },
+  { label: "Scaffolder", value: "Scaffolder" },
+];
 
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
@@ -129,6 +138,8 @@ export default function EmployerHomeScreen() {
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [weekendWork, setWeekendWork] = useState(false);
   const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
+  const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState("Groundworker");
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
     from: new Date(2026, 7, 18),
     to: new Date(2026, 7, 21),
@@ -309,15 +320,50 @@ export default function EmployerHomeScreen() {
           </Text>
 
           <FormSectionLabel label="Trade needed" />
-          <TouchableOpacity
-            activeOpacity={0.85}
-            className="mt-3 flex-row items-center justify-between rounded-[18px] bg-white px-4 py-4"
-          >
-            <Text className="text-[13px] font-semibold text-[#202020]">
-              Select trade
-            </Text>
-            <ChevronDown size={20} color="#727272" />
-          </TouchableOpacity>
+          <View className="mt-3">
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setTradeMenuOpen((current) => !current)}
+              className="flex-row items-center justify-between rounded-[18px] bg-white px-4 py-4"
+            >
+              <Text className="text-[13px] font-semibold text-[#202020]">
+                {selectedTrade || "Select trade"}
+              </Text>
+              <ChevronDown size={20} color="#727272" />
+            </TouchableOpacity>
+
+            {tradeMenuOpen ? (
+              <View className="mt-2 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
+                {TRADE_OPTIONS.map((option) => {
+                  const selected = selectedTrade === option.value;
+
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setSelectedTrade(option.value);
+                        setTradeMenuOpen(false);
+                      }}
+                      className={`min-h-[48px] justify-center px-4 ${
+                        selected ? "bg-[#FFF5F2]" : "bg-white"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[13px] ${
+                          selected
+                            ? "font-bold text-[#FF5500]"
+                            : "font-medium text-neutral-800"
+                        }`}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
 
           <View className="mt-4 rounded-[22px] bg-white p-4">
             <CounterRow

@@ -463,7 +463,7 @@ export default function EmployerMyJobsScreen() {
           shouldHideFilters
         />
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setShowProjectModal(true)}
           className="mb-6 flex-row items-center justify-center gap-2 rounded-2xl py-4"
@@ -505,7 +505,7 @@ export default function EmployerMyJobsScreen() {
               </Text>
             </View>
           )}
-        </View>
+        </View> */}
 
         <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
 

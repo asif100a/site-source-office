@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import type { Region } from "react-native-maps";
 import {
   ChevronDown,
   ChevronLeft,
@@ -21,7 +20,6 @@ import {
 } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
-import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { Colors } from "@/constants/Colors";
 
 const CALENDAR_DAYS = [
@@ -50,45 +48,46 @@ const CALENDAR_DAYS = [
 ];
 
 const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
+const TRADE_OPTIONS = [
+  { label: "Groundworker", value: "Groundworker" },
+  { label: "Carpenter", value: "Carpenter" },
+  { label: "Electrician", value: "Electrician" },
+  { label: "Plumber", value: "Plumber" },
+  { label: "Bricklayer", value: "Bricklayer" },
+  { label: "Painter", value: "Painter" },
+  { label: "Scaffolder", value: "Scaffolder" },
+];
 
 type MustHaveOption = (typeof MUST_HAVE_OPTIONS)[number];
-type NativeMapComponents = {
-  MapView: typeof import("react-native-maps").default;
-  Marker: typeof import("react-native-maps").Marker;
-  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
+type MapRegion = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
 };
 
-const SITE_REGION: Region = {
+const SITE_REGION: MapRegion = {
   latitude: 51.5295,
   longitude: -0.0887,
   latitudeDelta: 0.018,
   longitudeDelta: 0.018,
 };
 
-function getNativeMapComponents(): NativeMapComponents | null {
-  try {
-    const maps =
-      require("react-native-maps") as typeof import("react-native-maps");
-    return {
-      MapView: maps.default,
-      Marker: maps.Marker,
-      ProviderGoogle: maps.PROVIDER_GOOGLE,
-    };
-  } catch {
-    return null;
-  }
-}
+const getGoogleMapEmbedUrl = (region: MapRegion, zoom: number) => {
+  const query = encodeURIComponent(`${region.latitude},${region.longitude}`);
+
+  return `https://maps.google.com/maps?q=${query}&z=${zoom}&output=embed`;
+};
 
 export default function EmployerHomeScreenWeb() {
   const router = useRouter();
-  const nativeMapComponents = useMemo(() => getNativeMapComponents(), []);
-  const NativeMapView = nativeMapComponents?.MapView;
-  const NativeMarker = nativeMapComponents?.Marker;
-  const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [weekendWork, setWeekendWork] = useState(false);
-  const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
+  const [siteRegion, setSiteRegion] = useState<MapRegion>(SITE_REGION);
+  const [mapZoom, setMapZoom] = useState(15);
+  const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState("Groundworker");
   const [notes, setNotes] = useState(
     "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
   );
@@ -100,6 +99,10 @@ export default function EmployerHomeScreenWeb() {
     hourlyRate,
     workersNeeded,
   ]);
+  const mapEmbedUrl = useMemo(
+    () => getGoogleMapEmbedUrl(siteRegion, mapZoom),
+    [mapZoom, siteRegion],
+  );
 
   const handleCreateJobPost = () => {
     router.push({
@@ -131,6 +134,12 @@ export default function EmployerHomeScreenWeb() {
   };
 
   const adjustMapZoom = (direction: "in" | "out") => {
+    setMapZoom((current) =>
+      direction === "in"
+        ? Math.min(current + 1, 20)
+        : Math.max(current - 1, 3),
+    );
+
     setSiteRegion((current) => {
       const nextDelta =
         direction === "in"
@@ -203,11 +212,7 @@ export default function EmployerHomeScreenWeb() {
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-1 gap-6">
                 <MapHeroCard
-                  NativeMapView={NativeMapView}
-                  NativeMarker={NativeMarker}
-                  NativeProviderGoogle={NativeProviderGoogle}
-                  siteRegion={siteRegion}
-                  onRegionChange={setSiteRegion}
+                  mapEmbedUrl={mapEmbedUrl}
                   onZoomIn={() => adjustMapZoom("in")}
                   onZoomOut={() => adjustMapZoom("out")}
                 />
@@ -232,15 +237,50 @@ export default function EmployerHomeScreenWeb() {
                   </View>
 
                   <FormSectionLabel label="Trade needed" />
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    className="mt-3 flex-row items-center justify-between rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4"
-                  >
-                    <Text className="text-sm font-semibold text-[#202020]">
-                      Select trade
-                    </Text>
-                    <ChevronDown size={20} color="#727272" />
-                  </TouchableOpacity>
+                  <View className="mt-3">
+                    <TouchableOpacity
+                      activeOpacity={0.85}
+                      onPress={() => setTradeMenuOpen((current) => !current)}
+                      className="flex-row items-center justify-between rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4"
+                    >
+                      <Text className="text-sm font-semibold text-[#202020]">
+                        {selectedTrade || "Select trade"}
+                      </Text>
+                      <ChevronDown size={20} color="#727272" />
+                    </TouchableOpacity>
+
+                    {tradeMenuOpen ? (
+                      <View className="mt-2 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
+                        {TRADE_OPTIONS.map((option) => {
+                          const selected = selectedTrade === option.value;
+
+                          return (
+                            <TouchableOpacity
+                              key={option.value}
+                              activeOpacity={0.8}
+                              onPress={() => {
+                                setSelectedTrade(option.value);
+                                setTradeMenuOpen(false);
+                              }}
+                              className={`min-h-[48px] justify-center px-4 ${
+                                selected ? "bg-[#FFF5F2]" : "bg-white"
+                              }`}
+                            >
+                              <Text
+                                className={`text-sm ${
+                                  selected
+                                    ? "font-bold text-[#FF5500]"
+                                    : "font-medium text-neutral-800"
+                                }`}
+                              >
+                                {option.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : null}
+                  </View>
 
                   <View className="mt-5 grid gap-4 xl:grid-cols-2">
                     <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
@@ -526,19 +566,11 @@ export default function EmployerHomeScreenWeb() {
 }
 
 function MapHeroCard({
-  NativeMapView,
-  NativeMarker,
-  NativeProviderGoogle,
-  siteRegion,
-  onRegionChange,
+  mapEmbedUrl,
   onZoomIn,
   onZoomOut,
 }: {
-  NativeMapView?: NativeMapComponents["MapView"];
-  NativeMarker?: NativeMapComponents["Marker"];
-  NativeProviderGoogle?: NativeMapComponents["ProviderGoogle"];
-  siteRegion: Region;
-  onRegionChange: (region: Region) => void;
+  mapEmbedUrl: string;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }) {
@@ -546,24 +578,7 @@ function MapHeroCard({
     <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
       <View className="relative bg-[#DDD8D2]">
         <View className="h-[360px]">
-          {NativeMapView && NativeMarker ? (
-            <NativeMapView
-              style={{ flex: 1 }}
-              provider={NativeProviderGoogle}
-              region={siteRegion}
-              onRegionChangeComplete={onRegionChange}
-              mapType="standard"
-              loadingEnabled
-              showsCompass={false}
-              toolbarEnabled={false}
-              showsMyLocationButton={false}
-              moveOnMarkerPress={false}
-            >
-              <NativeMarker coordinate={siteRegion} title="Site location" />
-            </NativeMapView>
-          ) : (
-            <MapFallback />
-          )}
+          <WebGoogleMap sourceUrl={mapEmbedUrl} />
         </View>
 
         <View className="absolute inset-x-0 top-0 px-6 py-6">
@@ -641,6 +656,21 @@ function MapHeroCard({
       </View>
     </View>
   );
+}
+
+function WebGoogleMap({ sourceUrl }: { sourceUrl: string }) {
+  return React.createElement("iframe", {
+    title: "42 Hoxton Street map",
+    src: sourceUrl,
+    loading: "lazy",
+    referrerPolicy: "no-referrer-when-downgrade",
+    style: {
+      width: "100%",
+      height: "100%",
+      border: 0,
+      display: "block",
+    },
+  });
 }
 
 function FormSectionLabel({ label }: { label: string }) {
