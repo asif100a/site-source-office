@@ -42,6 +42,7 @@ import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/Worke
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
   Marker: typeof import("react-native-maps").Marker;
+  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
 };
 
 const MAP_REGION: Region = {
@@ -59,7 +60,11 @@ function getNativeMapComponents(): NativeMapComponents | null {
   try {
     const maps =
       require("react-native-maps") as typeof import("react-native-maps");
-    return { MapView: maps.default, Marker: maps.Marker };
+    return {
+      MapView: maps.default,
+      Marker: maps.Marker,
+      ProviderGoogle: maps.PROVIDER_GOOGLE,
+    };
   } catch {
     return null;
   }
@@ -224,6 +229,7 @@ export default function WorkerHomeScreen() {
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
+  const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
 
   const filteredJobs = useMemo(
     () =>
@@ -282,6 +288,7 @@ export default function WorkerHomeScreen() {
               {NativeMapView && NativeMarker ? (
                 <NativeMapView
                   style={{ flex: 1 }}
+                  provider={NativeProviderGoogle}
                   initialRegion={MAP_REGION}
                   mapType="standard"
                   loadingEnabled

@@ -77,7 +77,10 @@ export default function EmployerWorkersScreen() {
               Search workers
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity className="w-12 h-12 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-85">
+          <TouchableOpacity
+            onPress={handleSearchWorkers}
+            className="w-12 h-12 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-85"
+          >
             <SlidersHorizontal size={18} color="#333333" />
           </TouchableOpacity>
         </View>

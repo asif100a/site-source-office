@@ -108,11 +108,13 @@ export default function SearchWorkerScreen() {
         viewType={viewType}
       />
 
-      <SearchWorkerSearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        setShowFilters={setShowFilters}
-      />
+      {viewType === "list" && (
+        <SearchWorkerSearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          setShowFilters={setShowFilters}
+        />
+      )}
 
       {viewType === "list" ? (
         <ScrollView
@@ -143,10 +145,20 @@ export default function SearchWorkerScreen() {
           </View>
         </ScrollView>
       ) : (
-        <SearchWorkerMapView
-          WORKERS={WORKERS}
-          openWorkerDetails={openWorkerDetails}
-        />
+        <View className="relative flex-1">
+          <SearchWorkerMapView
+            WORKERS={WORKERS}
+            openWorkerDetails={openWorkerDetails}
+          />
+
+          <View className="absolute top-0 w-full">
+            <SearchWorkerSearchBar
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setShowFilters={setShowFilters}
+            />
+          </View>
+        </View>
       )}
 
       <SearchWorkerModal

@@ -23,6 +23,7 @@ import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJ
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
   Marker: typeof import("react-native-maps").Marker;
+  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
 };
 
 const MAP_REGION: Region = {
@@ -58,7 +59,11 @@ function getNativeMapComponents(): NativeMapComponents | null {
   try {
     const maps =
       require("react-native-maps") as typeof import("react-native-maps");
-    return { MapView: maps.default, Marker: maps.Marker };
+    return {
+      MapView: maps.default,
+      Marker: maps.Marker,
+      ProviderGoogle: maps.PROVIDER_GOOGLE,
+    };
   } catch {
     return null;
   }
@@ -80,6 +85,7 @@ export default function SearchEmployerMapView({
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
+  const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const featuredJob = MOCK_MAP_JOBS[0];
 
   return (
@@ -91,6 +97,7 @@ export default function SearchEmployerMapView({
         {NativeMapView && NativeMarker ? (
           <NativeMapView
             style={{ flex: 1 }}
+            provider={NativeProviderGoogle}
             initialRegion={MAP_REGION}
             mapType="standard"
             loadingEnabled
