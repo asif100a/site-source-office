@@ -79,7 +79,7 @@ function ApprovalTabs({
               }`}
             >
               <Text
-                className={`text-center text-sm font-extrabold ${
+                className={`text-center text-sm font-bold ${
                   active ? "text-neutral-950" : "text-neutral-500"
                 }`}
               >
@@ -96,9 +96,11 @@ function ApprovalTabs({
 function TimesheetApprovalList({
   items,
   onApprove,
+  openWorkerDetails
 }: {
   items: TimesheetApproval[];
   onApprove: (item: TimesheetApproval) => void;
+  openWorkerDetails: (workerId: string) => void
 }) {
   return (
     <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
@@ -137,7 +139,7 @@ function TimesheetApprovalList({
                   <View className="rounded-full bg-orange-50 px-3 py-1.5">
                     <Text
                       style={{ color: Colors.common.BRAND }}
-                      className="text-[11px] font-extrabold"
+                      className="text-[11px] font-bold"
                     >
                       Pending
                     </Text>
@@ -147,9 +149,9 @@ function TimesheetApprovalList({
                 <Text className="mt-4 text-sm font-semibold text-neutral-900">
                   {item.weekLabel}
                 </Text>
-                <Text className="mt-1 text-xs text-neutral-400">
+                {/* <Text className="mt-1 text-xs text-neutral-400">
                   {item.submittedAt}
-                </Text>
+                </Text> */}
 
                 <View className="mt-3 flex-row items-center gap-2">
                   <MapPin size={15} color="#C81E1E" />
@@ -158,26 +160,30 @@ function TimesheetApprovalList({
                   </Text>
                 </View>
 
-                <Text className="mt-2 text-sm text-neutral-500">
+                {/* <Text className="mt-2 text-sm text-neutral-500">
                   {item.totalHours}
-                </Text>
+                </Text> */}
+                <View className="mt-5 flex-row items-center justify-end gap-3 pt-4">
+                  <TouchableOpacity
+                    onPress={() => openWorkerDetails(item.id)}
+                    activeOpacity={0.85}
+                  >
+                    <Text className="text-sm font-bold text-neutral-700">
+                      View Details
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => onApprove(item)}
+                    activeOpacity={0.9}
+                    className="rounded-xl border border-neutral-200 px-4 py-3"
+                  >
+                    <Text className="text-sm font-bold text-neutral-700">
+                      Approve
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-
-            <View className="mt-5 flex-row items-center justify-end gap-3 border-t border-neutral-100 pt-4">
-              <TouchableOpacity onPress={() => onApprove(item)} activeOpacity={0.85}>
-                <Text className="text-sm font-bold text-neutral-700">View</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => onApprove(item)}
-                activeOpacity={0.9}
-                className="rounded-xl border border-neutral-200 px-4 py-3"
-              >
-                <Text className="text-sm font-bold text-neutral-700">
-                  Approve
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         ))}
@@ -195,8 +201,8 @@ export default function EmployerApprovalsScreenWeb() {
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
-      pathname: "/screens/worker-details/[id]",
-      params: { id: workerId, origin: "employer" },
+      pathname: `/screens/worker-details/${workerId}` as any,
+      params: { origin: "employer" },
     });
   };
 
@@ -277,6 +283,7 @@ export default function EmployerApprovalsScreenWeb() {
               <TimesheetApprovalList
                 items={TIMESHEET_APPROVALS}
                 onApprove={handleApproveTimesheet}
+                openWorkerDetails={openWorkerDetails}
               />
             ) : (
               <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">

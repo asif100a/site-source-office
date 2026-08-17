@@ -95,9 +95,11 @@ function ApprovalTabs({
 function TimesheetApprovalList({
   items,
   onApprove,
+  openWorkerDetails
 }: {
   items: TimesheetApproval[];
   onApprove: (item: TimesheetApproval) => void;
+  openWorkerDetails: (workerId: string) => void;
 }) {
   return (
     <View className="rounded-[24px] bg-white px-4 py-4">
@@ -136,7 +138,7 @@ function TimesheetApprovalList({
           <Text className="mt-3 text-sm font-semibold text-neutral-900">
             {item.weekLabel}
           </Text>
-          <Text className="mt-1 text-xs text-neutral-400">{item.submittedAt}</Text>
+          {/* <Text className="mt-1 text-xs text-neutral-400">{item.submittedAt}</Text> */}
 
           <View className="mt-3 flex-row items-center gap-2">
             <MapPin size={14} color="#C81E1E" />
@@ -145,11 +147,11 @@ function TimesheetApprovalList({
             </Text>
           </View>
 
-          <Text className="mt-2 text-xs text-neutral-500">{item.totalHours}</Text>
+          {/* <Text className="mt-2 text-xs text-neutral-500">{item.totalHours}</Text> */}
 
           <View className="mt-4 flex-row items-center justify-end gap-3">
-            <TouchableOpacity onPress={() => onApprove(item)} activeOpacity={0.85}>
-              <Text className="text-xs font-bold text-neutral-700">View</Text>
+            <TouchableOpacity onPress={() => openWorkerDetails(item.id)} activeOpacity={0.85}>
+              <Text className="text-xs font-bold text-neutral-700">View Details</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -232,6 +234,7 @@ export default function EmployerApprovalsScreen() {
             <TimesheetApprovalList
               items={timesheetItems}
               onApprove={handleApproveTimesheet}
+              openWorkerDetails={openWorkerDetails}
             />
           </View>
         ) : (

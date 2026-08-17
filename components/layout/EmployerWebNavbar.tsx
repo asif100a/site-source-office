@@ -21,7 +21,7 @@ const NAV_LINKS = [
     activePaths: ["/tabs/my-jobs"],
   },
   {
-    href: "/tabs/chats",
+    href: "/tabs/approvals",
     label: "Approvals",
     activePaths: ["/tabs/approvals"],
   },

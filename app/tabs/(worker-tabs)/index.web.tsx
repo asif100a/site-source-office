@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import type { Region } from "react-native-maps";
 import {
   Briefcase,
   CalendarClock,
@@ -35,6 +36,28 @@ import {
   type WorkerHomeJob,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
+
+type NativeMapComponents = {
+  MapView: typeof import("react-native-maps").default;
+  Marker: typeof import("react-native-maps").Marker;
+};
+
+const MAP_REGION: Region = {
+  latitude: 51.5295,
+  longitude: -0.056,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
+};
+
+function getNativeMapComponents(): NativeMapComponents | null {
+  try {
+    const maps =
+      require("react-native-maps") as typeof import("react-native-maps");
+    return { MapView: maps.default, Marker: maps.Marker };
+  } catch {
+    return null;
+  }
+}
 
 function FilterChip({
   label,
@@ -187,6 +210,9 @@ export default function WorkerHomeScreen() {
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
+  const nativeMapComponents = useMemo(() => getNativeMapComponents(), []);
+  const NativeMapView = nativeMapComponents?.MapView;
+  const NativeMarker = nativeMapComponents?.Marker;
 
   const filteredJobs = useMemo(
     () =>
@@ -242,96 +268,107 @@ export default function WorkerHomeScreen() {
           <View className="mx-auto w-full max-w-7xl gap-6">
             <View className="overflow-hidden rounded-lg">
               <View className="relative h-[430px]">
-                <MapFallback />
-
-              {filteredJobs.map((job, index) => (
-                <View
-                  key={job.id}
-                  className="absolute"
-                  style={{
-                    top: job.mapPosition.top,
-                    left: job.mapPosition.left as any,
-                    transform: [{ translateX: -24 }],
-                  }}
-                >
-                  <MarkerBubble
-                    label={`GBP ${job.payRatePerDay}`}
-                    dark={index === 0}
-                  />
-                </View>
-              ))}
-
-              <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
-                <View className="flex-row items-center gap-3">
-                  <View className="flex-1 flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-sm">
-                    <MapPin size={18} color={Colors.common.BRAND} />
-                    <TextInput
-                      className="ml-2 flex-1 text-sm font-semibold text-neutral-800"
-                      placeholder="Enter a location"
-                      placeholderTextColor="#9CA3AF"
-                      value={locationQuery}
-                      onChangeText={setLocationQuery}
-                    />
-                  </View>
-
-                  <TouchableOpacity
-                    className="rounded-2xl bg-[#111111] px-5 py-3.5 shadow-sm"
-                    onPress={() => setShowFilterModal(true)}
+                {NativeMapView && NativeMarker ? (
+                  <NativeMapView
+                    style={{ flex: 1 }}
+                    initialRegion={MAP_REGION}
+                    mapType="standard"
+                    loadingEnabled
+                    showsCompass={false}
+                    toolbarEnabled={false}
+                    showsMyLocationButton={false}
+                    moveOnMarkerPress={false}
                   >
-                    <View className="flex-row items-center gap-2">
-                      <Filter size={18} color="#FFFFFF" />
+                    {filteredJobs.map((job, index) => (
+                      <NativeMarker
+                        key={job.id}
+                        coordinate={job.coordinate}
+                        title={job.title}
+                        description={job.company}
+                      >
+                        <MarkerBubble
+                          label={`GBP ${job.payRatePerDay}`}
+                          dark={index === 0}
+                        />
+                      </NativeMarker>
+                    ))}
+                  </NativeMapView>
+                ) : (
+                  <MapFallback />
+                )}
+
+                <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
+                  <View className="flex-row items-center gap-3">
+                    <View className="flex-1 flex-row items-center rounded-2xl bg-white px-4 py-3 shadow-sm">
+                      <MapPin size={18} color={Colors.common.BRAND} />
+                      <TextInput
+                        className="ml-2 flex-1 text-sm font-semibold text-neutral-800"
+                        placeholder="Enter a location"
+                        placeholderTextColor="#9CA3AF"
+                        value={locationQuery}
+                        onChangeText={setLocationQuery}
+                      />
+                    </View>
+
+                    <TouchableOpacity
+                      className="rounded-2xl bg-[#111111] px-5 py-3.5 shadow-sm"
+                      onPress={() => setShowFilterModal(true)}
+                    >
+                      <View className="flex-row items-center gap-2">
+                        <Filter size={18} color="#FFFFFF" />
+                        <Text className="text-sm font-bold text-white">
+                          Filters
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View className="mt-4 flex-row items-center justify-between">
+                    <View className="rounded-full bg-[#111111] px-4 py-2.5">
                       <Text className="text-sm font-bold text-white">
-                        Filters
+                        {WORKER_HOME_JOBS.length} live sites nearby
                       </Text>
                     </View>
-                  </TouchableOpacity>
-                </View>
-
-                <View className="mt-4 flex-row items-center justify-between">
-                  <View className="rounded-full bg-[#111111] px-4 py-2.5">
-                    <Text className="text-sm font-bold text-white">
-                      {WORKER_HOME_JOBS.length} live sites nearby
-                    </Text>
                   </View>
                 </View>
+
+                <View className="absolute bottom-5 right-5 rounded-2xl bg-white px-3 py-3 shadow-sm">
+                  <Navigation size={18} color={Colors.common.BRAND} />
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.92}
+                  onPress={() => handleViewDetails(featuredJob)}
+                  className="absolute bottom-5 left-5 right-5 z-10 rounded-[28px] bg-white px-5 py-5 shadow-lg"
+                >
+                  <View className="flex-row items-center justify-between gap-4">
+                    <View className="flex-1 flex-row items-center gap-4">
+                      <View className="h-14 w-14 items-center justify-center rounded-2xl bg-[#2F5BFF]">
+                        <Briefcase size={24} color="#FFFFFF" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-2xl font-bold text-neutral-950">
+                          {featuredJob.title}
+                        </Text>
+                        <Text className="text-base font-medium text-neutral-500">
+                          {featuredJob.company} -{" "}
+                          {formatDistance(featuredJob.distanceMiles)} -{" "}
+                          {featuredJob.startLabel}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="items-end">
+                      <Text className="text-xl font-bold text-neutral-950">
+                        {formatPayRate(featuredJob.payRatePerDay)}
+                      </Text>
+                      <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
+                        Tap to view
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               </View>
-
-              <View className="absolute bottom-5 right-5 rounded-2xl bg-white px-3 py-3 shadow-sm">
-                <Navigation size={18} color={Colors.common.BRAND} />
-              </View>
-
-              <TouchableOpacity
-                activeOpacity={0.92}
-                onPress={() => handleViewDetails(featuredJob)}
-                className="absolute bottom-5 left-5 right-5 z-10 rounded-[28px] bg-white px-5 py-5 shadow-lg"
-              >
-                <View className="flex-row items-center justify-between gap-4">
-                  <View className="flex-1 flex-row items-center gap-4">
-                    <View className="h-14 w-14 items-center justify-center rounded-2xl bg-[#2F5BFF]">
-                      <Briefcase size={24} color="#FFFFFF" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-2xl font-bold text-neutral-950">
-                        {featuredJob.title}
-                      </Text>
-                      <Text className="text-base font-medium text-neutral-500">
-                        {featuredJob.company} -{" "}
-                        {formatDistance(featuredJob.distanceMiles)} -{" "}
-                        {featuredJob.startLabel}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="items-end">
-                    <Text className="text-xl font-bold text-neutral-950">
-                      {formatPayRate(featuredJob.payRatePerDay)}
-                    </Text>
-                    <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
-                      Tap to view
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
             </View>
 
             <View className="mt-8 flex-row items-end justify-between">
@@ -394,7 +431,6 @@ export default function WorkerHomeScreen() {
               ))}
             </View>
           </View>
-        </View>
         </View>
       </ScrollView>
 

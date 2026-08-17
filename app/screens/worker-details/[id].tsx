@@ -1,188 +1,127 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Modal } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import React from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors } from "@/constants/Colors";
-import {
-  getDashboardRouteForRole,
-  normalizeUserRole,
-} from "@/constants/Routes";
 import { StatusBar } from "expo-status-bar";
+import { Colors } from "@/constants/Colors";
 import WorkerDetailsHeader from "@/components/modules/worker/worker-details/WorkerDetailsHeader";
-import WorkerDetailsEmptyState from "@/components/modules/worker/worker-details/WorkerDetailsEmptyState";
 import WorkerInfo from "@/components/modules/worker/worker-details/WorkerInfo";
-import ReviewComposer from "@/components/modules/worker/worker-details/ReviewComposer";
 import WorkerDetailsStats from "@/components/modules/worker/worker-details/WorkerDetailsStats";
 import WorkerDetailsDocuments from "@/components/modules/worker/worker-details/WorkerDetailsDocuments";
 import WorkerDetailsWorkHistory from "@/components/modules/worker/worker-details/WorkerDetailsWorkHistory";
-import WorkerDetailsRatingAndFeedback from "@/components/modules/worker/worker-details/WorkerDetailsRatingAndFeedback";
 import WorkerDetailsReviews from "@/components/modules/worker/worker-details/WorkerDetailsReviews";
 import WorkerRatingStars from "@/components/modules/worker/worker-details/_ui/WorkerRatingStars";
-import { Image } from "expo-image";
-import PLACEHOLDER_USER from "@/assets/images/placeholder/placeholder-user.png";
-import { MapPin } from "lucide-react-native";
-import WorkerApproveModal from "@/components/modules/employer/worker-details/WorkerApproveModal";
 
-type WorkerDetail = {
-  name: string;
-  role: string;
-  status: string;
-  rating: string;
-  reviews: string;
-  location: string;
-  stats: Array<{ label: string; value: string }>;
-  about: string;
-  documents: Array<{ id: string; name: string; size: string }>;
-  workHistory: Array<{
-    id: string;
-    title: string;
-    company: string;
-    duration: string;
-    rating: string;
-  }>;
-  feedback: Array<{
-    id: string;
-    name: string;
-    date: string;
-    text: string;
-    rating: string;
-  }>;
+const STATIC_WORKER = {
+  name: "James Mitchell",
+  role: "Groundworker",
+  status: "Available Now",
+  rating: "4.8",
+  reviews: "142 reviews",
+  location: "Shoreditch - 2.4 mi away",
+  stats: [
+    { label: "Jobs Completed", value: "87" },
+    { label: "Reliability", value: "98%" },
+    { label: "Repeat Hires", value: "34" },
+  ],
+  about:
+    "Highly experienced groundworker with over 8 years in the industry. Specialized in site preparation, drainage systems, and structural foundations. Known for punctuality and a strong focus on safety standards.",
+  documents: [
+    { id: "doc-1", name: "CSCS Gold Card", size: "1.1 MB" },
+    { id: "doc-2", name: "Public Liability", size: "860 KB" },
+    { id: "doc-3", name: "Right to Work", size: "540 KB" },
+  ],
+  workHistory: [
+    {
+      id: "wh-1",
+      title: "Lead Groundworker",
+      company: "BuildRight Group",
+      duration: "3 months",
+      rating: "5.0",
+    },
+    {
+      id: "wh-2",
+      title: "Groundworker",
+      company: "Northline Builders",
+      duration: "1 year",
+      rating: "4.9",
+    },
+  ],
+  feedback: [
+    {
+      id: "fb-1",
+      name: "Jane Cooper",
+      date: "20 Apr 2026",
+      text: "Very professional and always arrived on time.",
+      rating: "5.00",
+    },
+    {
+      id: "fb-2",
+      name: "Esther Howard",
+      date: "28 May 2026",
+      text: "Worked safely, communicated well, and kept the site moving.",
+      rating: "4.90",
+    },
+  ],
 };
 
-const WORKER_DETAILS: Record<string, WorkerDetail> = {
-  "1": {
-    name: "James Mitchell",
-    role: "Groundworker",
-    status: "Available Now",
-    rating: "4.8",
-    reviews: "142 reviews",
-    location: "Shoreditch • 2.4 mi away",
-    stats: [
-      { label: "Jobs Completed", value: "87" },
-      { label: "Reliability", value: "98%" },
-      { label: "Repeat Hires", value: "34" },
-    ],
-    about:
-      "Highly experienced groundworker with over 8 years in the industry. Specialized in site preparation, drainage systems, and structural foundations. Known for punctuality and a focus on safety standards.",
-    documents: [
-      { id: "doc-1", name: "CSCS Gold Card", size: "1.1 MB" },
-      { id: "doc-2", name: "CSCS Gold Card", size: "1.1 MB" },
-      { id: "doc-3", name: "CSCS Gold Card", size: "1.1 MB" },
-    ],
-    workHistory: [
-      {
-        id: "wh-1",
-        title: "Lead Groundworker",
-        company: "BuildRight Group",
-        duration: "3 months",
-        rating: "5.0",
-      },
-      {
-        id: "wh-2",
-        title: "Groundworker",
-        company: "Northline Builders",
-        duration: "1 year",
-        rating: "4.9",
-      },
-    ],
-    feedback: [
-      {
-        id: "fb-1",
-        name: "Jane Cooper",
-        date: "20 Apr 2026",
-        text: "Very professional and always arrived on time.",
-        rating: "5.00",
-      },
-      {
-        id: "fb-2",
-        name: "Esther Howard",
-        date: "20 Apr 2026",
-        text: "Very professional and always arrived on time.",
-        rating: "5.00",
-      },
-    ],
-  },
-  empty: {
-    name: "",
-    role: "",
-    status: "",
-    rating: "",
-    reviews: "",
-    location: "",
-    stats: [],
-    about: "",
-    documents: [],
-    workHistory: [],
-    feedback: [],
-  },
-};
-
-WORKER_DETAILS["2"] = WORKER_DETAILS["1"];
-WORKER_DETAILS["3"] = WORKER_DETAILS["1"];
-
-const TIMESHEET_WEEKS = [
-  { id: "week-1", title: "Week 1", range: "12th - 16th July" },
-  { id: "week-2", title: "Week 1", range: "12th - 16th July" },
-  { id: "week-3", title: "Week 1", range: "12th - 16th July" },
-  { id: "week-4", title: "Week 1", range: "12th - 16th July" },
-];
-
-function EmployerWorkerCard({ worker }: { worker: WorkerDetail }) {
+function StaticRatingCard() {
   return (
-    <View className="rounded-2xl bg-white px-4 py-5">
-      <View className="items-center">
-        <View className="relative">
-          <Image
-            source={PLACEHOLDER_USER}
-            style={{ width: 88, height: 88 }}
-            className="rounded-full"
-          />
-          <View className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1">
-            <Text className="text-[10px] font-bold text-emerald-700">
-              {worker.status}
+    <View className="mt-6">
+      <Text className="mb-3 text-base font-extrabold text-neutral-900">
+        Rating & Feedback
+      </Text>
+
+      <View className="rounded-xl border border-neutral-200/80 bg-white p-4">
+        <View className="flex-row items-center gap-4">
+          <View className="items-center">
+            <Text className="text-4xl font-extrabold text-neutral-900">
+              {STATIC_WORKER.rating}
+            </Text>
+            <Text className="text-xs text-neutral-400">/5</Text>
+            <View className="mt-2">
+              <WorkerRatingStars rating={STATIC_WORKER.rating} />
+            </View>
+            <Text className="mt-2 text-xs text-neutral-400">
+              {STATIC_WORKER.reviews}
             </Text>
           </View>
-        </View>
 
-        <Text className="mt-6 text-center text-[22px] font-extrabold text-neutral-900">
-          {worker.name}
-        </Text>
-        <Text className="mt-1 text-base text-neutral-500">{worker.role}</Text>
-
-        <View className="mt-3 flex-row items-center gap-2">
-          <View className="flex-row">
-            <View className="h-7 w-7 items-center justify-center rounded-full bg-[#FF7A00]">
-              <Text className="text-xs font-bold text-white">K</Text>
-            </View>
-            <View className="-ml-1.5 h-7 w-7 items-center justify-center rounded-full bg-[#7C3AED]">
-              <Text className="text-xs font-bold text-white">C</Text>
-            </View>
+          <View className="flex-1 gap-2">
+            {[200, 40, 32, 19, 7].map((value, index) => (
+              <View
+                key={`${value}-${index}`}
+                className="flex-row items-center gap-2"
+              >
+                <Text className="w-4 text-right text-xs text-neutral-400">
+                  {5 - index}
+                </Text>
+                <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                  <View
+                    className="h-full rounded-full bg-slate-500"
+                    style={{ width: `${Math.max(15, value / 2)}%` }}
+                  />
+                </View>
+                <Text className="w-8 text-right text-xs text-neutral-400">
+                  {value}
+                </Text>
+              </View>
+            ))}
           </View>
-          <View className="flex-row items-center gap-1.5">
-            <WorkerRatingStars rating={worker.rating} />
-            <Text className="text-sm font-medium text-neutral-700">
-              <Text className="font-extrabold">{worker.rating}</Text> (
-              {worker.reviews})
-            </Text>
-          </View>
-        </View>
-
-        <View className="mt-4 flex-row items-center gap-2">
-          <MapPin size={14} color="#C81E1E" />
-          <Text className="text-sm font-medium text-neutral-500">
-            {worker.location}
-          </Text>
         </View>
       </View>
     </View>
   );
 }
 
-function EmployerTimesheetCard({
-  onApprovePress,
-}: {
-  onApprovePress: () => void;
-}) {
+function StaticTimesheetCard() {
+  const weeks = [
+    { id: "week-1", title: "Week 1", range: "12 Jul - 16 Jul" },
+    { id: "week-2", title: "Week 2", range: "19 Jul - 23 Jul" },
+    { id: "week-3", title: "Week 3", range: "26 Jul - 30 Jul" },
+    { id: "week-4", title: "Week 4", range: "2 Aug - 6 Aug" },
+  ];
+
   return (
     <View className="mt-4 rounded-2xl bg-white px-4 py-4">
       <View className="mb-3 flex-row items-center justify-between">
@@ -199,13 +138,11 @@ function EmployerTimesheetCard({
         </View>
       </View>
 
-      {TIMESHEET_WEEKS.map((week, index) => (
+      {weeks.map((week, index) => (
         <View
           key={week.id}
           className={`flex-row items-center justify-between py-3 ${
-            index < TIMESHEET_WEEKS.length - 1
-              ? "border-b border-neutral-100"
-              : ""
+            index < weeks.length - 1 ? "border-b border-neutral-100" : ""
           }`}
         >
           <View className="flex-1 pr-3">
@@ -221,10 +158,7 @@ function EmployerTimesheetCard({
             <TouchableOpacity className="px-1 py-2 active:opacity-70">
               <Text className="text-sm font-medium text-neutral-600">View</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onApprovePress}
-              className="rounded-xl border border-neutral-200 bg-white px-4 py-2 active:opacity-80"
-            >
+            <TouchableOpacity className="rounded-xl border border-neutral-200 bg-white px-4 py-2 active:opacity-80">
               <Text className="text-xs font-medium text-neutral-500">
                 Approve
               </Text>
@@ -238,52 +172,6 @@ function EmployerTimesheetCard({
 
 export default function WorkerDetailsScreen() {
   const router = useRouter();
-  const { id, origin } = useLocalSearchParams<{
-    id?: string;
-    origin?: string;
-  }>();
-  const workerId = Array.isArray(id) ? id[0] : id;
-  const originRoute = Array.isArray(origin) ? origin[0] : origin;
-  const worker = workerId ? WORKER_DETAILS[workerId] : undefined;
-  const showEmptyState = !worker || !worker.name;
-  const isEmployerView = normalizeUserRole(originRoute) === "employer";
-
-  const [showReviewComposer, setShowReviewComposer] = useState(false);
-  const [reviewRating, setReviewRating] = useState(4);
-  const [reviewText, setReviewText] = useState("");
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState("Select Week");
-  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
-
-  const goBackToOrigin = () => {
-    // if (originRoute === "worker" || originRoute === "employer") {
-    //   router.replace(getDashboardRouteForRole(normalizeUserRole(originRoute)));
-    //   return;
-    // }
-
-    router.back();
-  };
-
-  const closeReviewComposer = () => {
-    setShowReviewComposer(false);
-    setReviewText("");
-    setReviewRating(4);
-  };
-
-  const handleHeaderBack = () => {
-    if (showApprovalModal) {
-      setShowApprovalModal(false);
-      setIsWeekDropdownOpen(false);
-      return;
-    }
-
-    if (showReviewComposer) {
-      closeReviewComposer();
-      return;
-    }
-
-    goBackToOrigin();
-  };
 
   return (
     <SafeAreaView
@@ -292,132 +180,37 @@ export default function WorkerDetailsScreen() {
     >
       <StatusBar style="dark" />
 
-      <WorkerDetailsHeader handleHeaderBack={handleHeaderBack} />
+      <WorkerDetailsHeader handleHeaderBack={() => router.back()} />
 
-      {showEmptyState ? (
-        <WorkerDetailsEmptyState />
-      ) : isEmployerView ? (
-        <>
-          <ScrollView
-            className="flex-1 px-5"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingTop: 12, paddingBottom: 40 }}
-          >
-            <EmployerWorkerCard worker={worker} />
-            <EmployerTimesheetCard
-              onApprovePress={() => setShowApprovalModal(true)}
-            />
-          </ScrollView>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="pb-32 pt-6">
+          <WorkerInfo worker={STATIC_WORKER} />
 
-          <WorkerApproveModal
-            visible={showApprovalModal}
-            selectedWeek={selectedWeek}
-            isWeekDropdownOpen={isWeekDropdownOpen}
-            onToggleWeekDropdown={() =>
-              setIsWeekDropdownOpen((current) => !current)
-            }
-            onSelectWeek={(weekDay) => {
-              setSelectedWeek(weekDay);
-              setIsWeekDropdownOpen(false);
-            }}
-            onClose={() => {
-              setShowApprovalModal(false);
-              setIsWeekDropdownOpen(false);
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-            <View className="pt-6 pb-40">
-              {/* Worker Info */}
-              <WorkerInfo worker={worker} />
+          <View className="px-5">
+            <WorkerDetailsStats worker={STATIC_WORKER} />
 
-              <View className="px-5">
-                {/* Review Composer */}
-                {showReviewComposer ? (
-                  <ReviewComposer
-                    reviewRating={reviewRating}
-                    setReviewRating={setReviewRating}
-                    reviewText={reviewText}
-                    setReviewText={setReviewText}
-                  />
-                ) : (
-                  <>
-                    <WorkerDetailsStats worker={worker} />
-
-                    <View className="bg-white rounded-xl p-4 border border-neutral-200/80 mt-4">
-                      <Text className="text-neutral-900 text-base font-extrabold mb-3">
-                        About
-                      </Text>
-                      <Text className="text-neutral-600 text-sm leading-6">
-                        {worker.about}
-                      </Text>
-                    </View>
-
-                    {/* Documents */}
-                    <WorkerDetailsDocuments worker={worker} />
-
-                    {/* Work History */}
-                    <WorkerDetailsWorkHistory worker={worker} />
-
-                    {/* Rating & Feedback */}
-                    <WorkerDetailsRatingAndFeedback
-                      worker={worker}
-                      setShowReviewComposer={setShowReviewComposer}
-                    />
-
-                    {/* Reviews */}
-                    <WorkerDetailsReviews worker={worker} />
-                  </>
-                )}
-              </View>
+            <View className="mt-4 rounded-xl border border-neutral-200/80 bg-white p-4">
+              <Text className="mb-3 text-base font-extrabold text-neutral-900">
+                About
+              </Text>
+              <Text className="text-sm leading-6 text-neutral-600">
+                {STATIC_WORKER.about}
+              </Text>
             </View>
-          </ScrollView>
 
-          {showReviewComposer ? (
-            <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-4 py-4 flex-row gap-3">
-              <TouchableOpacity
-                onPress={closeReviewComposer}
-                style={{ backgroundColor: Colors.common.GRAY_DARK }}
-                className="flex-1 py-4 rounded-2xl items-center justify-center active:opacity-90 shadow-sm"
-              >
-                <Text className="text-white font-extrabold text-sm">
-                  Submit
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={closeReviewComposer}
-                className="flex-1 py-4 border border-neutral-200 rounded-2xl items-center justify-center bg-white active:opacity-75"
-              >
-                <Text className="text-neutral-900 font-extrabold text-sm">
-                  Discard
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-4 pt-4 pb-16 flex-row gap-3">
-              <TouchableOpacity
-                onPress={goBackToOrigin}
-                style={{ backgroundColor: Colors.common.GRAY_DARK }}
-                className="flex-1 py-4 rounded-2xl items-center justify-center active:opacity-90 shadow-sm"
-              >
-                <Text className="text-white font-extrabold text-sm">
-                  Accept
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={goBackToOrigin}
-                className="flex-1 py-4 border border-neutral-200 rounded-2xl items-center justify-center bg-white active:opacity-75"
-              >
-                <Text className="text-neutral-900 font-extrabold text-sm">
-                  Decline
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </>
-      )}
+            <WorkerDetailsDocuments worker={STATIC_WORKER} />
+            <WorkerDetailsWorkHistory worker={STATIC_WORKER} />
+            <StaticRatingCard />
+
+            <Text className="mb-3 mt-6 text-base font-extrabold text-neutral-900">
+              Reviews
+            </Text>
+            <WorkerDetailsReviews worker={STATIC_WORKER} />
+
+            <StaticTimesheetCard />
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -1,20 +1,72 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { ArrowRight, Plus } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  Minus,
+  Plus,
+} from "lucide-react-native";
+import {
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
 import { Colors } from "@/constants/Colors";
 
+const CALENDAR_DAYS = [
+  { value: 10, active: true },
+  { value: 11, highlighted: true },
+  { value: 12, highlighted: true },
+  { value: 13, highlighted: true },
+  { value: 14, highlighted: true },
+  { value: 15, highlighted: true },
+  { value: 16, highlighted: true },
+  { value: 17, highlighted: true },
+  { value: 18, highlighted: true },
+  { value: 19, highlighted: true },
+  { value: 20, highlighted: true },
+  { value: 21, active: true },
+  { value: 22 },
+  { value: 23 },
+  { value: 24 },
+  { value: 25 },
+  { value: 26 },
+  { value: 27 },
+  { value: 28 },
+  { value: 29 },
+  { value: 30 },
+  { value: 31 },
+];
+
+const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
+
+type MustHaveOption = (typeof MUST_HAVE_OPTIONS)[number];
+
 export default function EmployerHomeScreenWeb() {
   const router = useRouter();
+  const [hourlyRate, setHourlyRate] = useState(24);
+  const [workersNeeded, setWorkersNeeded] = useState(2);
+  const [weekendWork, setWeekendWork] = useState(false);
+  const [notes, setNotes] = useState(
+    "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
+  );
+  const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>(
+    ["CSCS card"],
+  );
 
-  const openWorkerDetails = (workerId: string) => {
-    router.push({
-      pathname: "/screens/worker-details/[id]",
-      params: { id: workerId, origin: "employer" },
-    });
-  };
+  const totalEstimate = useMemo(() => hourlyRate * 9 * 10 * workersNeeded, [
+    hourlyRate,
+    workersNeeded,
+  ]);
 
   const handleCreateJobPost = () => {
     router.push({
@@ -23,11 +75,26 @@ export default function EmployerHomeScreenWeb() {
     });
   };
 
-  const handleWorkerDetails = (id: string) => {
+  const openWorkerDetails = (workerId: string) => {
     router.push({
-      pathname: `/screens/worker-details/${id}` as any,
-      params: { origin: "employer" },
+      pathname: "/screens/worker-details/[id]",
+      params: { id: workerId, origin: "employer" },
     });
+  };
+
+  const toggleMustHave = (option: MustHaveOption) => {
+    setSelectedMustHaves((current) =>
+      current.includes(option)
+        ? current.filter((item) => item !== option)
+        : [...current, option],
+    );
+  };
+
+  const adjustValue = (
+    setter: React.Dispatch<React.SetStateAction<number>>,
+    nextValue: number,
+  ) => {
+    setter(Math.max(1, nextValue));
   };
 
   return (
@@ -39,29 +106,34 @@ export default function EmployerHomeScreenWeb() {
       >
         <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
-            <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
-              <View className="relative px-5 py-6 md:px-8 md:py-8">
+            <View className="overflow-hidden rounded-[32px] border border-neutral-200/80 bg-white shadow-sm">
+              <View className="relative px-6 py-6 md:px-8 md:py-8">
                 <View
-                  className="absolute -top-14 right-0 h-36 w-36 rounded-full opacity-80"
+                  className="absolute -right-12 -top-16 h-40 w-40 rounded-full opacity-80"
                   style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
                 />
-                <View className="absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-neutral-100" />
+                <View className="absolute -bottom-10 left-8 h-24 w-24 rounded-full bg-neutral-100" />
 
-                <View className="relative flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <View className="relative flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                   <View className="max-w-3xl gap-3">
-                    <View className="rounded-full bg-orange-50 px-3 py-1.5 self-start">
-                      <Text className="text-xs font-bold uppercase text-neutral-900">
-                        Employer home
+                    <View className="self-start rounded-full bg-orange-50 px-3 py-1.5">
+                      <Text
+                        style={{ color: Colors.common.BRAND }}
+                        className="text-xs font-bold uppercase"
+                      >
+                        Employer workspace
                       </Text>
                     </View>
 
                     <View className="gap-2">
-                      <Text className="max-w-3xl text-2xl font-bold tracking-tight text-neutral-950 md:text-[32px]">
-                        Create jobs and review worker requests in one place.
+                      <Text className="max-w-3xl text-3xl font-bold tracking-tight text-neutral-950">
+                        Build the job brief, lock the site details, and start
+                        hiring from one desktop workspace.
                       </Text>
                       <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
-                        The same employer home flow as mobile, presented in a
-                        cleaner desktop layout for faster hiring decisions.
+                        This follows the same employer home flow as mobile,
+                        reorganized for web with a live posting canvas on the
+                        left and a hiring summary on the right.
                       </Text>
                     </View>
                   </View>
@@ -69,30 +141,539 @@ export default function EmployerHomeScreenWeb() {
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={handleCreateJobPost}
-                    className="flex-row items-center justify-center gap-2 self-start rounded-2xl bg-slate-900 px-5 py-3.5 lg:self-auto"
+                    className="self-start rounded-2xl px-5 py-4 xl:self-auto"
+                    style={{ backgroundColor: Colors.common.BRAND }}
                   >
-                    <Plus size={20} color="#FFFFFF" />
                     <Text className="text-sm font-bold text-white">
-                      Create a job post
+                      Post Job
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
-              <JobRequests
-                openWorkerDetails={openWorkerDetails}
-                containerStyle={{
-                  marginTop: 0,
-                }}
-              />
+            <View className="flex-col gap-6 xl:flex-row">
+              <View className="flex-1 gap-6">
+                <MapHeroCard />
+
+                <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
+                  <View className="mb-6 flex-row items-start justify-between gap-4">
+                    <View>
+                      <Text className="text-[28px] font-bold tracking-tight text-neutral-950">
+                        Post a job
+                      </Text>
+                      <Text className="mt-2 text-sm text-neutral-500">
+                        Set the role, timing, and site requirements before you
+                        send this posting live.
+                      </Text>
+                    </View>
+
+                    <View className="rounded-full bg-neutral-100 px-3 py-2">
+                      <Text className="text-[11px] font-bold text-neutral-700">
+                        Draft mode
+                      </Text>
+                    </View>
+                  </View>
+
+                  <FormSectionLabel label="Trade needed" />
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    className="mt-3 flex-row items-center justify-between rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4"
+                  >
+                    <Text className="text-sm font-semibold text-[#202020]">
+                      Select trade
+                    </Text>
+                    <ChevronDown size={20} color="#727272" />
+                  </TouchableOpacity>
+
+                  <View className="mt-5 grid gap-4 xl:grid-cols-2">
+                    <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
+                      <CounterRow
+                        label="Hourly rate"
+                        hint="Market rate here is £22-£28/hr"
+                        value={`£${hourlyRate}/hr`}
+                        onDecrease={() =>
+                          adjustValue(setHourlyRate, hourlyRate - 1)
+                        }
+                        onIncrease={() =>
+                          adjustValue(setHourlyRate, hourlyRate + 1)
+                        }
+                      />
+                    </View>
+
+                    <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
+                      <CounterRow
+                        label="Workers needed"
+                        hint={`£${hourlyRate * 9} per day at 9 hrs`}
+                        value={`${workersNeeded}`}
+                        onDecrease={() =>
+                          adjustValue(setWorkersNeeded, workersNeeded - 1)
+                        }
+                        onIncrease={() =>
+                          adjustValue(setWorkersNeeded, workersNeeded + 1)
+                        }
+                      />
+                    </View>
+                  </View>
+
+                  <FormSectionLabel label="Job dates" />
+                  <View className="mt-3 rounded-[26px] border border-neutral-100 bg-white p-5">
+                    <View className="grid gap-4 xl:grid-cols-[220px,220px,1fr]">
+                      <DateCard label="Start" value="10 Aug" active />
+                      <DateCard label="Finish" value="21 Aug" />
+
+                      <View className="rounded-[22px] bg-neutral-50 px-5 py-4">
+                        <View className="flex-row items-center justify-between">
+                          <TouchableOpacity
+                            activeOpacity={0.85}
+                            className="h-10 w-10 items-center justify-center rounded-full bg-white"
+                          >
+                            <ChevronLeft size={18} color="#282828" />
+                          </TouchableOpacity>
+                          <Text className="text-sm font-bold text-[#222222]">
+                            August 2026
+                          </Text>
+                          <TouchableOpacity
+                            activeOpacity={0.85}
+                            className="h-10 w-10 items-center justify-center rounded-full bg-white"
+                          >
+                            <ChevronRight size={18} color="#282828" />
+                          </TouchableOpacity>
+                        </View>
+
+                        <View className="mt-4 flex-row justify-between">
+                          {["M", "T", "W", "T", "F", "S", "S"].map(
+                            (day, index) => (
+                              <Text
+                                key={`${day}-${index}`}
+                                className="w-10 text-center text-[11px] font-bold text-[#8A8A8A]"
+                              >
+                                {day}
+                              </Text>
+                            ),
+                          )}
+                        </View>
+
+                        <View className="mt-4 flex-row flex-wrap justify-between gap-y-2">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((day) => (
+                            <Text
+                              key={day}
+                              className="w-10 text-center text-[13px] font-semibold text-[#C7C7C7]"
+                            >
+                              {day}
+                            </Text>
+                          ))}
+
+                          {CALENDAR_DAYS.map((day) => (
+                            <View
+                              key={day.value}
+                              className={`h-10 w-10 items-center justify-center rounded-2xl ${
+                                day.active
+                                  ? "bg-[#FF5A1F]"
+                                  : day.highlighted
+                                    ? "bg-[#FFF1EA]"
+                                    : "bg-transparent"
+                              }`}
+                            >
+                              <Text
+                                className={`text-[13px] font-bold ${
+                                  day.active
+                                    ? "text-white"
+                                    : day.highlighted
+                                      ? "text-[#FF5A1F]"
+                                      : "text-[#252525]"
+                                }`}
+                              >
+                                {day.value}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+
+                    <View className="mt-4 flex-row items-center justify-between">
+                      <Text className="text-sm font-medium text-[#555555]">
+                        10 working days on site
+                      </Text>
+                      <TouchableOpacity activeOpacity={0.85}>
+                        <Text
+                          className="text-sm font-bold"
+                          style={{ color: Colors.common.BRAND }}
+                        >
+                          Clear
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View className="mt-6 grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
+                    <View>
+                      <FormSectionLabel label="Working hours" />
+                      <View className="mt-3 rounded-[24px] border border-neutral-100 bg-white p-5">
+                        <View className="flex-row items-start justify-between gap-4">
+                          <View className="shrink">
+                            <Text className="text-base font-bold text-[#1B1B1B]">
+                              Mon - Fri
+                            </Text>
+                            <Text className="mt-1 text-sm text-[#777777]">
+                              9 hr shift · 7:30am-4:30pm
+                            </Text>
+                          </View>
+
+                          <View className="flex-row items-center gap-2">
+                            <TimePill value="07:30" />
+                            <Text className="text-sm font-semibold text-[#777777]">
+                              to
+                            </Text>
+                            <TimePill value="16:30" />
+                          </View>
+                        </View>
+
+                        <View className="mt-5 flex-row items-center justify-between rounded-[18px] border border-[#EEEEEE] px-4 py-4">
+                          <View className="flex-row items-center gap-3">
+                            <Switch
+                              value={weekendWork}
+                              onValueChange={setWeekendWork}
+                              trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
+                              thumbColor={
+                                weekendWork
+                                  ? Colors.common.BRAND
+                                  : "#FFFFFF"
+                              }
+                            />
+                            <View>
+                              <Text className="text-sm font-bold text-[#202020]">
+                                Weekend work
+                              </Text>
+                              <Text className="text-sm text-[#7A7A7A]">
+                                Off by default
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View>
+                      <FormSectionLabel label="Must have" />
+                      <View className="mt-3 flex-row flex-wrap gap-3">
+                        {MUST_HAVE_OPTIONS.map((option) => {
+                          const selected = selectedMustHaves.includes(option);
+
+                          return (
+                            <Pressable
+                              key={option}
+                              onPress={() => toggleMustHave(option)}
+                              className={`rounded-full px-4 py-3 ${
+                                selected ? "bg-[#111111]" : "bg-white"
+                              }`}
+                            >
+                              <Text
+                                className={`text-sm font-bold ${
+                                  selected ? "text-white" : "text-[#606060]"
+                                }`}
+                              >
+                                {option}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </View>
+
+                  <FormSectionLabel label="Job notes" />
+                  <TextInput
+                    value={notes}
+                    onChangeText={setNotes}
+                    multiline
+                    textAlignVertical="top"
+                    placeholder="Add site notes, access details, or start instructions"
+                    className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222]"
+                  />
+                </View>
+
+                <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
+                  <JobRequests
+                    openWorkerDetails={openWorkerDetails}
+                    containerStyle={{ marginTop: 0, paddingHorizontal: 0 }}
+                  />
+                </View>
+              </View>
+
+              <View className="w-full gap-6 xl:w-[360px] 2xl:w-[390px]">
+                <View className="rounded-[30px] border border-neutral-200/80 bg-[#121316] p-6 shadow-sm">
+                  <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#A7A7A7]">
+                    Estimated total
+                  </Text>
+                  <Text className="mt-2 text-[34px] font-bold tracking-tight text-white">
+                    £{totalEstimate.toLocaleString()}
+                  </Text>
+                  <Text className="mt-3 text-sm leading-6 text-[#C9C9C9]">
+                    {workersNeeded} x labourer · 10 days · 9 hr shifts
+                  </Text>
+
+                  <View className="mt-6 gap-3 rounded-[22px] bg-white/5 p-4">
+                    <SummaryRow label="Site" value="42 Hoxton Street, London N1" />
+                    <SummaryRow label="Trade" value="Labour" />
+                    <SummaryRow label="Dates" value="10 Aug - 21 Aug 2026" />
+                    <SummaryRow label="Hours" value="07:30 - 16:30" />
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={handleCreateJobPost}
+                    className="mt-6 items-center justify-center rounded-[18px] py-4"
+                    style={{ backgroundColor: Colors.common.BRAND }}
+                  >
+                    <Text className="text-sm font-bold text-white">
+                      Post Job
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text className="mt-4 text-center text-xs leading-5 text-[#B4B4B4]">
+                    Workers are matched by trade, rating and travel time. You
+                    pick who starts.
+                  </Text>
+                </View>
+
+                <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
+                  <Text className="text-xs font-bold uppercase tracking-[1.3px] text-[#7A7A7A]">
+                    Hiring snapshot
+                  </Text>
+                  <View className="mt-4 gap-4">
+                    <SnapshotCard
+                      label="Draft completeness"
+                      value="92%"
+                      helper="Only trade selection is left before publishing."
+                    />
+                    <SnapshotCard
+                      label="Market signal"
+                      value="Healthy"
+                      helper="Current rate fits the local range for August 2026."
+                    />
+                    <SnapshotCard
+                      label="Schedule"
+                      value="10 days"
+                      helper="Monday to Friday plan with weekend work off."
+                    />
+                  </View>
+                </View>
+              </View>
             </View>
           </View>
         </View>
-        {/* Job Requests */}
-        <JobRequests openWorkerDetails={handleWorkerDetails} />
       </ScrollView>
     </ScreenWrapper>
+  );
+}
+
+function MapHeroCard() {
+  return (
+    <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
+      <View className="bg-[#DDD8D2] px-6 py-6">
+        <View className="flex-row items-start justify-between gap-4">
+          <View className="rounded-full bg-white px-4 py-2 shadow-sm">
+            <View className="flex-row items-center gap-2">
+              <View className="h-2.5 w-2.5 rounded-full bg-[#FF5A1F]" />
+              <Text className="text-sm font-semibold text-[#262626]">
+                Shoreditch, E2
+              </Text>
+            </View>
+          </View>
+
+          <View className="flex-row gap-2">
+            {[
+              <MapPin key="pin" size={18} color={Colors.common.BRAND} />,
+              <Plus key="plus" size={18} color="#111111" />,
+              <Minus key="minus" size={18} color="#111111" />,
+            ].map((icon, index) => (
+              <TouchableOpacity
+                key={`map-control-${index}`}
+                activeOpacity={0.85}
+                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
+              >
+                {icon}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View className="items-center py-10">
+          <View className="rounded-full bg-[#2E2E2E] px-5 py-2">
+            <Text className="text-xs font-bold text-white">
+              Drag the map to place your site
+            </Text>
+          </View>
+        </View>
+
+        <View className="rounded-[24px] bg-white px-5 py-5 shadow-sm">
+          <View className="flex-row items-center justify-between gap-4">
+            <View className="flex-row items-center gap-4">
+              <View
+                className="h-14 w-14 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: Colors.common.BRAND }}
+              >
+                <MapPin size={22} color="#FFFFFF" fill="#FFFFFF" />
+              </View>
+
+              <View className="shrink">
+                <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-[#8A8A8A]">
+                  Site location
+                </Text>
+                <Text className="mt-1 text-sm font-bold text-[#111111]">
+                  42 Hoxton Street, London N1
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              className="rounded-2xl bg-[#F3F3F3] px-4 py-3"
+            >
+              <Text className="text-sm font-bold text-[#222222]">Edit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function FormSectionLabel({ label }: { label: string }) {
+  return (
+    <Text className="mt-6 text-[11px] font-bold uppercase tracking-[1.3px] text-[#7A7A7A]">
+      {label}
+    </Text>
+  );
+}
+
+function CounterRow({
+  label,
+  hint,
+  value,
+  onDecrease,
+  onIncrease,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  onDecrease: () => void;
+  onIncrease: () => void;
+}) {
+  return (
+    <View className="flex-row items-center justify-between gap-3">
+      <View className="shrink">
+        <Text className="text-base font-bold text-[#202020]">{label}</Text>
+        <Text className="mt-1 text-sm text-[#858585]">{hint}</Text>
+      </View>
+
+      <View className="flex-row items-center gap-4">
+        <CounterButton
+          icon={<Minus size={18} color="#202020" />}
+          onPress={onDecrease}
+        />
+        <Text className="min-w-[64px] text-center text-[20px] font-bold tracking-tight text-[#111111]">
+          {value}
+        </Text>
+        <CounterButton
+          icon={<Plus size={18} color="#FFFFFF" />}
+          onPress={onIncrease}
+          filled
+        />
+      </View>
+    </View>
+  );
+}
+
+function CounterButton({
+  icon,
+  filled = false,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  filled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      className={`h-11 w-11 items-center justify-center rounded-2xl ${
+        filled ? "bg-[#111111]" : "bg-[#F3F3F3]"
+      }`}
+    >
+      {icon}
+    </TouchableOpacity>
+  );
+}
+
+function DateCard({
+  label,
+  value,
+  active = false,
+}: {
+  label: string;
+  value: string;
+  active?: boolean;
+}) {
+  return (
+    <View
+      className={`rounded-[18px] border bg-white px-4 py-4 ${
+        active ? "border-[#FF5A1F]" : "border-[#E9E9E9]"
+      }`}
+    >
+      <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#8B8B8B]">
+        {label}
+      </Text>
+      <Text className="mt-1 text-[22px] font-bold tracking-tight text-[#111111]">
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function TimePill({ value }: { value: string }) {
+  return (
+    <View className="flex-row items-center gap-2 rounded-2xl border border-[#E9E9E9] bg-white px-3 py-2.5">
+      <Text className="text-sm font-bold text-[#202020]">{value}</Text>
+      <Clock3 size={15} color="#8A8A8A" />
+    </View>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row items-start justify-between gap-4">
+      <Text className="text-xs font-bold uppercase tracking-[1px] text-[#8F8F8F]">
+        {label}
+      </Text>
+      <Text className="max-w-[190px] text-right text-sm font-semibold text-white">
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function SnapshotCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <View className="rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4">
+      <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-neutral-500">
+        {label}
+      </Text>
+      <Text className="mt-2 text-2xl font-bold tracking-tight text-neutral-950">
+        {value}
+      </Text>
+      <Text className="mt-2 text-sm leading-6 text-neutral-500">{helper}</Text>
+    </View>
   );
 }
