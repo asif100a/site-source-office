@@ -4,67 +4,68 @@ import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import CommonHeader from "@/components/modules/common/CommonHeader";
 import ScreenHeader from "@/components/layout/ScreenHeader";
+import ScreenWrapper from "@/components/layout/ScreenWrapper";
 
 const MOCK_CHATS = [
   {
-    id: 'sarah',
-    name: 'Sarah Mitchell',
-    lastMessage: 'You: Did you see the proposal? I ma...',
-    time: '4:30 PM',
+    id: "sarah",
+    name: "Sarah Mitchell",
+    lastMessage: "You: Did you see the proposal? I ma...",
+    time: "4:30 PM",
     unread: true,
-    initials: 'SM',
-    avatarBg: '#E0F2FE', // Light blue
-    avatarColor: '#0369A1',
+    initials: "SM",
+    avatarBg: "#E0F2FE", // Light blue
+    avatarColor: "#0369A1",
   },
   {
-    id: 'james-1',
-    name: 'James Thornton',
+    id: "james-1",
+    name: "James Thornton",
     lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
+    time: "3:15 PM",
     unread: false,
-    initials: 'JT',
-    avatarBg: '#FEE2E2', // Light red
-    avatarColor: '#B91C1C',
+    initials: "JT",
+    avatarBg: "#FEE2E2", // Light red
+    avatarColor: "#B91C1C",
   },
   {
-    id: 'james-2',
-    name: 'James Thornton',
+    id: "james-2",
+    name: "James Thornton",
     lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
+    time: "3:15 PM",
     unread: false,
-    initials: 'JT',
-    avatarBg: '#F3E8FF', // Light purple
-    avatarColor: '#6B21A8',
+    initials: "JT",
+    avatarBg: "#F3E8FF", // Light purple
+    avatarColor: "#6B21A8",
   },
   {
-    id: 'james-3',
-    name: 'James Thornton',
+    id: "james-3",
+    name: "James Thornton",
     lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
+    time: "3:15 PM",
     unread: false,
-    initials: 'JT',
-    avatarBg: '#ECFDF5', // Light green
-    avatarColor: '#047857',
+    initials: "JT",
+    avatarBg: "#ECFDF5", // Light green
+    avatarColor: "#047857",
   },
   {
-    id: 'james-4',
-    name: 'James Thornton',
+    id: "james-4",
+    name: "James Thornton",
     lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
+    time: "3:15 PM",
     unread: false,
-    initials: 'JT',
-    avatarBg: '#FEF3C7', // Light amber
-    avatarColor: '#B45309',
+    initials: "JT",
+    avatarBg: "#FEF3C7", // Light amber
+    avatarColor: "#B45309",
   },
   {
-    id: 'james-5',
-    name: 'James Thornton',
+    id: "james-5",
+    name: "James Thornton",
     lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
+    time: "3:15 PM",
     unread: false,
-    initials: 'JT',
-    avatarBg: '#F1F5F9', // Muted slate
-    avatarColor: '#475569',
+    initials: "JT",
+    avatarBg: "#F1F5F9", // Muted slate
+    avatarColor: "#475569",
   },
 ];
 
@@ -77,11 +78,11 @@ export default function EmployerChatsScreen() {
       params: { id, origin: "employer" },
     });
   };
-  
+
   return (
-    <View className="flex-1 bg-white">
-      {/* Brand Header */}
-      <ScreenHeader />
+    <ScreenWrapper>
+      {/* Header */}
+      <CommonHeader headerTitle="Chats" withBackButton />
 
       {/* Chats List */}
       <ScrollView
@@ -141,6 +142,6 @@ export default function EmployerChatsScreen() {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }

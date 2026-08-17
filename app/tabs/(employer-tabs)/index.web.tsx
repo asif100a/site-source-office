@@ -23,6 +23,13 @@ export default function EmployerHomeScreenWeb() {
     });
   };
 
+  const handleWorkerDetails = (id: string) => {
+    router.push({
+      pathname: `/screens/worker-details/${id}`,
+      params: { origin: "employer" },
+    });
+  };
+
   return (
     <ScreenWrapper>
       <ScrollView
@@ -74,12 +81,17 @@ export default function EmployerHomeScreenWeb() {
             </View>
 
             <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
-              <JobRequests openWorkerDetails={openWorkerDetails} containerStyle={{
-                marginTop: 0
-              }} />
+              <JobRequests
+                openWorkerDetails={openWorkerDetails}
+                containerStyle={{
+                  marginTop: 0,
+                }}
+              />
             </View>
           </View>
         </View>
+        {/* Job Requests */}
+        <JobRequests openWorkerDetails={handleWorkerDetails} />
       </ScrollView>
     </ScreenWrapper>
   );

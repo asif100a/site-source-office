@@ -10,6 +10,7 @@ import {
   Lock,
   LogOut,
   MessageSquare,
+  MessageSquareText,
   Star,
   User,
 } from "lucide-react-native";
@@ -127,6 +128,15 @@ export default function EmployerProfileWebScreen() {
         onPress: () =>
           router.push({
             pathname: "/screens/profile/notification-settings",
+            params: { origin: "employer" },
+          }),
+      },
+      {
+        icon: MessageSquareText,
+        label: "Chats",
+        onPress: () =>
+          router.push({
+            pathname: "/screens/chats/chats",
             params: { origin: "employer" },
           }),
       },

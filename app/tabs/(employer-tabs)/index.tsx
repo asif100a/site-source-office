@@ -22,6 +22,7 @@ import {
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
+import JobRequests from "@/components/modules/employer/home/JobRequests";
 
 const CALENDAR_DAYS = [
   { value: 10, active: true },
@@ -90,6 +91,13 @@ export default function EmployerHomeScreen() {
   ) => {
     setter(Math.max(1, nextValue));
   };
+
+  const handleWorkerDetails = (id: string) => {
+    router.push({
+      pathname: `/screens/worker-details/${id}`,
+      params: { origin: "employer" },
+    });
+  }
 
   return (
     <ScreenWrapper>
@@ -394,6 +402,9 @@ export default function EmployerHomeScreen() {
             starts.
           </Text>
         </View>
+
+        {/* Job Requests */}
+        <JobRequests openWorkerDetails={handleWorkerDetails} />
       </ScrollView>
     </ScreenWrapper>
   );

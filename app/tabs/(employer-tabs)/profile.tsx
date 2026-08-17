@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronRight,
   Copy,
+  MessageSquareText,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
@@ -84,6 +85,15 @@ export default function ProfileScreen() {
         onPress: () =>
           router.push({
             pathname: "/screens/profile/notification-settings",
+            params: { origin: "employer" },
+          }),
+      },
+      {
+        icon: MessageSquareText,
+        label: "Chats",
+        onPress: () =>
+          router.push({
+            pathname: "/screens/chats/chats",
             params: { origin: "employer" },
           }),
       },

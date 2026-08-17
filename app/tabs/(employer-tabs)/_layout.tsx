@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { CustomTabBar } from "@/components/layout/CustomTabBar";
 import TabIcons from "@/assets/icons/TabIcons";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function EmployerTabsLayout() {
   return (
@@ -32,10 +33,10 @@ export default function EmployerTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="chats"
+        name="approvals"
         options={{
-          title: "Chats",
-          tabBarIcon: ({ color, size }) => <TabIcons.ChatIcon color={color} size={size} />,
+          title: "Approvals",
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen

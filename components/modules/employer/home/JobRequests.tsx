@@ -31,7 +31,7 @@ export default function JobRequests({
   containerStyle?: ViewStyle;
 }) {
   return (
-    <View className="mt-8" style={containerStyle}>
+    <View className="mt-8 px-5" style={containerStyle}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-neutral-950 text-[18px] font-semibold">
           Job Requests
@@ -43,7 +43,7 @@ export default function JobRequests({
         {JOB_REQUESTS.map((job) => (
           <View
             key={job.id}
-            className="bg-white rounded-xl border border-neutral-200/80 overflow-hidden"
+            className="bg-white rounded-xl overflow-hidden"
           >
             <View className="px-4 pt-4 pb-3">
               <View className="flex-row items-start justify-between">

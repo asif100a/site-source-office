@@ -22,8 +22,8 @@ const NAV_LINKS = [
   },
   {
     href: "/tabs/chats",
-    label: "Chats",
-    activePaths: ["/tabs/chats"],
+    label: "Approvals",
+    activePaths: ["/tabs/approvals"],
   },
   {
     href: "/tabs/profile",
