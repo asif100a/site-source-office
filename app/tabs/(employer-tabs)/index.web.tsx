@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import type { Region } from "react-native-maps";
 import {
   ChevronDown,
   ChevronLeft,
@@ -20,6 +21,7 @@ import {
 } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
+import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { Colors } from "@/constants/Colors";
 
 const CALENDAR_DAYS = [
@@ -50,12 +52,43 @@ const CALENDAR_DAYS = [
 const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
 
 type MustHaveOption = (typeof MUST_HAVE_OPTIONS)[number];
+type NativeMapComponents = {
+  MapView: typeof import("react-native-maps").default;
+  Marker: typeof import("react-native-maps").Marker;
+  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
+};
+
+const SITE_REGION: Region = {
+  latitude: 51.5295,
+  longitude: -0.0887,
+  latitudeDelta: 0.018,
+  longitudeDelta: 0.018,
+};
+
+function getNativeMapComponents(): NativeMapComponents | null {
+  try {
+    const maps =
+      require("react-native-maps") as typeof import("react-native-maps");
+    return {
+      MapView: maps.default,
+      Marker: maps.Marker,
+      ProviderGoogle: maps.PROVIDER_GOOGLE,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default function EmployerHomeScreenWeb() {
   const router = useRouter();
+  const nativeMapComponents = useMemo(() => getNativeMapComponents(), []);
+  const NativeMapView = nativeMapComponents?.MapView;
+  const NativeMarker = nativeMapComponents?.Marker;
+  const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [weekendWork, setWeekendWork] = useState(false);
+  const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
   const [notes, setNotes] = useState(
     "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
   );
@@ -95,6 +128,21 @@ export default function EmployerHomeScreenWeb() {
     nextValue: number,
   ) => {
     setter(Math.max(1, nextValue));
+  };
+
+  const adjustMapZoom = (direction: "in" | "out") => {
+    setSiteRegion((current) => {
+      const nextDelta =
+        direction === "in"
+          ? Math.max(current.latitudeDelta * 0.7, 0.0025)
+          : Math.min(current.latitudeDelta / 0.7, 0.2);
+
+      return {
+        ...current,
+        latitudeDelta: nextDelta,
+        longitudeDelta: nextDelta,
+      };
+    });
   };
 
   return (
@@ -154,7 +202,15 @@ export default function EmployerHomeScreenWeb() {
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-1 gap-6">
-                <MapHeroCard />
+                <MapHeroCard
+                  NativeMapView={NativeMapView}
+                  NativeMarker={NativeMarker}
+                  NativeProviderGoogle={NativeProviderGoogle}
+                  siteRegion={siteRegion}
+                  onRegionChange={setSiteRegion}
+                  onZoomIn={() => adjustMapZoom("in")}
+                  onZoomOut={() => adjustMapZoom("out")}
+                />
 
                 <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
                   <View className="mb-6 flex-row items-start justify-between gap-4">
@@ -469,38 +525,84 @@ export default function EmployerHomeScreenWeb() {
   );
 }
 
-function MapHeroCard() {
+function MapHeroCard({
+  NativeMapView,
+  NativeMarker,
+  NativeProviderGoogle,
+  siteRegion,
+  onRegionChange,
+  onZoomIn,
+  onZoomOut,
+}: {
+  NativeMapView?: NativeMapComponents["MapView"];
+  NativeMarker?: NativeMapComponents["Marker"];
+  NativeProviderGoogle?: NativeMapComponents["ProviderGoogle"];
+  siteRegion: Region;
+  onRegionChange: (region: Region) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+}) {
   return (
     <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
-      <View className="bg-[#DDD8D2] px-6 py-6">
-        <View className="flex-row items-start justify-between gap-4">
-          <View className="rounded-full bg-white px-4 py-2 shadow-sm">
-            <View className="flex-row items-center gap-2">
-              <View className="h-2.5 w-2.5 rounded-full bg-[#FF5A1F]" />
-              <Text className="text-sm font-semibold text-[#262626]">
-                Shoreditch, E2
-              </Text>
-            </View>
-          </View>
+      <View className="relative bg-[#DDD8D2]">
+        <View className="h-[360px]">
+          {NativeMapView && NativeMarker ? (
+            <NativeMapView
+              style={{ flex: 1 }}
+              provider={NativeProviderGoogle}
+              region={siteRegion}
+              onRegionChangeComplete={onRegionChange}
+              mapType="standard"
+              loadingEnabled
+              showsCompass={false}
+              toolbarEnabled={false}
+              showsMyLocationButton={false}
+              moveOnMarkerPress={false}
+            >
+              <NativeMarker coordinate={siteRegion} title="Site location" />
+            </NativeMapView>
+          ) : (
+            <MapFallback />
+          )}
+        </View>
 
-          <View className="flex-row gap-2">
-            {[
-              <MapPin key="pin" size={18} color={Colors.common.BRAND} />,
-              <Plus key="plus" size={18} color="#111111" />,
-              <Minus key="minus" size={18} color="#111111" />,
-            ].map((icon, index) => (
+        <View className="absolute inset-x-0 top-0 px-6 py-6">
+          <View className="flex-row items-start justify-between gap-4">
+            <View className="rounded-full bg-white px-4 py-2 shadow-sm">
+              <View className="flex-row items-center gap-2">
+                <View className="h-2.5 w-2.5 rounded-full bg-[#FF5A1F]" />
+                <Text className="text-sm font-semibold text-[#262626]">
+                  Shoreditch, E2
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row gap-2">
               <TouchableOpacity
-                key={`map-control-${index}`}
                 activeOpacity={0.85}
                 className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
               >
-                {icon}
+                <MapPin size={18} color={Colors.common.BRAND} />
               </TouchableOpacity>
-            ))}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={onZoomIn}
+                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
+              >
+                <Plus size={18} color="#111111" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={onZoomOut}
+                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
+              >
+                <Minus size={18} color="#111111" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        <View className="items-center py-10">
+        <View className="pointer-events-none absolute inset-x-0 top-20 items-center">
           <View className="rounded-full bg-[#2E2E2E] px-5 py-2">
             <Text className="text-xs font-bold text-white">
               Drag the map to place your site
@@ -508,7 +610,7 @@ function MapHeroCard() {
           </View>
         </View>
 
-        <View className="rounded-[24px] bg-white px-5 py-5 shadow-sm">
+        <View className="absolute inset-x-6 bottom-6 rounded-[24px] bg-white px-5 py-5 shadow-sm">
           <View className="flex-row items-center justify-between gap-4">
             <View className="flex-row items-center gap-4">
               <View
