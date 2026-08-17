@@ -94,7 +94,7 @@ export default function EmployerHomeScreen() {
 
   const handleWorkerDetails = (id: string) => {
     router.push({
-      pathname: `/screens/worker-details/${id}`,
+      pathname: `/screens/worker-details/${id}` as any,
       params: { origin: "employer" },
     });
   }

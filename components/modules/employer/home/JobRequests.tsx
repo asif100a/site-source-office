@@ -31,7 +31,7 @@ export default function JobRequests({
   containerStyle?: ViewStyle;
 }) {
   return (
-    <View className="mt-8 px-5" style={containerStyle}>
+    <View className="mt-8" style={containerStyle}>
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-neutral-950 text-[18px] font-semibold">
           Job Requests
