@@ -86,3 +86,16 @@ export type WorkerHomeModalFilters = {
   dateRange: WorkerHomeDateRange;
   sortBy: WorkerHomeFilter;
 };
+
+export type ApprovalTab = "timesheets" | "requests";
+
+export interface TimesheetApproval {
+  id: string;
+  workerId: string;
+  workerName: string;
+  role: string;
+  location: string;
+  submittedAt: string;
+  weekLabel: string;
+  totalHours: string;
+};

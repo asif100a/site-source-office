@@ -1,25 +1,13 @@
-import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useMemo, useState } from "react";
+import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronRight, MapPin } from "lucide-react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
 import WorkerApproveModal from "@/components/modules/employer/worker-details/WorkerApproveModal";
-import { Colors } from "@/constants/Colors";
-
-type ApprovalTab = "timesheets" | "requests";
-
-type TimesheetApproval = {
-  id: string;
-  workerId: string;
-  workerName: string;
-  role: string;
-  location: string;
-  submittedAt: string;
-  weekLabel: string;
-  totalHours: string;
-};
+import ApprovalTabs from "@/components/modules/employer/approvals/ApprovalTabs";
+import TimesheetApprovalList from "@/components/modules/employer/approvals/TimesheetApprovalList";
+import { ApprovalTab, TimesheetApproval } from "@/types";
 
 const TIMESHEET_APPROVALS: TimesheetApproval[] = [
   {
@@ -53,120 +41,6 @@ const WEEK_OPTIONS = [
   "Saturday",
   "Sunday",
 ];
-
-function ApprovalTabs({
-  activeTab,
-  setActiveTab,
-}: {
-  activeTab: ApprovalTab;
-  setActiveTab: React.Dispatch<React.SetStateAction<ApprovalTab>>;
-}) {
-  return (
-    <View className="mt-5 flex-row rounded-2xl bg-neutral-100 p-1">
-      {[
-        { id: "timesheets" as const, label: "Approve Timesheet" },
-        { id: "requests" as const, label: "Approve Job Request" },
-      ].map((tab) => {
-        const active = activeTab === tab.id;
-
-        return (
-          <TouchableOpacity
-            key={tab.id}
-            activeOpacity={0.9}
-            onPress={() => setActiveTab(tab.id)}
-            className={`flex-1 rounded-[14px] px-3 py-3 ${
-              active ? "bg-white" : "bg-transparent"
-            }`}
-          >
-            <Text
-              className={`text-center text-xs font-extrabold ${
-                active ? "text-neutral-950" : "text-neutral-500"
-              }`}
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-function TimesheetApprovalList({
-  items,
-  onApprove,
-  openWorkerDetails
-}: {
-  items: TimesheetApproval[];
-  onApprove: (item: TimesheetApproval) => void;
-  openWorkerDetails: (workerId: string) => void;
-}) {
-  return (
-    <View className="rounded-[24px] bg-white px-4 py-4">
-      <View className="mb-4 flex-row items-center justify-between">
-        <Text className="text-base font-extrabold text-neutral-950">
-          Pending Timesheets
-        </Text>
-        <ChevronRight size={18} color="#1F2937" />
-      </View>
-
-      {items.map((item, index) => (
-        <View
-          key={item.id}
-          className={`py-4 ${
-            index < items.length - 1 ? "border-b border-neutral-100" : ""
-          }`}
-        >
-          <View className="flex-row items-start justify-between gap-3">
-            <View className="flex-1 pr-2">
-              <Text className="text-sm font-bold text-neutral-950">
-                {item.workerName}
-              </Text>
-              <Text className="mt-1 text-xs text-neutral-500">{item.role}</Text>
-            </View>
-
-            <View className="rounded-full bg-orange-50 px-3 py-1.5">
-              <Text
-                style={{ color: Colors.common.BRAND }}
-                className="text-[10px] font-extrabold"
-              >
-                Pending
-              </Text>
-            </View>
-          </View>
-
-          <Text className="mt-3 text-sm font-semibold text-neutral-900">
-            {item.weekLabel}
-          </Text>
-          {/* <Text className="mt-1 text-xs text-neutral-400">{item.submittedAt}</Text> */}
-
-          <View className="mt-3 flex-row items-center gap-2">
-            <MapPin size={14} color="#C81E1E" />
-            <Text className="flex-1 text-xs text-neutral-500">
-              {item.location}
-            </Text>
-          </View>
-
-          {/* <Text className="mt-2 text-xs text-neutral-500">{item.totalHours}</Text> */}
-
-          <View className="mt-4 flex-row items-center justify-end gap-3">
-            <TouchableOpacity onPress={() => openWorkerDetails(item.id)} activeOpacity={0.85}>
-              <Text className="text-xs font-bold text-neutral-700">View Details</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => onApprove(item)}
-              activeOpacity={0.9}
-              className="rounded-xl border border-neutral-200 px-4 py-2.5"
-            >
-              <Text className="text-xs font-bold text-neutral-700">Approve</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
 
 export default function EmployerApprovalsScreen() {
   const router = useRouter();
