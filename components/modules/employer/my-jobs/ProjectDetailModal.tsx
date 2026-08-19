@@ -3,6 +3,7 @@ import React from "react";
 import { ModalFrame, ModalHeader } from "./_ui";
 import { Colors } from "@/constants/Colors";
 import { Plus } from "lucide-react-native";
+import { ProjectCard } from "@/types";
 
 export default function ProjectDetailModal({
   visible,

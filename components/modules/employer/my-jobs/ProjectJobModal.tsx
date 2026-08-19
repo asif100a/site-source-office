@@ -4,6 +4,8 @@ import { ModalFrame, ModalHeader, ProjectInput, TradeSkillDropdown } from "./_ui
 import { CalendarDays } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
+import { ProjectCard, ProjectJobDateRange, ProjectJobForm } from "@/types";
+import { formatProjectJobDateRange } from "@/app/tabs/(employer-tabs)/my-jobs";
 
 export default function ProjectJobModal({
   visible,

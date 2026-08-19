@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { BriefcaseBusiness, MapPin } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
+import { ProjectCard } from '@/types';
 
 export default function ProjectSummaryCard({
   project,

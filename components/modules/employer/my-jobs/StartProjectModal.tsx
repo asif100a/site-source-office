@@ -1,6 +1,7 @@
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { ModalFrame, ModalHeader, ProjectDateInput, ProjectInput } from "./_ui";
 import { Colors } from "@/constants/Colors";
+import { ProjectForm } from "@/types";
 
 export default function StartProjectModal({
   visible,

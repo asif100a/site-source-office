@@ -37,7 +37,7 @@ const formatProjectDate = (date: Date) =>
     year: "numeric",
   });
 
-const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
+export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
   if (!range.from && !range.to) {
     return "Select required days";
   }
