@@ -240,13 +240,7 @@ export default function AuthFlow() {
       case "complete_payroll":
         return (
           <CompletePayrollScreen
-            onComplete={() => {
-              if (role === "employer") {
-                setStep("review");
-              } else {
-                goToPostRegistrationRoute();
-              }
-            }}
+            onComplete={goToPostRegistrationRoute}
           />
         );
       case "review":
@@ -268,14 +262,6 @@ export default function AuthFlow() {
     }
   };
 
-  const showHeader =
-    step !== "complete_payroll" &&
-    step !== "review" &&
-    step !== "login" &&
-    step !== "register_general" &&
-    step !== "register_sso" &&
-    step !== "forgot_password";
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -285,8 +271,6 @@ export default function AuthFlow() {
         style={{ flex: 1, backgroundColor: "white" }}
         edges={["bottom"]}
       >
-        {/* Top Mini-Navigation Bar */}
-        {showHeader && (
           <View
             className="flex-row items-center justify-between px-4 pt-16"
             style={{ backgroundColor: Colors.common.BRAND }}
@@ -299,7 +283,6 @@ export default function AuthFlow() {
               iconColor={Colors.common.WHITE}
             />
           </View>
-        )}
 
         {/* Render Current Active Screen */}
         <View style={{ flex: 1 }} className="flex-1">

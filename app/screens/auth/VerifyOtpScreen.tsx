@@ -134,8 +134,8 @@ export default function VerifyOtpScreen({
       keyboardShouldPersistTaps="handled"
       bounces={false}
     >
-      <View className="bg-[#FF5500] px-6 pb-10 pt-16">
-        <View className="mb-4 items-center justify-center">
+      <View className="bg-[#FF5500] px-6 pb-10">
+        <View className="mb-4 justify-center items-center">
           <LogoWhite />
         </View>
         <Text className="text-3xl font-bold tracking-tight text-white">
@@ -246,12 +246,6 @@ export default function VerifyOtpScreen({
               }`}
             >
               {flow === "password_reset" ? "Send again" : "Resend code"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleBack} activeOpacity={0.7}>
-            <Text className="text-center text-sm font-semibold text-neutral-600 underline">
-              {flow === "password_reset" ? "Back to password reset" : "Back to sign up"}
             </Text>
           </TouchableOpacity>
         </View>

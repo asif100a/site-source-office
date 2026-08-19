@@ -79,7 +79,7 @@ export default function ResetPasswordScreen({
       keyboardShouldPersistTaps="handled"
       bounces={false}
     >
-      <View className="bg-[#FF5500] px-6 pb-10 pt-16">
+      <View className="bg-[#FF5500] px-6 pb-10">
         <View className="mb-4 items-center justify-center">
           <LogoWhite />
         </View>

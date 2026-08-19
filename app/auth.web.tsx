@@ -209,13 +209,7 @@ export default function AuthFlowWeb() {
       case "complete_payroll":
         return (
           <CompletePayrollScreen
-            onComplete={() => {
-              if (role === "employer") {
-                setStep("review");
-              } else {
-                goToPostRegistrationRoute();
-              }
-            }}
+            onComplete={goToPostRegistrationRoute}
           />
         );
       case "review":

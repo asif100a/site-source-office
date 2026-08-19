@@ -173,7 +173,10 @@ export default function EmployerProfileWebScreen() {
         icon: LogOut,
         label: "Log out",
         onPress: () => {
-          return router.replace("/screens/auth/LoginScreen");
+          return router.replace({
+            pathname: "/auth",
+            params: { currentStep: "login" },
+          });
         },
       },
     ],
