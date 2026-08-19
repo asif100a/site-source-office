@@ -250,7 +250,7 @@ function FilterBody({
               <Slider
                 value={maxDistanceMiles}
                 minValue={1}
-                maxValue={5}
+                maxValue={50}
                 step={1}
                 onChange={onMaxDistanceMilesChange}
                 onChangeEnd={() => setIsAdjustingRange(false)}
@@ -269,7 +269,7 @@ function FilterBody({
                 Min rate
               </Text>
               <Text className="text-sm font-bold text-neutral-900">
-                GBP {minRatePerDay}/day
+                £{minRatePerDay}/day
               </Text>
             </View>
             <View

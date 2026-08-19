@@ -203,5 +203,5 @@ export function formatNeeded(workersNeeded: number) {
 }
 
 export function formatPayRate(payRatePerDay: number) {
-  return `GBP ${payRatePerDay}/day`;
+  return `£${payRatePerDay}/hr`;
 }

@@ -303,7 +303,7 @@ export default function WorkerHomeScreen() {
                       description={job.company}
                     >
                       <MarkerBubble
-                        label={`GBP ${job.payRatePerDay}`}
+                        label={`£${job.payRatePerDay}`}
                         dark={index === 0}
                       />
                     </NativeMarker>
@@ -395,7 +395,7 @@ export default function WorkerHomeScreen() {
                 Nearby Jobs
               </Text>
               <Text className="mt-1 text-xs font-medium text-neutral-500">
-                {filteredJobs.length} within 5 mi of{" "}
+                {filteredJobs.length} within {maxDistanceMiles} mi of{" "}
                 {locationQuery || DEFAULT_HOME_LOCATION}
               </Text>
             </View>
