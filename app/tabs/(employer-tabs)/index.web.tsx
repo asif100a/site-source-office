@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   MapPin,
   Minus,
   Plus,
@@ -21,6 +20,8 @@ import {
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
 import { Colors } from "@/constants/Colors";
+import { CounterRow, DateCard, FormSectionLabel, SnapshotCard, SummaryRow, TimePill } from "@/components/modules/employer/home/_ui/web.index";
+import WebMapHeroCard from "@/components/modules/employer/home/WebMapHeroCard";
 
 const CALENDAR_DAYS = [
   { value: 10, active: true },
@@ -211,7 +212,7 @@ export default function EmployerHomeScreenWeb() {
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-1 gap-6">
-                <MapHeroCard
+                <WebMapHeroCard
                   mapEmbedUrl={mapEmbedUrl}
                   onZoomIn={() => adjustMapZoom("in")}
                   onZoomOut={() => adjustMapZoom("out")}
@@ -562,250 +563,5 @@ export default function EmployerHomeScreenWeb() {
         </View>
       </ScrollView>
     </ScreenWrapper>
-  );
-}
-
-function MapHeroCard({
-  mapEmbedUrl,
-  onZoomIn,
-  onZoomOut,
-}: {
-  mapEmbedUrl: string;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-}) {
-  return (
-    <View className="overflow-hidden rounded-[30px] border border-neutral-200/80 bg-white shadow-sm">
-      <View className="relative bg-[#DDD8D2]">
-        <View className="h-[360px]">
-          <WebGoogleMap sourceUrl={mapEmbedUrl} />
-        </View>
-
-        <View className="absolute inset-x-0 top-0 px-6 py-6">
-          <View className="flex-row items-start justify-between gap-4">
-            <View className="rounded-full bg-white px-4 py-2 shadow-sm">
-              <View className="flex-row items-center gap-2">
-                <View className="h-2.5 w-2.5 rounded-full bg-[#FF5A1F]" />
-                <Text className="text-sm font-semibold text-[#262626]">
-                  Shoreditch, E2
-                </Text>
-              </View>
-            </View>
-
-            <View className="flex-row gap-2">
-              <TouchableOpacity
-                activeOpacity={0.85}
-                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
-              >
-                <MapPin size={18} color={Colors.common.BRAND} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={onZoomIn}
-                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
-              >
-                <Plus size={18} color="#111111" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={onZoomOut}
-                className="h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm"
-              >
-                <Minus size={18} color="#111111" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        <View className="pointer-events-none absolute inset-x-0 top-20 items-center">
-          <View className="rounded-full bg-[#2E2E2E] px-5 py-2">
-            <Text className="text-xs font-bold text-white">
-              Drag the map to place your site
-            </Text>
-          </View>
-        </View>
-
-        <View className="absolute inset-x-6 bottom-6 rounded-[24px] bg-white px-5 py-5 shadow-sm">
-          <View className="flex-row items-center justify-between gap-4">
-            <View className="flex-row items-center gap-4">
-              <View
-                className="h-14 w-14 items-center justify-center rounded-2xl"
-                style={{ backgroundColor: Colors.common.BRAND }}
-              >
-                <MapPin size={22} color="#FFFFFF" fill="#FFFFFF" />
-              </View>
-
-              <View className="shrink">
-                <Text className="text-[11px] font-bold uppercase tracking-[1.4px] text-[#8A8A8A]">
-                  Site location
-                </Text>
-                <Text className="mt-1 text-sm font-bold text-[#111111]">
-                  42 Hoxton Street, London N1
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              className="rounded-2xl bg-[#F3F3F3] px-4 py-3"
-            >
-              <Text className="text-sm font-bold text-[#222222]">Edit</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function WebGoogleMap({ sourceUrl }: { sourceUrl: string }) {
-  return React.createElement("iframe", {
-    title: "42 Hoxton Street map",
-    src: sourceUrl,
-    loading: "lazy",
-    referrerPolicy: "no-referrer-when-downgrade",
-    style: {
-      width: "100%",
-      height: "100%",
-      border: 0,
-      display: "block",
-    },
-  });
-}
-
-function FormSectionLabel({ label }: { label: string }) {
-  return (
-    <Text className="mt-6 text-[11px] font-bold uppercase tracking-[1.3px] text-[#7A7A7A]">
-      {label}
-    </Text>
-  );
-}
-
-function CounterRow({
-  label,
-  hint,
-  value,
-  onDecrease,
-  onIncrease,
-}: {
-  label: string;
-  hint: string;
-  value: string;
-  onDecrease: () => void;
-  onIncrease: () => void;
-}) {
-  return (
-    <View className="flex-row items-center justify-between gap-3">
-      <View className="shrink">
-        <Text className="text-base font-bold text-[#202020]">{label}</Text>
-        <Text className="mt-1 text-sm text-[#858585]">{hint}</Text>
-      </View>
-
-      <View className="flex-row items-center gap-4">
-        <CounterButton
-          icon={<Minus size={18} color="#202020" />}
-          onPress={onDecrease}
-        />
-        <Text className="min-w-[64px] text-center text-[20px] font-bold tracking-tight text-[#111111]">
-          {value}
-        </Text>
-        <CounterButton
-          icon={<Plus size={18} color="#FFFFFF" />}
-          onPress={onIncrease}
-          filled
-        />
-      </View>
-    </View>
-  );
-}
-
-function CounterButton({
-  icon,
-  filled = false,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  filled?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      className={`h-11 w-11 items-center justify-center rounded-2xl ${
-        filled ? "bg-[#111111]" : "bg-[#F3F3F3]"
-      }`}
-    >
-      {icon}
-    </TouchableOpacity>
-  );
-}
-
-function DateCard({
-  label,
-  value,
-  active = false,
-}: {
-  label: string;
-  value: string;
-  active?: boolean;
-}) {
-  return (
-    <View
-      className={`rounded-[18px] border bg-white px-4 py-4 ${
-        active ? "border-[#FF5A1F]" : "border-[#E9E9E9]"
-      }`}
-    >
-      <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#8B8B8B]">
-        {label}
-      </Text>
-      <Text className="mt-1 text-[22px] font-bold tracking-tight text-[#111111]">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function TimePill({ value }: { value: string }) {
-  return (
-    <View className="flex-row items-center gap-2 rounded-2xl border border-[#E9E9E9] bg-white px-3 py-2.5">
-      <Text className="text-sm font-bold text-[#202020]">{value}</Text>
-      <Clock3 size={15} color="#8A8A8A" />
-    </View>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-start justify-between gap-4">
-      <Text className="text-xs font-bold uppercase tracking-[1px] text-[#8F8F8F]">
-        {label}
-      </Text>
-      <Text className="max-w-[190px] text-right text-sm font-semibold text-white">
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function SnapshotCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-}) {
-  return (
-    <View className="rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4">
-      <Text className="text-[11px] font-bold uppercase tracking-[1.2px] text-neutral-500">
-        {label}
-      </Text>
-      <Text className="mt-2 text-2xl font-bold tracking-tight text-neutral-950">
-        {value}
-      </Text>
-      <Text className="mt-2 text-sm leading-6 text-neutral-500">{helper}</Text>
-    </View>
   );
 }
