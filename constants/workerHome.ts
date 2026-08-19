@@ -1,8 +1,4 @@
-export type WorkerHomeFilter =
-  | "All"
-  | "Closing soon"
-  | "Highest paid"
-  | "Nearby";
+import { WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob, WorkerHomeModalFilters } from "@/types";
 
 export const WORKER_HOME_TRADE_OPTIONS = [
   "Labourer",
@@ -12,34 +8,6 @@ export const WORKER_HOME_TRADE_OPTIONS = [
   "Bricklayer",
   "Plant op",
 ] as const;
-
-export type WorkerHomeDateRange = {
-  from?: Date;
-  to?: Date;
-};
-
-export type WorkerHomeJob = {
-  id: string;
-  title: string;
-  company: string;
-  area: string;
-  distanceMiles: number;
-  workersNeeded: number;
-  startLabel: string;
-  startDate: string;
-  posted: string;
-  payRatePerDay: number;
-  duration: string;
-  closingAt: string;
-  coordinate: {
-    latitude: number;
-    longitude: number;
-  };
-  mapPosition: {
-    top: number;
-    left: string;
-  };
-};
 
 export const DEFAULT_HOME_LOCATION = "Shoreditch, E2";
 
@@ -140,14 +108,6 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     },
   },
 ];
-
-export type WorkerHomeModalFilters = {
-  trades: string[];
-  maxDistanceMiles: number;
-  minRatePerDay: number;
-  dateRange: WorkerHomeDateRange;
-  sortBy: WorkerHomeFilter;
-};
 
 function matchesTrade(job: WorkerHomeJob, trades: string[]) {
   if (trades.length === 0) {

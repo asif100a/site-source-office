@@ -19,8 +19,8 @@ import { Slider, SliderFilledTrack, SliderThumb, SliderTrack } from "@/component
 import { Colors } from "@/constants/Colors";
 import {
   WORKER_HOME_TRADE_OPTIONS,
-  type WorkerHomeDateRange,
 } from "@/constants/workerHome";
+import { WorkerHomeDateRange } from "@/types";
 
 type WorkerHomeFilterModalProps = {
   visible: boolean;

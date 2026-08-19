@@ -2,10 +2,12 @@ import React, { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ScrollView,
+  StyleProp,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import {
   Briefcase,
@@ -25,22 +27,14 @@ import {
   DEFAULT_HOME_LOCATION,
   filterWorkerHomeJobs,
   formatDistance,
-  formatNeeded,
   formatPayRate,
   WORKER_HOME_FILTERS,
   WORKER_HOME_JOBS,
-  type WorkerHomeDateRange,
-  type WorkerHomeFilter,
-  type WorkerHomeJob,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
-
-type MapRegion = {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-};
+import { MapRegion, WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob } from "@/types";
+import { FilterChip, MarkerBubble } from "@/components/modules/worker/home/_ui";
+import WebJobCard from "@/components/modules/worker/home/WebJobCard";
 
 const MAP_REGION: MapRegion = {
   latitude: 51.5295,
@@ -54,148 +48,6 @@ const getGoogleMapEmbedUrl = (region: MapRegion) => {
 
   return `https://maps.google.com/maps?q=${query}&z=14&output=embed`;
 };
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: WorkerHomeFilter;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className="mr-3 rounded-full px-5 py-3"
-      style={{
-        backgroundColor: active ? "#111111" : "#FFFFFF",
-        borderWidth: active ? 0 : 1,
-        borderColor: "#E7E7E7",
-      }}
-    >
-      <Text
-        className="text-sm font-bold"
-        style={{ color: active ? "#FFFFFF" : "#4B4B4B" }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function MarkerBubble({
-  label,
-  dark = false,
-}: {
-  label: string;
-  dark?: boolean;
-}) {
-  return (
-    <View
-      className="rounded-full px-3 py-2 shadow-sm"
-      style={{
-        backgroundColor: dark ? "#111111" : "#FFFFFF",
-        borderWidth: dark ? 0 : 1,
-        borderColor: "#ECECEC",
-      }}
-    >
-      <Text
-        className="text-sm font-bold"
-        style={{ color: dark ? "#FFFFFF" : "#111111" }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function JobCard({
-  job,
-  onDetails,
-  onApply,
-}: {
-  job: WorkerHomeJob;
-  onDetails: (job: WorkerHomeJob) => void;
-  onApply: (job: WorkerHomeJob) => void;
-}) {
-  const closingSoon =
-    new Date(job.closingAt).getTime() - Date.now() < 1000 * 60 * 60 * 30;
-
-  return (
-    <View className="mb-4 rounded-xl bg-white px-6 py-5">
-      <View className="flex-row items-start justify-between gap-4">
-        <View className="flex-1 flex-row items-center gap-4">
-          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-[#2F5BFF]">
-            <Briefcase size={24} color="#FFFFFF" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-2xl font-bold text-neutral-950">
-              {job.title}
-            </Text>
-            <Text className="text-base font-medium text-neutral-500">
-              {job.company}
-            </Text>
-          </View>
-        </View>
-
-        <View className="items-end">
-          <Text className="text-xl font-bold text-neutral-950">
-            {formatPayRate(job.payRatePerDay)}
-          </Text>
-          <Text className="mt-1 text-sm font-medium text-neutral-500">
-            {job.duration}
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-5 flex-row flex-wrap gap-2">
-        <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
-          <Text className="text-sm font-semibold text-neutral-600">
-            {job.area} - {formatDistance(job.distanceMiles)}
-          </Text>
-        </View>
-        <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
-          <Text className="text-sm font-semibold text-neutral-600">
-            {formatNeeded(job.workersNeeded)}
-          </Text>
-        </View>
-        <View
-          className="rounded-full px-3 py-1.5"
-          style={{ backgroundColor: closingSoon ? "#FFF0E8" : "#F4F4F4" }}
-        >
-          <Text
-            className="text-sm font-bold"
-            style={{ color: closingSoon ? Colors.common.BRAND : "#5A5A5A" }}
-          >
-            {closingSoon ? "Closing soon" : job.startLabel}
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-5 flex-row items-center justify-between">
-        <Text className="text-sm font-medium text-neutral-400">
-          {job.posted}
-        </Text>
-        <View className="flex-row gap-3">
-          <TouchableOpacity
-            onPress={() => onDetails(job)}
-            className="rounded-xl bg-[#F5F3F3] px-5 py-3"
-          >
-            <Text className="text-sm font-bold text-neutral-700">Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onApply(job)}
-            className="rounded-xl px-6 py-3"
-            style={{ backgroundColor: "#111111" }}
-          >
-            <Text className="text-sm font-bold text-white">Apply</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-}
 
 export default function WorkerHomeScreen() {
   const router = useRouter();
@@ -274,7 +126,7 @@ export default function WorkerHomeScreen() {
                       top: job.mapPosition.top,
                       left: job.mapPosition.left,
                       transform: [{ translateX: -28 }],
-                    }}
+                    } as StyleProp<ViewStyle>}
                   >
                     <MarkerBubble
                       label={`GBP ${job.payRatePerDay}`}
@@ -408,7 +260,7 @@ export default function WorkerHomeScreen() {
 
             <View className="mt-6 gap-4">
               {filteredJobs.map((job) => (
-                <JobCard
+                <WebJobCard
                   key={job.id}
                   job={job}
                   onDetails={handleViewDetails}

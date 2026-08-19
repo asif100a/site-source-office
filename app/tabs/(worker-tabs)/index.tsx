@@ -33,11 +33,9 @@ import {
   formatPayRate,
   WORKER_HOME_FILTERS,
   WORKER_HOME_JOBS,
-  type WorkerHomeDateRange,
-  type WorkerHomeFilter,
-  type WorkerHomeJob,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
+import { WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob } from "@/types";
 
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
