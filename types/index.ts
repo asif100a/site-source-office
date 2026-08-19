@@ -99,3 +99,62 @@ export interface TimesheetApproval {
   weekLabel: string;
   totalHours: string;
 };
+
+export type JobStatus = "active" | "upcoming" | "completed" | "cancelled";
+export type JobTab = "active" | "upcoming" | "completed";
+
+export interface JobCard {
+  id: string;
+  title: string;
+  company: string;
+  badge: string;
+  location: string;
+  team: string;
+  duration: string;
+  status: JobStatus;
+  rate?: string;
+  applications?: string;
+  applicants?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    location: string;
+    availability: string;
+    experience: string;
+  }>;
+};
+
+export type ProjectJob = {
+  id: string;
+  tradeSkill: string;
+  daysRequired: string;
+  hourlyRate: string;
+  workBrief: string;
+};
+
+export type ProjectCard = {
+  id: string;
+  name: string;
+  address: string;
+  startDate: string;
+  endDate: string;
+  jobs: ProjectJob[];
+};
+
+export type ProjectForm = {
+  name: string;
+  address: string;
+  startDate: Date | null;
+  endDate: Date | null;
+};
+
+export type ProjectJobForm = {
+  tradeSkill: string;
+  hourlyRate: string;
+  workBrief: string;
+};
+
+export type ProjectJobDateRange = {
+  from?: Date;
+  to?: Date;
+};

@@ -9,9 +9,7 @@ import MyJobActiveCards from "@/components/modules/employer/my-jobs/MyJobActiveC
 import MyJobUpcomingCards from "@/components/modules/employer/my-jobs/MyJobUpcomingCards";
 import MyJobCompletedOrCanceledCards from "@/components/modules/employer/my-jobs/MyJobCompletedOrCanceledCards";
 import { Colors } from "@/constants/Colors";
-
-type JobStatus = "active" | "upcoming" | "completed" | "cancelled";
-type JobTab = "active" | "upcoming" | "completed";
+import { JobStatus, JobTab } from "@/types";
 
 type JobCard = {
   id: string;
