@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ScrollView,
@@ -9,13 +9,7 @@ import {
   Platform,
 } from "react-native";
 import type { Region } from "react-native-maps";
-import {
-  Briefcase,
-  CalendarClock,
-  Filter,
-  MapPin,
-  Navigation,
-} from "lucide-react-native";
+import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
 
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
@@ -35,7 +29,11 @@ import {
   WORKER_HOME_JOBS,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
-import { WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob } from "@/types";
+import {
+  WorkerHomeDateRange,
+  WorkerHomeFilter,
+  WorkerHomeJob,
+} from "@/types";
 
 type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
@@ -97,28 +95,17 @@ function FilterChip({
   );
 }
 
-function MarkerBubble({
-  label,
-  dark = false,
-}: {
-  label: string;
-  dark?: boolean;
-}) {
+function MarkerBubble({ dark = false }: { dark?: boolean }) {
   return (
     <View
-      className="rounded-full px-3 py-2 shadow-sm"
+      className="items-center justify-center rounded-full p-2.5 shadow-sm"
       style={{
         backgroundColor: dark ? "#111111" : "#FFFFFF",
         borderWidth: dark ? 0 : 1,
         borderColor: "#ECECEC",
       }}
     >
-      <Text
-        className="text-[10px] font-extrabold"
-        style={{ color: dark ? "#FFFFFF" : "#111111" }}
-      >
-        {label}
-      </Text>
+      <MapPin size={16} color={dark ? "#FFFFFF" : Colors.common.BRAND} />
     </View>
   );
 }
@@ -240,8 +227,26 @@ export default function WorkerHomeScreen() {
       }),
     [activeFilter, dateRange, maxDistanceMiles, minRatePerDay, selectedTrade],
   );
+  const [selectedJobId, setSelectedJobId] = useState(
+    WORKER_HOME_JOBS[0]?.id ?? "",
+  );
 
-  const featuredJob = filteredJobs[0] ?? WORKER_HOME_JOBS[0];
+  useEffect(() => {
+    if (!filteredJobs.length) {
+      return;
+    }
+
+    const hasSelectedJob = filteredJobs.some((job) => job.id === selectedJobId);
+
+    if (!hasSelectedJob) {
+      setSelectedJobId(filteredJobs[0].id);
+    }
+  }, [filteredJobs, selectedJobId]);
+
+  const featuredJob =
+    filteredJobs.find((job) => job.id === selectedJobId) ??
+    filteredJobs[0] ??
+    WORKER_HOME_JOBS[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
     if (isUserAuthenticated()) {
@@ -281,7 +286,7 @@ export default function WorkerHomeScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <View className="px-4 pb-8 pt-4">
-          <View className="overflow-hidden bg-white rounded-lg">
+          <View className="overflow-hidden rounded-lg bg-white">
             <View className="relative h-[340px]">
               {NativeMapView && NativeMarker ? (
                 <NativeMapView
@@ -295,17 +300,15 @@ export default function WorkerHomeScreen() {
                   showsMyLocationButton={false}
                   moveOnMarkerPress={false}
                 >
-                  {filteredJobs.map((job, index) => (
+                  {filteredJobs.map((job) => (
                     <NativeMarker
                       key={job.id}
                       coordinate={job.coordinate}
                       title={job.title}
                       description={job.company}
+                      onPress={() => setSelectedJobId(job.id)}
                     >
-                      <MarkerBubble
-                        label={`£${job.payRatePerDay}`}
-                        dark={index === 0}
-                      />
+                      <MarkerBubble dark={job.id === featuredJob?.id} />
                     </NativeMarker>
                   ))}
                 </NativeMapView>
@@ -381,7 +384,7 @@ export default function WorkerHomeScreen() {
                       {formatPayRate(featuredJob.payRatePerDay)}
                     </Text>
                     <Text className="mt-1 text-[10px] font-bold uppercase tracking-[0.8px] text-neutral-400">
-                      Tap to view
+                      Tap to view details
                     </Text>
                   </View>
                 </View>

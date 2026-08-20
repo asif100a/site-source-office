@@ -1,4 +1,6 @@
 import { WorkerHomeFilter } from "@/types";
+import { Colors } from "@/constants/Colors";
+import { MapPin } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
 
 export function FilterChip({
@@ -31,27 +33,20 @@ export function FilterChip({
 }
 
 export function MarkerBubble({
-  label,
   dark = false,
 }: {
-  label: string;
   dark?: boolean;
 }) {
   return (
     <View
-      className="rounded-full px-3 py-2 shadow-sm"
+      className="items-center justify-center rounded-full p-2.5 shadow-sm"
       style={{
         backgroundColor: dark ? "#111111" : "#FFFFFF",
         borderWidth: dark ? 0 : 1,
         borderColor: "#ECECEC",
       }}
     >
-      <Text
-        className="text-sm font-bold"
-        style={{ color: dark ? "#FFFFFF" : "#111111" }}
-      >
-        {label}
-      </Text>
+      <MapPin size={16} color={dark ? "#FFFFFF" : Colors.common.BRAND} />
     </View>
   );
 }

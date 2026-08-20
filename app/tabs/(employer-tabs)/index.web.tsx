@@ -126,13 +126,6 @@ export default function EmployerHomeScreenWeb() {
                   setHourlyRate={setHourlyRate}
                   setWorkersNeeded={setWorkersNeeded}
                 />
-
-                <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
-                  <JobRequests
-                    openWorkerDetails={openWorkerDetails}
-                    containerStyle={{ marginTop: 0, paddingHorizontal: 0 }}
-                  />
-                </View>
               </View>
 
               <View className="w-full gap-6 xl:w-[360px] 2xl:w-[390px]">

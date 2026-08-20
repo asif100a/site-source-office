@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ScrollView,
@@ -9,13 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import {
-  Briefcase,
-  CalendarClock,
-  Filter,
-  MapPin,
-  Navigation,
-} from "lucide-react-native";
+import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
@@ -32,8 +26,16 @@ import {
   WORKER_HOME_JOBS,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
-import { MapRegion, WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob } from "@/types";
-import { FilterChip, MarkerBubble } from "@/components/modules/worker/home/_ui";
+import {
+  MapRegion,
+  WorkerHomeDateRange,
+  WorkerHomeFilter,
+  WorkerHomeJob,
+} from "@/types";
+import {
+  FilterChip,
+  MarkerBubble,
+} from "@/components/modules/worker/home/_ui";
 import WebJobCard from "@/components/modules/worker/home/WebJobCard";
 
 const MAP_REGION: MapRegion = {
@@ -71,8 +73,26 @@ export default function WorkerHomeScreen() {
       }),
     [activeFilter, dateRange, maxDistanceMiles, minRatePerDay, selectedTrade],
   );
+  const [selectedJobId, setSelectedJobId] = useState(
+    WORKER_HOME_JOBS[0]?.id ?? "",
+  );
 
-  const featuredJob = filteredJobs[0] ?? WORKER_HOME_JOBS[0];
+  useEffect(() => {
+    if (!filteredJobs.length) {
+      return;
+    }
+
+    const hasSelectedJob = filteredJobs.some((job) => job.id === selectedJobId);
+
+    if (!hasSelectedJob) {
+      setSelectedJobId(filteredJobs[0].id);
+    }
+  }, [filteredJobs, selectedJobId]);
+
+  const featuredJob =
+    filteredJobs.find((job) => job.id === selectedJobId) ??
+    filteredJobs[0] ??
+    WORKER_HOME_JOBS[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
     if (isUserAuthenticated()) {
@@ -116,22 +136,19 @@ export default function WorkerHomeScreen() {
               <View className="relative h-[430px]">
                 <WebGoogleMap sourceUrl={mapEmbedUrl} />
 
-                {filteredJobs.map((job, index) => (
+                {filteredJobs.map((job) => (
                   <TouchableOpacity
                     key={job.id}
                     activeOpacity={0.9}
-                    onPress={() => handleViewDetails(job)}
+                    onPress={() => setSelectedJobId(job.id)}
                     className="absolute z-10"
                     style={{
                       top: job.mapPosition.top,
                       left: job.mapPosition.left,
-                      transform: [{ translateX: -28 }],
+                      transform: [{ translateX: -18 }],
                     } as StyleProp<ViewStyle>}
                   >
-                    <MarkerBubble
-                      label={`£${job.payRatePerDay}`}
-                      dark={index === 0}
-                    />
+                    <MarkerBubble dark={job.id === featuredJob?.id} />
                   </TouchableOpacity>
                 ))}
 
@@ -201,7 +218,7 @@ export default function WorkerHomeScreen() {
                         {formatPayRate(featuredJob.payRatePerDay)}
                       </Text>
                       <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
-                        Tap to view
+                        Tap to view details
                       </Text>
                     </View>
                   </View>

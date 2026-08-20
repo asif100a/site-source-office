@@ -194,14 +194,6 @@ export default function EmployerHomeScreen() {
 
         {/* POST A JOB */}
         <PostAJob />
-
-        {/* Job Requests */}
-        <JobRequests
-          openWorkerDetails={handleWorkerDetails}
-          containerStyle={{
-            paddingHorizontal: 20,
-          }}
-        />
       </ScrollView>
     </ScreenWrapper>
   );
