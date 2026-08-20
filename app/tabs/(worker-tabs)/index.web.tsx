@@ -212,7 +212,7 @@ export default function WorkerHomeScreen() {
             <View className="mt-8 flex-row items-end justify-between">
               <View>
                 <Text className="text-[34px] font-bold text-neutral-950">
-                  Nearby Jobs
+                  All Jobs
                 </Text>
                 <Text className="mt-1 text-base font-medium text-neutral-500">
                   {filteredJobs.length} within {maxDistanceMiles} mi of{" "}
@@ -246,17 +246,6 @@ export default function WorkerHomeScreen() {
                 />
               ))}
             </ScrollView>
-
-            <View className="mt-5 rounded-[28px] bg-[#111111] px-5 py-4">
-              <View className="flex-row items-center gap-3">
-                <CalendarClock size={18} color="#FFFFFF" />
-                <Text className="flex-1 text-sm font-semibold text-white/92">
-                  Sort by closing soon to surface jobs expiring first, highest
-                  paid to rank by day rate, or nearby to move from nearest to
-                  furthest.
-                </Text>
-              </View>
-            </View>
 
             <View className="mt-6 gap-4">
               {filteredJobs.map((job) => (

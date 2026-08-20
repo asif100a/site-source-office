@@ -1,12 +1,12 @@
-import React from 'react';
-import { View, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Text } from '@/components/ui/text';
-import LogoWhite from '@/assets/icons/LogoWhite';
-import { useForm } from 'react-hook-form';
-import { ChevronDown } from 'lucide-react-native';
-import { normalizeUserRole, UserRole } from '@/constants/Routes';
-import { useState } from 'react';
+import React from "react";
+import { View, TouchableOpacity, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
+import { Text } from "@/components/ui/text";
+import LogoWhite from "@/assets/icons/LogoWhite";
+import { useForm } from "react-hook-form";
+import { ChevronDown } from "lucide-react-native";
+import { normalizeUserRole, UserRole } from "@/constants/Routes";
+import { useState } from "react";
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
@@ -19,46 +19,53 @@ interface RegisterGeneralScreenProps {
   onLoginPress?: () => void;
 }
 
-export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }: RegisterGeneralScreenProps) {
+export default function RegisterGeneralScreen({
+  role,
+  onContinue,
+  onLoginPress,
+}: RegisterGeneralScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
-  const [openField, setOpenField] = useState<"trade" | "experience" | "availableTime" | null>(null);
+  const [openField, setOpenField] = useState<
+    "trade" | "experience" | "availableTime" | null
+  >(null);
 
   const { handleSubmit, watch, setValue } = useForm({
     defaultValues: {
-      trade: 'Groundworker',
-      experience: '6 years',
-      availableTime: '8 am - 5 pm',
-      address: '2972 Westheimer Rd. Santa A...',
-    }
+      trade: "Groundworker",
+      experience: "6 years",
+      availableTime: "8 am - 5 pm",
+      address: "2972 Westheimer Rd. Santa A...",
+    },
   });
 
   const trades = [
-    { label: 'Groundworker', value: 'Groundworker' },
-    { label: 'Carpenter', value: 'Carpenter' },
-    { label: 'Electrician', value: 'Electrician' },
-    { label: 'Plumber', value: 'Plumber' },
-    { label: 'Bricklayer', value: 'Bricklayer' },
-    { label: 'Painter', value: 'Painter' },
-    { label: 'Scaffolder', value: 'Scaffolder' }
+    { label: "Groundworker", value: "Groundworker" },
+    { label: "Carpenter", value: "Carpenter" },
+    { label: "Electrician", value: "Electrician" },
+    { label: "Plumber", value: "Plumber" },
+    { label: "Bricklayer", value: "Bricklayer" },
+    { label: "Painter", value: "Painter" },
+    { label: "Scaffolder", value: "Scaffolder" },
   ];
 
   const experiences = [
-    { label: '1 year', value: '1 year' },
-    { label: '2 years', value: '2 years' },
-    { label: '3 years', value: '3 years' },
-    { label: '4 years', value: '4 years' },
-    { label: '5 years', value: '5 years' },
-    { label: '6 years', value: '6 years' },
-    { label: '7+ years', value: '7+ years' }
+    { label: "0-1 year", value: "0-1 year" },
+    { label: "1 year", value: "1 year" },
+    { label: "2 years", value: "2 years" },
+    { label: "3 years", value: "3 years" },
+    { label: "4 years", value: "4 years" },
+    { label: "5 years", value: "5 years" },
+    { label: "6 years", value: "6 years" },
+    { label: "7+ years", value: "7+ years" },
   ];
 
   const times = [
-    { label: '8 am - 5 pm', value: '8 am - 5 pm' },
-    { label: '7 am - 4 pm', value: '7 am - 4 pm' },
-    { label: '9 am - 6 pm', value: '9 am - 6 pm' },
-    { label: 'Night shift', value: 'Night shift' },
-    { label: 'Flexible', value: 'Flexible' }
+    { label: "8 am - 5 pm", value: "8 am - 5 pm" },
+    { label: "7 am - 4 pm", value: "7 am - 4 pm" },
+    { label: "9 am - 6 pm", value: "9 am - 6 pm" },
+    { label: "Night shift", value: "Night shift" },
+    { label: "Flexible", value: "Flexible" },
   ];
   const selectedTrade = watch("trade");
   const selectedExperience = watch("experience");
@@ -129,14 +136,17 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
     if (onContinue) {
       onContinue(data);
     } else {
-      router.push({ pathname: '/auth', params: { step: 'register_documents', role: activeRole } });
+      router.push({
+        pathname: "/auth",
+        params: { step: "register_documents", role: activeRole },
+      });
     }
   };
 
   return (
-    <View className="flex-1 bg-white" style={{flex: 1}}>
-      <ScrollView 
-        className="flex-1" 
+    <View className="flex-1 bg-white" style={{ flex: 1 }}>
+      <ScrollView
+        className="flex-1"
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
@@ -146,7 +156,7 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
             <LogoWhite />
           </View>
           <Text className="text-white text-3xl font-bold tracking-tight">
-           Add Your Trade Details
+            Add Your Trade Details
           </Text>
           <Text className="text-white/85 text-sm mt-1.5 font-medium">
             Tell employers about your trade, experience, and availability.
@@ -185,17 +195,22 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
             activeOpacity={0.9}
             className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
           >
-            <Text className="text-white text-base font-semibold">
-              Continue
-            </Text>
+            <Text className="text-white text-base font-semibold">Continue</Text>
           </TouchableOpacity>
 
           <View className="flex-row justify-center items-center mt-6">
             <Text className="text-neutral-800 text-sm font-medium">
-              Already have an account?{' '}
+              Already have an account?{" "}
             </Text>
             <TouchableOpacity
-              onPress={onLoginPress ?? (() => router.push({ pathname: '/auth', params: { step: 'login', role: activeRole } }))}
+              onPress={
+                onLoginPress ??
+                (() =>
+                  router.push({
+                    pathname: "/auth",
+                    params: { step: "login", role: activeRole },
+                  }))
+              }
               activeOpacity={0.7}
             >
               <Text className="text-[#1B2530] text-sm font-bold underline">

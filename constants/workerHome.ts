@@ -51,7 +51,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     startLabel: "Starts tomorrow",
     startDate: "2026-08-17",
     posted: "Posted 12 min ago",
-    payRatePerDay: 180,
+    payRatePerDay: 220,
     duration: "2 weeks",
     closingAt: "2026-08-17T16:00:00.000Z",
     coordinate: {
@@ -73,7 +73,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     startLabel: "Starts Mon 24 Aug",
     startDate: "2026-08-24",
     posted: "Posted 1 hr ago",
-    payRatePerDay: 240,
+    payRatePerDay: 200,
     duration: "6 weeks",
     closingAt: "2026-08-18T12:00:00.000Z",
     coordinate: {
@@ -95,7 +95,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     startLabel: "Urgent today",
     startDate: "2026-08-16",
     posted: "Posted 25 min ago",
-    payRatePerDay: 280,
+    payRatePerDay: 180,
     duration: "4 days",
     closingAt: "2026-08-16T18:00:00.000Z",
     coordinate: {

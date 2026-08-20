@@ -38,7 +38,7 @@ export default function CategoryToggles({
             ? { backgroundColor: Colors.common.GRAY_DARK }
             : { backgroundColor: "#ffffff" }
         }
-        className={`px-4 py-2 rounded-xl ${activeCategory === "offers" ? "" : "border border-neutral-200/60"}`}
+        className={`px-4 py-2 rounded-lg ${activeCategory === "offers" ? "" : "border border-neutral-200/60"}`}
       >
         <Text
           className={`text-xs font-bold ${activeCategory === "offers" ? "text-white" : "text-neutral-500"}`}

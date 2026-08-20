@@ -50,6 +50,7 @@ export default function RegisterGeneralScreenWeb({
   ];
 
   const experiences = [
+    { label: "0-1 year", value: "0-1 year" },
     { label: "1 year", value: "1 year" },
     { label: "2 years", value: "2 years" },
     { label: "3 years", value: "3 years" },
@@ -162,7 +163,7 @@ export default function RegisterGeneralScreenWeb({
       subtitle="Employers can understand your trade, experience, and availability faster when your profile is complete."
       onBackPress={handleBack}
     >
-      <View className="grid gap-5 lg:grid-cols-2">
+      <View className="gap-6">
         {renderDropdown(
           "trade",
           "Trade / Skill",

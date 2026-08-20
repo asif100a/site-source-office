@@ -392,7 +392,7 @@ export default function WorkerHomeScreen() {
           <View className="mt-6 flex-row items-end justify-between">
             <View>
               <Text className="text-[22px] font-extrabold text-neutral-950">
-                Nearby Jobs
+                All Jobs
               </Text>
               <Text className="mt-1 text-xs font-medium text-neutral-500">
                 {filteredJobs.length} within {maxDistanceMiles} mi of{" "}
@@ -426,17 +426,6 @@ export default function WorkerHomeScreen() {
               />
             ))}
           </ScrollView>
-
-          <View className="mt-4 rounded-xl bg-[#111111] px-4 py-4">
-            <View className="flex-row items-center gap-3">
-              <CalendarClock size={18} color="#FFFFFF" />
-              <Text className="flex-1 text-xs font-semibold text-white/92">
-                Most engaging now: sort by closing soon to catch jobs that shut
-                first, highest paid for best day rates, or nearby for the
-                shortest travel.
-              </Text>
-            </View>
-          </View>
 
           <View className="mt-5">
             {filteredJobs.map((job) => (
