@@ -60,7 +60,7 @@ export default function WorkerSearchScreen() {
       {/* Search Header */}
       <View
         style={{ backgroundColor: Colors.common.BRAND }}
-        className="pb-3 pt-12 px-6 z-10"
+        className="pb-3 pt-8 px-6 z-10"
       >
         <View className="flex-row justify-between items-end">
           {/* Back button and title */}
@@ -74,8 +74,20 @@ export default function WorkerSearchScreen() {
             </Text>
           </TouchableOpacity>
 
-          <View className="-mb-3 flex-1 ml-6">
-            <LogoWhite size={{ width: "100", height: "72" }} />
+          <View
+            className="-mb-3 mr-0"
+            style={
+              { minWidth: "100", minHeight: "72", position: "relative" } as any
+            }
+          >
+            <View
+              style={{
+                position: "absolute",
+                right: "37%",
+              }}
+            >
+              <LogoWhite size={{ width: "100", height: "72" }} />
+            </View>
           </View>
 
           {/* Map/List View Toggle */}
