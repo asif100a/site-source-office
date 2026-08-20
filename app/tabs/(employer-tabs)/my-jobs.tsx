@@ -374,7 +374,7 @@ export default function EmployerMyJobsScreen() {
       <ScrollView
         className="flex-1 px-5 pt-5"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* Search & Filter Input */}
         <SearchAndFilterInput

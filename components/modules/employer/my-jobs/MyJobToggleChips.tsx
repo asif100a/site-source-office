@@ -12,7 +12,7 @@ export default function MyJobToggleChips({
   >;
 }) {
   return (
-    <View className="flex-row gap-2.5 mt-5">
+    <View className="flex-row gap-2.5 mt-4">
       {(
         [
           { key: "active", label: "Active Jobs" },

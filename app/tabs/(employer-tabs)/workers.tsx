@@ -85,7 +85,7 @@ export default function EmployerWorkersScreen() {
           </TouchableOpacity>
         </View>
 
-        <View className="flex-row justify-between items-center mt-6 mb-4">
+        <View className="flex-row justify-between items-center mt-4 mb-4">
           <Text className="text-neutral-950 text-[18px] font-semibold">
             Search Result
           </Text>

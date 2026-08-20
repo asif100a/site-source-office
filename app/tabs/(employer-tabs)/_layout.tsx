@@ -21,8 +21,8 @@ export default function EmployerTabsLayout() {
       <Tabs.Screen
         name="workers"
         options={{
-          title: "Applicants",
-          tabBarIcon: ({ color, size }) => <TabIcons.PeopleIcon color={color} size={size} />,
+          title: "Search",
+          tabBarIcon: ({ color, size }) => <TabIcons.SearchIcon color={color} size={size} />,
         }}
       />
       <Tabs.Screen
