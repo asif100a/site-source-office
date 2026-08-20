@@ -1,4 +1,9 @@
-import { WorkerHomeDateRange, WorkerHomeFilter, WorkerHomeJob, WorkerHomeModalFilters } from "@/types";
+import {
+  WorkerHomeDateRange,
+  WorkerHomeFilter,
+  WorkerHomeJob,
+  WorkerHomeModalFilters,
+} from "@/types";
 
 export const WORKER_HOME_TRADE_OPTIONS = [
   "Labourer",
@@ -13,9 +18,9 @@ export const DEFAULT_HOME_LOCATION = "Shoreditch, E2";
 
 export const WORKER_HOME_FILTERS: WorkerHomeFilter[] = [
   "All",
-  "Closing soon",
-  "Highest paid",
+  "Best match",
   "Nearby",
+  "Closing soon",
 ];
 
 export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
@@ -26,12 +31,12 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     area: "Shoreditch",
     distanceMiles: 0.7,
     workersNeeded: 5,
-    startLabel: "Starts tomorrow",
-    startDate: "2026-08-17",
+    startLabel: "Starts Fri 21 Aug",
+    startDate: "2026-08-21",
     posted: "Posted 8 min ago",
     payRatePerDay: 260,
     duration: "1 day",
-    closingAt: "2026-08-17T09:00:00.000Z",
+    closingAt: "2026-08-20T23:00:00.000Z",
     coordinate: {
       latitude: 51.5276,
       longitude: -0.0783,
@@ -48,12 +53,12 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     area: "Shoreditch",
     distanceMiles: 0.8,
     workersNeeded: 4,
-    startLabel: "Starts tomorrow",
-    startDate: "2026-08-17",
+    startLabel: "Starts Fri 21 Aug",
+    startDate: "2026-08-21",
     posted: "Posted 12 min ago",
     payRatePerDay: 220,
     duration: "2 weeks",
-    closingAt: "2026-08-17T16:00:00.000Z",
+    closingAt: "2026-08-21T12:00:00.000Z",
     coordinate: {
       latitude: 51.5249,
       longitude: -0.0718,
@@ -75,7 +80,7 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     posted: "Posted 1 hr ago",
     payRatePerDay: 200,
     duration: "6 weeks",
-    closingAt: "2026-08-18T12:00:00.000Z",
+    closingAt: "2026-08-22T12:00:00.000Z",
     coordinate: {
       latitude: 51.5434,
       longitude: -0.0226,
@@ -92,12 +97,12 @@ export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
     area: "Bethnal Green",
     distanceMiles: 1.1,
     workersNeeded: 1,
-    startLabel: "Urgent today",
-    startDate: "2026-08-16",
+    startLabel: "Starts Sat 22 Aug",
+    startDate: "2026-08-22",
     posted: "Posted 25 min ago",
     payRatePerDay: 180,
     duration: "4 days",
-    closingAt: "2026-08-16T18:00:00.000Z",
+    closingAt: "2026-08-20T20:00:00.000Z",
     coordinate: {
       latitude: 51.5279,
       longitude: -0.0555,
@@ -121,11 +126,7 @@ function matchesTrade(job: WorkerHomeJob, trades: string[]) {
 
 function toLocalDate(value: string | Date) {
   if (value instanceof Date) {
-    return new Date(
-      value.getFullYear(),
-      value.getMonth(),
-      value.getDate(),
-    );
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
 
   const [year, month, day] = value.split("-").map(Number);
@@ -176,15 +177,20 @@ export function sortWorkerHomeJobs(
 ) {
   const nextJobs = [...jobs];
 
+  if (filter === "Best match") {
+    return nextJobs.sort((a, b) => {
+      const scoreA = a.payRatePerDay - a.distanceMiles * 20;
+      const scoreB = b.payRatePerDay - b.distanceMiles * 20;
+
+      return scoreB - scoreA;
+    });
+  }
+
   if (filter === "Closing soon") {
     return nextJobs.sort(
       (a, b) =>
         new Date(a.closingAt).getTime() - new Date(b.closingAt).getTime(),
     );
-  }
-
-  if (filter === "Highest paid") {
-    return nextJobs.sort((a, b) => b.payRatePerDay - a.payRatePerDay);
   }
 
   if (filter === "Nearby") {
@@ -203,5 +209,5 @@ export function formatNeeded(workersNeeded: number) {
 }
 
 export function formatPayRate(payRatePerDay: number) {
-  return `£${payRatePerDay}/hr`;
+  return `£${payRatePerDay}/day`;
 }

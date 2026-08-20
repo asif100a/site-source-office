@@ -263,7 +263,7 @@ function FilterBody({
             </View>
           </View>
 
-          <View className="mt-6">
+          {/* <View className="mt-6">
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
                 Min rate
@@ -292,7 +292,7 @@ function FilterBody({
                 <SliderThumb className="h-5 w-5 border-[#FF5A1F] bg-[#FF5A1F]" />
               </Slider>
             </View>
-          </View>
+          </View> */}
 
           <View className="mt-6">
             <Text className="mb-3 text-xs font-bold uppercase tracking-[1px] text-neutral-400">
