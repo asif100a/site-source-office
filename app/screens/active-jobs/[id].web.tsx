@@ -987,14 +987,15 @@ export default function ActiveJobDetailWebScreen() {
                   </View>
 
                   {employerJobStatus === "active" ? (
-                    <ActionCard
-                      title="Cancel or dispute"
-                      description="The mobile footer actions are moved into a desktop action card here."
-                      primaryLabel="Cancel Job"
-                      secondaryLabel="Dispute"
-                      onPrimary={handleNavigateBack}
-                      onSecondary={handleNavigateBack}
-                    />
+                    // <ActionCard
+                    //   title="Cancel or dispute"
+                    //   description="The mobile footer actions are moved into a desktop action card here."
+                    //   primaryLabel="Cancel Job"
+                    //   secondaryLabel="Dispute"
+                    //   onPrimary={handleNavigateBack}
+                    //   onSecondary={handleNavigateBack}
+                    // />
+                    <></>
                   ) : (
                     <ActionCard
                       title="Review applicants"

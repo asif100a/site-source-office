@@ -28,7 +28,7 @@ export default function EmployerTabsLayout() {
       <Tabs.Screen
         name="my-jobs"
         options={{
-          title: "Projects",
+          title: "My Jobs",
           tabBarIcon: ({ color, size }) => <TabIcons.BagIcon color={color} size={size} />,
         }}
       />

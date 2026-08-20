@@ -9,6 +9,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import MessageSupportModal from "../../common/MessageSupportModal";
 
 const APPROVAL_DAYS = [
   { day: "Saturday", hours: "8 Hours" },
@@ -46,6 +47,11 @@ export default function WorkerApproveModal({
     [approvedDaysByWeek, selectedWeek],
   );
 
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportModalState, setSupportModalState] = useState<
+    "form" | "submitted"
+  >("form");
+
   useEffect(() => {
     if (!visible) {
       setApprovedDaysByWeek({});
@@ -74,6 +80,11 @@ export default function WorkerApproveModal({
     }));
     onApproveAll?.(selectedWeek);
     onClose();
+  };
+
+  const handleDispute = () => {
+    setSupportModalState("form");
+    setShowSupportModal(true);
   };
 
   return (
@@ -110,7 +121,9 @@ export default function WorkerApproveModal({
               paddingBottom: isWeb ? 28 : 20,
             }}
           >
-            <View className={`${isWeb ? "mb-6 border-b border-neutral-100 pb-5" : "mb-5"} flex-row items-center justify-between`}>
+            <View
+              className={`${isWeb ? "mb-6 border-b border-neutral-100 pb-5" : "mb-5"} flex-row items-center justify-between`}
+            >
               <View className="flex-1 pr-4">
                 {isWeb ? (
                   <View className="mb-3 self-start rounded-full bg-orange-50 px-3 py-1.5">
@@ -229,7 +242,9 @@ export default function WorkerApproveModal({
               ))}
             </View>
 
-            <View className={`${isWeb ? "mt-6 border-t border-neutral-100 pt-5" : "mt-5"}`}>
+            <View
+              className={`${isWeb ? "mt-6 border-t border-neutral-100 pt-5" : "mt-5"}`}
+            >
               <TouchableOpacity
                 onPress={handleApproveAll}
                 style={{ backgroundColor: "#1F2937" }}
@@ -239,10 +254,28 @@ export default function WorkerApproveModal({
                   Approve all
                 </Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleDispute}
+                style={{ backgroundColor: "#FFFFFF" }}
+                className={`mt-3 items-center justify-center rounded-xl px-4 active:opacity-90 border border-neutral-200 ${isWeb ? "min-h-14" : "min-h-12 py-3"}`}
+              >
+                <Text className="text-base font-medium text-black">
+                  Dispute
+                </Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
       </View>
+
+      {/* Message Support Modal */}
+      <MessageSupportModal
+        showSupportModal={showSupportModal}
+        setShowSupportModal={setShowSupportModal}
+        supportModalState={supportModalState}
+        setSupportModalState={setSupportModalState}
+      />
     </Modal>
   );
 }

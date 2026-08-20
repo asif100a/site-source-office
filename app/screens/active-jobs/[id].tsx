@@ -109,7 +109,7 @@ export default function ActiveJobDetailScreen() {
           </View>
         </ScrollView>
 
-        {employerJobStatus === "active" && (
+        {/* {employerJobStatus === "active" && (
           <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-4 py-4 pb-14 flex-row gap-3">
             <TouchableOpacity
               style={{ backgroundColor: Colors.common.GRAY_DARK }}
@@ -125,7 +125,7 @@ export default function ActiveJobDetailScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        )}
+        )} */}
       </ScreenWrapper>
     );
   }

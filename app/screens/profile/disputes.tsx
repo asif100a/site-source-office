@@ -12,7 +12,7 @@ export default function DisputesScreen() {
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
   const items = Array.from({ length: 6 });
 
-    const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportModalState, setSupportModalState] = useState<
     "form" | "submitted"
   >("form");
@@ -66,7 +66,7 @@ export default function DisputesScreen() {
       >
         <Headphones size={24} color="#FFFFFF" />
       </TouchableOpacity>
-      
+
       <MessageSupportModal
         showSupportModal={showSupportModal}
         setShowSupportModal={setShowSupportModal}

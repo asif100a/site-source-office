@@ -17,7 +17,7 @@ const NAV_LINKS = [
   },
   {
     href: "/tabs/my-jobs",
-    label: "Projects",
+    label: "My Jobs",
     activePaths: ["/tabs/my-jobs"],
   },
   {
