@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight, ChevronDown } from "lucide-react-native";
-import LogoWhite from "@/assets/icons/LogoWhite";
+import AuthWebShell from "./_web-shell";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
-import { useState } from "react";
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
@@ -15,16 +15,20 @@ interface RegisterGeneralScreenProps {
     address: string;
   }) => void;
   onLoginPress?: () => void;
+  onBackPress?: () => void;
 }
 
 export default function RegisterGeneralScreenWeb({
   role,
   onContinue,
   onLoginPress,
+  onBackPress,
 }: RegisterGeneralScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
-  const [openField, setOpenField] = useState<"trade" | "experience" | "availableTime" | null>(null);
+  const [openField, setOpenField] = useState<
+    "trade" | "experience" | "availableTime" | null
+  >(null);
 
   const { handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -62,6 +66,7 @@ export default function RegisterGeneralScreenWeb({
     { label: "Night shift", value: "Night shift" },
     { label: "Flexible", value: "Flexible" },
   ];
+
   const selectedTrade = watch("trade");
   const selectedExperience = watch("experience");
   const selectedTime = watch("availableTime");
@@ -105,7 +110,7 @@ export default function RegisterGeneralScreenWeb({
                     });
                     setOpenField(null);
                   }}
-                  className={`min-h-[48px] px-4 justify-center ${
+                  className={`min-h-[48px] justify-center px-4 ${
                     selected ? "bg-[#FFF5F2]" : "bg-white"
                   }`}
                 >
@@ -127,6 +132,18 @@ export default function RegisterGeneralScreenWeb({
     );
   };
 
+  const handleBack = () => {
+    if (onBackPress) {
+      onBackPress();
+      return;
+    }
+
+    router.push({
+      pathname: "/auth",
+      params: { step: "register_sso", role: activeRole },
+    });
+  };
+
   const onSubmit = (data: any) => {
     if (onContinue) {
       onContinue(data);
@@ -139,77 +156,69 @@ export default function RegisterGeneralScreenWeb({
   };
 
   return (
-    <View className="flex-1 min-h-0">
-      <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
-        <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
-          <LogoWhite />
-          <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
-            Add your work details
+    <AuthWebShell
+      eyebrow="Profile setup"
+      title="Add your work details"
+      subtitle="Employers can understand your trade, experience, and availability faster when your profile is complete."
+      onBackPress={handleBack}
+    >
+      <View className="grid gap-5 lg:grid-cols-2">
+        {renderDropdown(
+          "trade",
+          "Trade / Skill",
+          selectedTrade,
+          trades,
+          "Select trade / skill",
+        )}
+
+        {renderDropdown(
+          "experience",
+          "Experience",
+          selectedExperience,
+          experiences,
+          "Select experience",
+        )}
+
+        {renderDropdown(
+          "availableTime",
+          "Available times",
+          selectedTime,
+          times,
+          "Select availability",
+        )}
+      </View>
+
+      <View className="mt-6 gap-4">
+        <TouchableOpacity
+          onPress={handleSubmit(onSubmit)}
+          activeOpacity={0.9}
+          className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
+        >
+          <Text className="text-base font-semibold text-white">Continue</Text>
+          <ArrowRight size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <View className="flex-row items-center justify-center">
+          <Text className="text-sm font-medium text-neutral-700">
+            Already have an account?{" "}
           </Text>
-          <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
-            Employers can understand your trade, experience, and availability
-            faster when your profile is complete.
-          </Text>
-        </View>
-
-        <View className="grid gap-5 lg:grid-cols-2">
-          {renderDropdown(
-            "trade",
-            "Trade / Skill",
-            selectedTrade,
-            trades,
-            "Select trade / skill",
-          )}
-
-          {renderDropdown(
-            "experience",
-            "Experience",
-            selectedExperience,
-            experiences,
-            "Select experience",
-          )}
-
-          {renderDropdown(
-            "availableTime",
-            "Available times",
-            selectedTime,
-            times,
-            "Select availability",
-          )}
-        </View>
-
-        <View className="mt-6 gap-4">
           <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
-            activeOpacity={0.9}
-            className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
+            onPress={
+              onLoginPress ??
+              (() =>
+                router.push({
+                  pathname: "/auth",
+                  params: { step: "login", role: activeRole },
+                }))
+            }
+            activeOpacity={0.7}
           >
-            <Text className="text-base font-semibold text-white">Continue</Text>
-            <ArrowRight size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <View className="flex-row items-center justify-center">
-            <Text className="text-sm font-medium text-neutral-700">
-              Already have an account?{" "}
+            <Text className="text-sm font-semibold text-[#1B2530] underline">
+              Login
             </Text>
-            <TouchableOpacity
-              onPress={
-                onLoginPress ??
-                (() =>
-                  router.push({
-                    pathname: "/auth",
-                    params: { step: "login", role: activeRole },
-                  }))
-              }
-              activeOpacity={0.7}
-            >
-              <Text className="text-sm font-semibold text-[#1B2530] underline">
-                Login
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </AuthWebShell>
   );
 }

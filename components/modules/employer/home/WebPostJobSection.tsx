@@ -10,9 +10,10 @@ import React, { Dispatch, SetStateAction, useState } from "react";
 import { CounterRow, DateCard, FormSectionLabel, TimePill } from "./_ui";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-import { MUST_HAVE_OPTIONS } from "@/app/tabs/(employer-tabs)";
-
-type MustHaveOption = (typeof MUST_HAVE_OPTIONS)[number];
+import {
+  MUST_HAVE_OPTIONS,
+  type MustHaveOption,
+} from "./job-post.constants";
 
 const CALENDAR_DAYS = [
   { value: 10, active: true },

@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  ShieldCheck,
-} from "lucide-react-native";
+import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react-native";
 import { useForm } from "react-hook-form";
-import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
@@ -79,17 +73,18 @@ export default function ResetPasswordScreenWeb({
   };
 
   return (
-    <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
-      <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
-        <LogoWhite />
-        <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
-          Reset your password
-        </Text>
-        <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
-          Choose a new password to secure your account.
-        </Text>
-      </View>
-
+    <AuthWebShell
+      eyebrow="Secure access"
+      title={isSaved ? "Password updated" : "Reset your password"}
+      subtitle={
+        isSaved
+          ? "Your account is ready to sign in with the new password."
+          : `Choose a new password${
+              email ? ` for ${email}` : ""
+            } to secure your account.`
+      }
+      onBackPress={isSaved ? undefined : handleBack}
+    >
       {!isSaved ? (
         <View className="grid gap-5">
           <StandardInputField<ResetPasswordFormValues>
@@ -137,7 +132,6 @@ export default function ResetPasswordScreenWeb({
             activeOpacity={0.7}
             className="flex-row items-center justify-center gap-2 py-2"
           >
-            <ArrowLeft size={16} color="#1B2530" />
             <Text className="text-sm font-semibold text-[#1B2530] underline">
               Back to verification
             </Text>
@@ -170,6 +164,6 @@ export default function ResetPasswordScreenWeb({
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </AuthWebShell>
   );
 }

@@ -272,7 +272,7 @@ export default function AuthFlow() {
         edges={["bottom"]}
       >
           <View
-            className="flex-row items-center justify-between px-4 pt-16"
+            className="px-4 pt-16"
             style={{ backgroundColor: Colors.common.BRAND }}
           >
             <BackButton

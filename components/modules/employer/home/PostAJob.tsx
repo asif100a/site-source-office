@@ -12,10 +12,10 @@ import { CalendarDays, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
 import {
-  JobDateRange,
   MUST_HAVE_OPTIONS,
-  MustHaveOption,
-} from "@/app/tabs/(employer-tabs)";
+  type JobDateRange,
+  type MustHaveOption,
+} from "./job-post.constants";
 import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
 
 const TRADE_OPTIONS = [

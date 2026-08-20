@@ -96,6 +96,28 @@ export default function AuthFlowWeb() {
     setStep(currentRole === "employer" ? "register_employer" : "register_sso");
   };
 
+  const handleBack = () => {
+    if (step === "register_sso" || step === "register_employer") {
+      setStep("login");
+    } else if (step === "register_general") {
+      setStep(role === "worker" ? "register_sso" : "login");
+    } else if (step === "register_documents") {
+      setStep("register_general");
+    } else if (step === "verify_otp") {
+      setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso");
+    } else if (step === "forgot_password") {
+      setStep("login");
+    } else if (step === "reset_password") {
+      setStep("verify_otp");
+    } else if (step === "register_password") {
+      setStep("register_documents");
+    } else if (step === "complete_payroll" || step === "review") {
+      setStep("login");
+    } else {
+      router.back();
+    }
+  };
+
   const renderActiveScreen = () => {
     if (
       role === "employer" &&
@@ -107,6 +129,7 @@ export default function AuthFlowWeb() {
             console.log("Employer register data:", data);
             setStep("complete_payroll");
           }}
+          onBackPress={handleBack}
           onLoginPress={() => setStep("login")}
         />
       );
@@ -132,6 +155,7 @@ export default function AuthFlowWeb() {
               );
               setStep("verify_otp");
             }}
+            onBackPress={handleBack}
             onLoginPress={() => setStep("login")}
           />
         );
@@ -180,6 +204,7 @@ export default function AuthFlowWeb() {
               console.log("General register data:", data);
               setStep("register_documents");
             }}
+            onBackPress={handleBack}
             onLoginPress={() => setStep("login")}
           />
         );
@@ -191,12 +216,14 @@ export default function AuthFlowWeb() {
               console.log("Uploaded documents:", docs);
               setStep("register_password");
             }}
+            onBackPress={handleBack}
           />
         );
       case "register_password":
         return (
           <RegisterPasswordScreen
             role={role}
+            onBackPress={handleBack}
             onComplete={() => {
               if (role === "employer") {
                 setStep("review");
@@ -209,6 +236,7 @@ export default function AuthFlowWeb() {
       case "complete_payroll":
         return (
           <CompletePayrollScreen
+            onBackPress={handleBack}
             onComplete={goToPostRegistrationRoute}
           />
         );
@@ -227,8 +255,8 @@ export default function AuthFlowWeb() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-neutral-50 justify-center items-center">
-      <View className="max-w-full w-full md:min-w-xl xl:min-w-3xl">
+    <ScrollView className="flex-1 bg-neutral-50">
+      <View className="mx-auto w-full max-w-[1120px] px-4 py-6 md:px-6 md:py-8">
         {renderActiveScreen()}
       </View>
     </ScrollView>

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ArrowRight, RotateCcw, ShieldCheck } from "lucide-react-native";
-import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import AuthWebShell from "./_web-shell";
@@ -128,21 +127,36 @@ export default function VerifyOtpScreenWeb({
     });
   };
 
-  return (
-    <View className="rounded-[28px] border border-neutral-200 bg-white p-5 md:p-6">
-      <View className="mb-6 items-center rounded-[24px] bg-[#FF5500] px-6 py-8">
-        <LogoWhite />
-        <Text className="mt-6 text-center text-2xl font-semibold tracking-tight text-white">
-          {flow === "password_reset"
-            ? "Verify reset code"
-            : "Verify your email"}
-        </Text>
-        <Text className="mt-2 max-w-md text-center text-sm leading-6 text-white/85">
-          {`We sent a 6-digit code to ${verificationTarget}.`}
-        </Text>
-      </View>
+  const title =
+    flow === "password_reset" ? "Verify reset code" : "Verify your email";
+  const subtitle =
+    flow === "password_reset"
+      ? `We sent a 6-digit code to ${verificationTarget} so you can reset your password.`
+      : `We sent a 6-digit code to ${verificationTarget} to confirm your registration.`;
 
+  return (
+    <AuthWebShell
+      eyebrow={flow === "password_reset" ? "Password recovery" : "Verification"}
+      title={title}
+      subtitle={subtitle}
+      onBackPress={handleBack}
+    >
       <View className="grid gap-6">
+        <View className="gap-2">
+          <Text className="text-lg font-semibold text-[#1B2530]">
+            {flow === "password_reset"
+              ? "Enter the reset code"
+              : name
+                ? `Hi ${name}, enter your code`
+                : "Enter your code"}
+          </Text>
+          <Text className="text-sm leading-6 text-neutral-500">
+            {flow === "password_reset"
+              ? "Type the code we sent to verify your password reset request."
+              : "Type the code we sent to finish setting up your account."}
+          </Text>
+        </View>
+
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => inputRef.current?.focus()}
@@ -247,6 +261,6 @@ export default function VerifyOtpScreenWeb({
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </AuthWebShell>
   );
 }
