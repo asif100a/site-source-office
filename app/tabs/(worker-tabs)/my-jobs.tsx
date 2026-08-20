@@ -1,38 +1,49 @@
 import { useEffect, useState } from "react";
-import { ScrollView, TouchableOpacity } from "react-native";
+import { ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import SearchAndFilterInput from "@/components/modules/common/job/SearchAndFilterInput";
 import MyJobToggleChips from "@/components/modules/worker/my-jobs/MyJobToggleChips";
 import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
-import { Headphones } from "lucide-react-native";
-import { Colors } from "@/constants/Colors";
-import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import ScreenHeader from "@/components/layout/ScreenHeader";
+
+const tabOptions = ["Job Offers", "Confirmed", "Completed"];
 
 export default function MyJobsScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+  const [activeTab, setActiveTab] = useState<string>(tabOptions[0]);
   const [searchQuery, setSearchQuery] = useState("");
-  // Support Modal State
-  const [showSupportModal, setShowSupportModal] = useState(false);
-  const [supportModalState, setSupportModalState] = useState<
-    "form" | "submitted"
-  >("form");
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
     if (
-      requestedTab === "active" ||
+      requestedTab === "confirmed" ||
+      requestedTab === "offers" ||
       requestedTab === "completed" ||
-      requestedTab === "cancelled"
+      requestedTab === "cancelled" ||
+      requestedTab === "active"
     ) {
-      setActiveTab(requestedTab === "cancelled" ? "completed" : requestedTab);
+      if (requestedTab === "offers") {
+        setActiveTab("Job Offers");
+        return;
+      }
+
+      if (requestedTab === "confirmed" || requestedTab === "active") {
+        setActiveTab("Confirmed");
+        return;
+      }
+
+      setActiveTab("Completed");
     }
   }, [tab]);
 
   const handleOpenJobDetails = (id: string, status: string) => {
+    if (status === "offer") {
+      router.push(`/screens/employer-details/${id}` as any);
+      return;
+    }
+
     if (status === "completed") {
       router.push({
         pathname: "/screens/completed-jobs/[id]",
@@ -57,7 +68,7 @@ export default function MyJobsScreen() {
       <ScreenHeader />
 
       <ScrollView
-        className="flex-1 px-5 pt-6"
+        className="flex-1 px-5 pt-4"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
@@ -69,7 +80,11 @@ export default function MyJobsScreen() {
         />
 
         {/* Toggle Chips */}
-        <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MyJobToggleChips
+          tabOptions={tabOptions}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
         {/* Jobs List */}
         <JobsList
@@ -77,25 +92,6 @@ export default function MyJobsScreen() {
           activeTab={activeTab}
         />
       </ScrollView>
-
-      {/* <TouchableOpacity
-        onPress={() => {
-          setSupportModalState("form");
-          setShowSupportModal(true);
-        }}
-        style={{ backgroundColor: Colors.common.BRAND }}
-        className="absolute bottom-8 right-6 w-14 h-14 rounded-full items-center justify-center active:opacity-90 z-20"
-      >
-        <Headphones size={24} color="#FFFFFF" />
-      </TouchableOpacity> */}
-
-      {/* Message Support Modal */}
-      {/* <MessageSupportModal
-        showSupportModal={showSupportModal}
-        setShowSupportModal={setShowSupportModal}
-        supportModalState={supportModalState}
-        setSupportModalState={setSupportModalState}
-      /> */}
     </ScreenWrapper>
   );
 }

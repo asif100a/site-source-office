@@ -8,24 +8,43 @@ import MyJobToggleChips from "@/components/modules/worker/my-jobs/MyJobToggleChi
 import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import { Colors } from "@/constants/Colors";
 
+const tabOptions = ["Job Offers", "Confirmed", "Completed"];
+
 export default function MyJobsWebScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+  const [activeTab, setActiveTab] = useState<string>(tabOptions[0]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
     if (
-      requestedTab === "active" ||
+      requestedTab === "confirmed" ||
+      requestedTab === "offers" ||
       requestedTab === "completed" ||
-      requestedTab === "cancelled"
+      requestedTab === "cancelled" ||
+      requestedTab === "active"
     ) {
-      setActiveTab(requestedTab === "cancelled" ? "completed" : requestedTab);
+      if (requestedTab === "offers") {
+        setActiveTab("Job Offers");
+        return;
+      }
+
+      if (requestedTab === "confirmed" || requestedTab === "active") {
+        setActiveTab("Confirmed");
+        return;
+      }
+
+      setActiveTab("Completed");
     }
   }, [tab]);
 
   const handleOpenJobDetails = (id: string, status: string) => {
+    if (status === "offer") {
+      router.push(`/screens/employer-details/${id}` as any);
+      return;
+    }
+
     if (status === "completed") {
       router.push({
         pathname: "/screens/completed-jobs/[id]",
@@ -53,7 +72,12 @@ export default function MyJobsWebScreen() {
   };
 
   const pageTitle = useMemo(
-    () => (activeTab === "active" ? "Active jobs" : "Completed jobs"),
+    () =>
+      activeTab === "Job Offers"
+        ? "Job offers"
+        : activeTab === "Confirmed"
+          ? "Confirmed jobs"
+          : "Completed jobs",
     [activeTab],
   );
 
@@ -113,11 +137,12 @@ export default function MyJobsWebScreen() {
                 setSearchQuery={setSearchQuery}
                 shouldHideFilters
                 searchContainerStyle={{
-                  paddingVertical: 16
+                  paddingVertical: 16,
                 }}
               />
 
               <MyJobToggleChips
+                tabOptions={tabOptions}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
               />

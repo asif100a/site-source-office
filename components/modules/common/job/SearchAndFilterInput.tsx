@@ -12,7 +12,7 @@ export default function SearchAndFilterInput({
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   shouldHideFilters?: boolean;
   searchContainerStyle?: ViewStyle;
-}) {
+}) { 
   return (
     <View className="flex-row gap-3 mb-6">
       <View className="flex-1 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-4 py-0" style={searchContainerStyle}>
@@ -25,6 +25,7 @@ export default function SearchAndFilterInput({
           onChangeText={setSearchQuery}
         />
       </View>
+      
       {shouldHideFilters || (
         <TouchableOpacity className="p-3 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-85">
           <SlidersHorizontal size={18} color="#333333" />

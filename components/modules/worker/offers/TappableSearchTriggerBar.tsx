@@ -14,8 +14,8 @@ export default function TappableSearchTriggerBar({
         activeOpacity={0.9}
         className="flex-1 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-4 py-3"
       >
-        <Search size={18} color="#A3A3A3" className="mr-3" />
-        <Text className="flex-1 text-neutral-400 text-sm font-medium">
+        <Search size={18} color="#A3A3A3" />
+        <Text className="flex-1 text-neutral-400 text-sm font-medium ml-1">
           Search Jobs
         </Text>
       </TouchableOpacity>
