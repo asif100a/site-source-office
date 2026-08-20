@@ -9,18 +9,19 @@ import {
   View,
 } from "react-native";
 import {
-  CalendarDays,
   ChevronDown,
   X,
 } from "lucide-react-native";
 
-import DateTimePicker from "react-native-ui-datepicker";
 import { Slider, SliderFilledTrack, SliderThumb, SliderTrack } from "@/components/ui/slider";
 import { Colors } from "@/constants/Colors";
 import {
   WORKER_HOME_TRADE_OPTIONS,
 } from "@/constants/workerHome";
 import { WorkerHomeDateRange } from "@/types";
+import DateRangeCalendar, {
+  formatDateRange,
+} from "@/components/modules/common/DateRangeCalendar";
 
 type WorkerHomeFilterModalProps = {
   visible: boolean;
@@ -39,32 +40,6 @@ type WorkerHomeFilterModalProps = {
 
 type OpenPanel = "trade" | "dateRange" | null;
 
-function formatDateLabel(value?: Date) {
-  if (!value) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-  }).format(value);
-}
-
-function formatDateRange(value: WorkerHomeDateRange) {
-  if (!value.from && !value.to) {
-    return "Select dates";
-  }
-
-  if (value.from && value.to) {
-    return `${formatDateLabel(value.from)} - ${formatDateLabel(value.to)}`;
-  }
-
-  if (value.from) {
-    return `From ${formatDateLabel(value.from)}`;
-  }
-
-  return `Until ${formatDateLabel(value.to)}`;
-}
 
 function FilterBody({
   isWeb,
@@ -314,44 +289,17 @@ function FilterBody({
                   Use the calendar to pick a start and end date
                 </Text>
               </View>
-              <View className="ml-3 h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
-                <CalendarDays size={16} color="#404040" />
-              </View>
             </TouchableOpacity>
 
             {openPanel === "dateRange" ? (
-              <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
-                <DateTimePicker
-                  mode="range"
-                  startDate={dateRange.from}
-                  endDate={dateRange.to}
-                  onChange={({ startDate, endDate }) =>
-                    onDateRangeChange({
-                      from: startDate ? new Date(startDate as any) : undefined,
-                      to: endDate ? new Date(endDate as any) : undefined,
-                    })
-                  }
-                  containerStyle={{ width: "100%" }}
-                  style={{ width: "100%" }}
-                  className="w-full rounded-2xl bg-neutral-50"
-                  minDate={new Date()}
-                  firstDayOfWeek={1}
-                  showOutsideDays
+              <View className="mt-2">
+                <DateRangeCalendar
+                  value={dateRange}
+                  onChange={onDateRangeChange}
+                  onClear={() => onDateRangeChange({})}
+                  summaryEmptyLabel="Select dates"
+                  helperText="Select one date or drag across multiple dates."
                 />
-
-                <View className="mt-3 flex-row items-center justify-between">
-                  <Text className="text-xs font-medium text-neutral-500">
-                    Select one date or drag across multiple dates.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => onDateRangeChange({})}
-                    className="rounded-full bg-neutral-100 px-3 py-2"
-                  >
-                    <Text className="text-xs font-bold text-neutral-700">
-                      Clear
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </View>
             ) : null}
           </View>

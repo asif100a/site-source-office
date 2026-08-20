@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import React, { useMemo, useState } from "react";
 import { CounterRow, DateCard, FormSectionLabel, TimePill } from "./_ui";
-import { CalendarDays, ChevronDown } from "lucide-react-native";
+import { ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
 import {
@@ -16,7 +16,10 @@ import {
   type JobDateRange,
   type MustHaveOption,
 } from "./job-post.constants";
-import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
+import DateRangeCalendar, {
+  formatDateLabel,
+  formatDateRange,
+} from "@/components/modules/common/DateRangeCalendar";
 
 const TRADE_OPTIONS = [
   { label: "Groundworker", value: "Groundworker" },
@@ -29,7 +32,6 @@ const TRADE_OPTIONS = [
 ];
 
 export default function PostAJob() {
-  const calendarStyles = useDefaultStyles();
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [weekendWork, setWeekendWork] = useState(false);
@@ -155,155 +157,18 @@ export default function PostAJob() {
         <View className="flex-row gap-3">
           <DateCard
             label="Start"
-            value={formatJobDate(jobDateRange.from)}
+            value={formatDateLabel(jobDateRange.from)}
             active
           />
-          <DateCard label="Finish" value={formatJobDate(jobDateRange.to)} />
+          <DateCard label="Finish" value={formatDateLabel(jobDateRange.to)} />
         </View>
 
-        <View className="mt-4 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3">
-          <View className="mb-3 flex-row items-center justify-between gap-3">
-            <View className="flex-1 flex-row items-center gap-2">
-              <CalendarDays size={15} color="#737373" />
-              <Text className="flex-1 text-xs font-semibold text-neutral-600">
-                {formatJobDateRange(jobDateRange)}
-              </Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setJobDateRange({})}
-            >
-              <Text className="text-xs font-bold text-[#FF5500]">Clear</Text>
-            </TouchableOpacity>
-          </View>
-
-          <DateTimePicker
-            mode="range"
-            startDate={jobDateRange.from}
-            endDate={jobDateRange.to}
-            onChange={({ startDate, endDate }) =>
-              setJobDateRange({
-                from: startDate ? new Date(startDate as any) : undefined,
-                to: endDate ? new Date(endDate as any) : undefined,
-              })
-            }
-            containerStyle={{ width: "100%" }}
-            style={{ width: "100%" }}
-            className="w-full rounded-2xl bg-neutral-50"
-            minDate={new Date()}
-            firstDayOfWeek={1}
-            showOutsideDays
-            calendar="gregory"
-            containerHeight={300}
-            navigationPosition="around"
-            styles={{
-              ...calendarStyles,
-              header: {
-                marginBottom: 12,
-              },
-              month_selector_label: {
-                color: "#111827",
-                fontSize: 15,
-                fontWeight: "800",
-              },
-              year_selector_label: {
-                color: "#111827",
-                fontSize: 15,
-                fontWeight: "800",
-              },
-              button_prev: {
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: Colors.common.BRAND_LIGHT,
-              },
-              button_next: {
-                width: 34,
-                height: 34,
-                borderRadius: 17,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: Colors.common.BRAND_LIGHT,
-              },
-              button_prev_image: {
-                tintColor: Colors.common.BRAND,
-                width: 15,
-                height: 15,
-              },
-              button_next_image: {
-                tintColor: Colors.common.BRAND,
-                width: 15,
-                height: 15,
-              },
-              day_cell: {
-                minHeight: 44,
-              },
-              day_label: {
-                color: "#262626",
-                fontWeight: "600",
-              },
-              outside_label: {
-                color: "#A3A3A3",
-              },
-              disabled_label: {
-                color: "#D4D4D4",
-              },
-              weekday_label: {
-                color: "#8A8A8A",
-                fontSize: 11,
-                fontWeight: "700",
-              },
-              selected: {
-                backgroundColor: Colors.common.BRAND,
-                borderRadius: 12,
-              },
-              selected_label: { color: "#FFFFFF", fontWeight: "800" },
-              range_start: {
-                backgroundColor: Colors.common.BRAND,
-                borderRadius: 12,
-              },
-              range_start_label: {
-                color: "#FFFFFF",
-                fontWeight: "800",
-              },
-              range_end: {
-                backgroundColor: Colors.common.BRAND,
-                borderRadius: 12,
-              },
-              range_end_label: {
-                color: "#FFFFFF",
-                fontWeight: "800",
-              },
-              range_middle: {
-                backgroundColor: "transparent",
-                borderRadius: 0,
-              },
-              range_middle_label: {
-                color: Colors.common.BRAND,
-                fontWeight: "700",
-              },
-              range_fill: {
-                backgroundColor: "#FFE4D6",
-              },
-              range_fill_weekstart: {
-                borderTopLeftRadius: 12,
-                borderBottomLeftRadius: 12,
-              },
-              range_fill_weekend: {
-                borderTopRightRadius: 12,
-                borderBottomRightRadius: 12,
-              },
-              today: {
-                borderColor: Colors.common.BRAND,
-                borderWidth: 1,
-              },
-              today_label: {
-                color: Colors.common.BRAND,
-                fontWeight: "800",
-              },
-            }}
+        <View className="mt-4">
+          <DateRangeCalendar
+            value={jobDateRange}
+            onChange={setJobDateRange}
+            onClear={() => setJobDateRange({})}
+            summaryEmptyLabel="Select job dates"
           />
         </View>
 
@@ -431,17 +296,6 @@ export default function PostAJob() {
   );
 }
 
-const formatJobDate = (date?: Date) => {
-  if (!date) {
-    return "--";
-  }
-
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
-};
-
 const countWeekdaysInRange = (range: JobDateRange) => {
   if (!range.from || !range.to) {
     return 0;
@@ -472,18 +326,3 @@ const countWeekdaysInRange = (range: JobDateRange) => {
   return count;
 };
 
-const formatJobDateRange = (range: JobDateRange) => {
-  if (!range.from && !range.to) {
-    return "Select job dates";
-  }
-
-  if (range.from && !range.to) {
-    return formatJobDate(range.from);
-  }
-
-  if (!range.from && range.to) {
-    return formatJobDate(range.to);
-  }
-
-  return `${formatJobDate(range.from)} - ${formatJobDate(range.to)}`;
-};
