@@ -1,4 +1,5 @@
 import {
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -7,8 +8,8 @@ import {
   Switch,
 } from "react-native";
 import React, { useMemo, useState } from "react";
-import { CounterRow, DateCard, FormSectionLabel, TimePill } from "./_ui";
-import { ChevronDown } from "lucide-react-native";
+import { CounterRow, DateCard, FormSectionLabel } from "./_ui";
+import { Check, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
 import {
@@ -18,8 +19,10 @@ import {
 } from "./job-post.constants";
 import DateRangeCalendar, {
   formatDateLabel,
-  formatDateRange,
 } from "@/components/modules/common/DateRangeCalendar";
+import TimePickerField, {
+  createTimeValue,
+} from "@/components/modules/common/TimePickerField";
 import Toast from "react-native-toast-message";
 
 const TRADE_OPTIONS = [
@@ -32,12 +35,36 @@ const TRADE_OPTIONS = [
   { label: "Scaffolder", value: "Scaffolder" },
 ];
 
+const WORKING_DAY_OPTIONS = [
+  { key: "monday", label: "Monday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "tuesday", label: "Tuesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "wednesday", label: "Wednesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "thursday", label: "Thursday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "friday", label: "Friday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "saturday", label: "Saturday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
+  { key: "sunday", label: "Sunday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
+] as const;
+
+type WorkingDayKey = (typeof WORKING_DAY_OPTIONS)[number]["key"];
+type WeekendPayRate = "standard" | "1.5x" | "2x";
+type WorkingDaySchedule = Record<
+  WorkingDayKey,
+  { enabled: boolean; startTime: Date; endTime: Date; weekendRate: WeekendPayRate }
+>;
+
+const WEEKEND_DAY_KEYS: WorkingDayKey[] = ["saturday", "sunday"];
+const WEEKEND_RATE_OPTIONS: Exclude<WeekendPayRate, "standard">[] = ["1.5x", "2x"];
+const WEB_SWITCH_STYLE = Platform.OS === "web"
+  ? ({ accentColor: Colors.common.BRAND } as const)
+  : undefined;
+
 export default function PostAJob() {
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
-  const [weekendWork, setWeekendWork] = useState(false);
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState("Groundworker");
+  const [selectedTrades, setSelectedTrades] = useState<string[]>([
+    "Groundworker",
+  ]);
   const [notes, setNotes] = useState(
     "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
   );
@@ -48,11 +75,67 @@ export default function PostAJob() {
     from: new Date(2026, 7, 18),
     to: new Date(2026, 7, 21),
   });
+  const [workingDaySchedule, setWorkingDaySchedule] =
+    useState<WorkingDaySchedule>({
+      monday: {
+        enabled: true,
+        startTime: createTimeValue(7, 30),
+        endTime: createTimeValue(16, 30),
+        weekendRate: "standard",
+      },
+      tuesday: {
+        enabled: true,
+        startTime: createTimeValue(7, 30),
+        endTime: createTimeValue(16, 30),
+        weekendRate: "standard",
+      },
+      wednesday: {
+        enabled: true,
+        startTime: createTimeValue(7, 30),
+        endTime: createTimeValue(16, 30),
+        weekendRate: "standard",
+      },
+      thursday: {
+        enabled: true,
+        startTime: createTimeValue(7, 30),
+        endTime: createTimeValue(16, 30),
+        weekendRate: "standard",
+      },
+      friday: {
+        enabled: true,
+        startTime: createTimeValue(7, 30),
+        endTime: createTimeValue(16, 30),
+        weekendRate: "standard",
+      },
+      saturday: {
+        enabled: false,
+        startTime: createTimeValue(8, 0),
+        endTime: createTimeValue(13, 0),
+        weekendRate: "standard",
+      },
+      sunday: {
+        enabled: false,
+        startTime: createTimeValue(8, 0),
+        endTime: createTimeValue(13, 0),
+        weekendRate: "standard",
+      },
+    });
 
   const workingDays = useMemo(
     () => countWeekdaysInRange(jobDateRange),
     [jobDateRange],
   );
+  const selectedTradesLabel = useMemo(() => {
+    if (selectedTrades.length === 0) {
+      return "Select trade";
+    }
+
+    if (selectedTrades.length <= 2) {
+      return selectedTrades.join(", ");
+    }
+
+    return `${selectedTrades.slice(0, 2).join(", ")} +${selectedTrades.length - 2}`;
+  }, [selectedTrades]);
 
   const totalEstimate = useMemo(
     () => hourlyRate * 9 * Math.max(workingDays, 1) * workersNeeded,
@@ -76,11 +159,56 @@ export default function PostAJob() {
     );
   };
 
+  const toggleTrade = (trade: string) => {
+    setSelectedTrades((current) =>
+      current.includes(trade)
+        ? current.filter((item) => item !== trade)
+        : [...current, trade],
+    );
+  };
+
   const adjustValue = (
     setter: React.Dispatch<React.SetStateAction<number>>,
     nextValue: number,
   ) => {
     setter(Math.max(1, nextValue));
+  };
+
+  const toggleWorkingDay = (day: WorkingDayKey) => {
+    setWorkingDaySchedule((current) => ({
+      ...current,
+      [day]: {
+        ...current[day],
+        enabled: !current[day].enabled,
+      },
+    }));
+  };
+
+  const updateWorkingDayTime = (
+    day: WorkingDayKey,
+    field: "startTime" | "endTime",
+    value: Date,
+  ) => {
+    setWorkingDaySchedule((current) => ({
+      ...current,
+      [day]: {
+        ...current[day],
+        [field]: value,
+      },
+    }));
+  };
+
+  const updateWeekendPayRate = (
+    day: WorkingDayKey,
+    rate: Exclude<WeekendPayRate, "standard">,
+  ) => {
+    setWorkingDaySchedule((current) => ({
+      ...current,
+      [day]: {
+        ...current[day],
+        weekendRate: current[day].weekendRate === rate ? "standard" : rate,
+      },
+    }));
   };
 
   return (
@@ -97,7 +225,7 @@ export default function PostAJob() {
           className="flex-row items-center justify-between rounded-[18px] bg-white px-4 py-4"
         >
           <Text className="text-[13px] font-semibold text-[#202020]">
-            {selectedTrade || "Select trade"}
+            {selectedTradesLabel}
           </Text>
           <ChevronDown size={20} color="#727272" />
         </TouchableOpacity>
@@ -105,17 +233,14 @@ export default function PostAJob() {
         {tradeMenuOpen ? (
           <View className="mt-2 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
             {TRADE_OPTIONS.map((option) => {
-              const selected = selectedTrade === option.value;
+              const selected = selectedTrades.includes(option.value);
 
               return (
                 <TouchableOpacity
                   key={option.value}
                   activeOpacity={0.8}
-                  onPress={() => {
-                    setSelectedTrade(option.value);
-                    setTradeMenuOpen(false);
-                  }}
-                  className={`min-h-[48px] justify-center px-4 ${
+                  onPress={() => toggleTrade(option.value)}
+                  className={`min-h-[48px] flex-row items-center justify-between px-4 ${
                     selected ? "bg-[#FFF5F2]" : "bg-white"
                   }`}
                 >
@@ -128,9 +253,26 @@ export default function PostAJob() {
                   >
                     {option.label}
                   </Text>
+                  {selected ? <Check size={16} color={Colors.common.BRAND} /> : null}
                 </TouchableOpacity>
               );
             })}
+          </View>
+        ) : null}
+
+        {selectedTrades.length > 0 ? (
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            {selectedTrades.map((trade) => (
+              <Pressable
+                key={trade}
+                onPress={() => toggleTrade(trade)}
+                className="rounded-full bg-[#FFF1EA] px-3 py-2"
+              >
+                <Text className="text-[12px] font-bold text-[#FF5500]">
+                  {trade}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         ) : null}
       </View>
@@ -195,38 +337,94 @@ export default function PostAJob() {
 
       <FormSectionLabel label="Working hours" />
       <View className="mt-3 rounded-[24px] bg-white p-4">
-        <View className="flex-row items-start justify-between gap-3">
-          <View className="shrink">
-            <Text className="text-[15px] font-bold text-[#1B1B1B]">
-              Mon - Fri
-            </Text>
-            <Text className="mt-1 text-[12px] text-[#777777]">
-              9 hr shift · 7:30am-4:30pm
-            </Text>
-          </View>
+        <View className="gap-3">
+          {WORKING_DAY_OPTIONS.map((day) => {
+            const schedule = workingDaySchedule[day.key];
+            const enabled = schedule.enabled;
+            const showWeekendRates = WEEKEND_DAY_KEYS.includes(day.key);
 
-          <View className="flex-row items-center gap-2">
-            <TimePill value="07:30" />
-            <Text className="text-[12px] font-semibold text-[#777777]">to</Text>
-            <TimePill value="16:30" />
-          </View>
-        </View>
+            return (
+              <View
+                key={day.key}
+                className="rounded-[18px] border border-[#EEEEEE] px-3 py-3"
+              >
+                <View className="flex-row items-center justify-between gap-3">
+                  <View className="flex-row items-center gap-3">
+                    <Switch
+                      value={enabled}
+                      onValueChange={() => toggleWorkingDay(day.key)}
+                      trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
+                      activeThumbColor={Colors.common.BRAND}
+                      thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
+                      ios_backgroundColor="#E6E6E6"
+                      style={WEB_SWITCH_STYLE}
+                    />
+                    <Text className="text-[13px] font-bold text-[#202020]">
+                      {day.label}
+                    </Text>
+                  </View>
 
-        <View className="mt-5 flex-row items-center justify-between rounded-[18px] border border-[#EEEEEE] px-3 py-3">
-          <View className="flex-row items-center gap-3">
-            <Switch
-              value={weekendWork}
-              onValueChange={setWeekendWork}
-              trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
-              thumbColor={weekendWork ? Colors.common.BRAND : "#FFFFFF"}
-            />
-            <View>
-              <Text className="text-[13px] font-bold text-[#202020]">
-                Weekend work
-              </Text>
-              <Text className="text-[12px] text-[#7A7A7A]">Off by default</Text>
-            </View>
-          </View>
+                  <View
+                    className={`flex-row items-center gap-2 ${
+                      enabled ? "opacity-100" : "opacity-50"
+                    }`}
+                  >
+                    <TimePickerField
+                      value={schedule.startTime}
+                      onChange={(value) =>
+                        updateWorkingDayTime(day.key, "startTime", value)
+                      }
+                      disabled={!enabled}
+                    />
+                    <Text className="text-[12px] font-semibold text-[#777777]">
+                      to
+                    </Text>
+                    <TimePickerField
+                      value={schedule.endTime}
+                      onChange={(value) =>
+                        updateWorkingDayTime(day.key, "endTime", value)
+                      }
+                      disabled={!enabled}
+                    />
+                  </View>
+                </View>
+
+                {showWeekendRates ? (
+                  <View className="mt-3 flex-row items-center gap-2">
+                    {WEEKEND_RATE_OPTIONS.map((rate) => {
+                      const selected = schedule.weekendRate === rate;
+
+                      return (
+                        <Pressable
+                          key={rate}
+                          onPress={() => updateWeekendPayRate(day.key, rate)}
+                          disabled={!enabled}
+                          className={`flex-row items-center gap-2 rounded-full border px-3 py-2 ${
+                            selected
+                              ? "border-[#FF5A1F] bg-[#FFF1EA]"
+                              : "border-[#E9E9E9] bg-white"
+                          } ${enabled ? "opacity-100" : "opacity-50"}`}
+                        >
+                          <View
+                            className={`h-4 w-4 items-center justify-center rounded-[4px] border ${
+                              selected
+                                ? "border-[#FF5A1F] bg-[#FF5A1F]"
+                                : "border-[#CFCFCF] bg-white"
+                            }`}
+                          >
+                            {selected ? <Check size={11} color="#FFFFFF" /> : null}
+                          </View>
+                          <Text className="text-[12px] font-bold text-[#202020]">
+                            {rate} pay
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -262,21 +460,24 @@ export default function PostAJob() {
         multiline
         textAlignVertical="top"
         placeholder="Add site notes, access details, or start instructions"
-        className="mt-3 min-h-[110px] rounded-[20px] bg-white px-4 py-4 text-[13px] leading-5 text-[#222222]"
+        className="mt-3 min-h-[110px] rounded-[20px] bg-white py-4 text-[13px] leading-5 text-[#222222] border border-neutral-200/80"
+        style={{
+          paddingHorizontal: 16,
+        }}
       />
 
-      <View className="mt-6 rounded-[22px] bg-[#121316] px-4 py-5">
+      <View className="mt-6 rounded-[22px] bg-white px-4 py-5">
         <View className="flex-row items-end justify-between gap-4">
           <View>
-            <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#A7A7A7]">
+            <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#222222]">
               Estimated total
             </Text>
-            <Text className="mt-1 text-[24px] font-black tracking-[-0.6px] text-white">
+            <Text className="mt-1 text-[24px] font-black tracking-[-0.6px] text-[#222222]">
               £{totalEstimate.toLocaleString()}
             </Text>
           </View>
 
-          <Text className="max-w-[150px] text-right text-[12px] font-semibold leading-4 text-[#C9C9C9]">
+          <Text className="max-w-[150px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
             {workersNeeded} x labourer · {workingDays || 0} days · 9 hr shifts
           </Text>
         </View>

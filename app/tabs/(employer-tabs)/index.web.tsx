@@ -129,18 +129,18 @@ export default function EmployerHomeScreenWeb() {
               </View>
 
               <View className="w-full gap-6 xl:w-[360px] 2xl:w-[390px]">
-                <View className="rounded-[30px] border border-neutral-200/80 bg-[#121316] p-6 shadow-sm">
-                  <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#A7A7A7]">
+                <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
+                  <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#222222]">
                     Estimated total
                   </Text>
-                  <Text className="mt-2 text-[34px] font-bold tracking-tight text-white">
+                  <Text className="mt-2 text-[34px] font-bold tracking-tight text-[#222222]">
                     £{totalEstimate.toLocaleString()}
                   </Text>
-                  <Text className="mt-3 text-sm leading-6 text-[#C9C9C9]">
+                  <Text className="mt-3 text-sm leading-6 text-[#222222]">
                     {workersNeeded} x labourer · 10 days · 9 hr shifts
                   </Text>
 
-                  <View className="mt-6 gap-3 rounded-[22px] bg-white/5 p-4">
+                  <View className="mt-6 gap-3 rounded-[22px] bg-[#222222]/5 p-4">
                     <SummaryRow
                       label="Site"
                       value="42 Hoxton Street, London N1"
@@ -161,7 +161,7 @@ export default function EmployerHomeScreenWeb() {
                     </Text>
                   </TouchableOpacity>
 
-                  <Text className="mt-4 text-center text-xs leading-5 text-[#B4B4B4]">
+                  <Text className="mt-4 text-center text-xs leading-5 text-[#222233]">
                     Workers are matched by trade, rating and travel time. You
                     pick who starts.
                   </Text>

@@ -106,10 +106,10 @@ export function TimePill({ value }: { value: string }) {
 export function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-start justify-between gap-4">
-      <Text className="text-xs font-bold uppercase tracking-[1px] text-[#8F8F8F]">
+      <Text className="text-xs font-bold uppercase tracking-[1px] text-[#222222]">
         {label}
       </Text>
-      <Text className="max-w-[190px] text-right text-sm font-semibold text-white">
+      <Text className="max-w-[190px] text-right text-sm font-semibold text-[#222222]">
         {value}
       </Text>
     </View>
