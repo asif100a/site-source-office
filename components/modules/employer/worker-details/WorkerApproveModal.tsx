@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Platform,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
@@ -17,32 +17,64 @@ const APPROVAL_DAYS = [
   { day: "Tuesday", hours: "8 Hours" },
 ];
 
-const WEEK_DAY_OPTIONS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
 export default function WorkerApproveModal({
   visible,
   selectedWeek,
+  weekOptions,
   isWeekDropdownOpen,
   onToggleWeekDropdown,
   onSelectWeek,
+  onApproveAll,
   onClose,
 }: {
   visible: boolean;
   selectedWeek: string;
+  weekOptions: string[];
   isWeekDropdownOpen: boolean;
   onToggleWeekDropdown: () => void;
-  onSelectWeek: (weekDay: string) => void;
+  onSelectWeek: (weekLabel: string) => void;
+  onApproveAll?: (weekLabel: string) => void;
   onClose: () => void;
 }) {
   const isWeb = Platform.OS === "web";
+  const [approvedDaysByWeek, setApprovedDaysByWeek] = useState<
+    Record<string, string[]>
+  >({});
+
+  const selectedApprovedDays = useMemo(
+    () => approvedDaysByWeek[selectedWeek] ?? [],
+    [approvedDaysByWeek, selectedWeek],
+  );
+
+  useEffect(() => {
+    if (!visible) {
+      setApprovedDaysByWeek({});
+    }
+  }, [visible]);
+
+  const handleApproveDay = (day: string) => {
+    setApprovedDaysByWeek((current) => {
+      const currentWeekDays = current[selectedWeek] ?? [];
+
+      if (currentWeekDays.includes(day)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [selectedWeek]: [...currentWeekDays, day],
+      };
+    });
+  };
+
+  const handleApproveAll = () => {
+    setApprovedDaysByWeek((current) => ({
+      ...current,
+      [selectedWeek]: APPROVAL_DAYS.map((item) => item.day),
+    }));
+    onApproveAll?.(selectedWeek);
+    onClose();
+  };
 
   return (
     <Modal
@@ -94,7 +126,7 @@ export default function WorkerApproveModal({
                 <Text
                   className={`${isWeb ? "text-[32px]" : "text-[28px]"} font-semibold text-neutral-900`}
                 >
-                  Request approval
+                  Timesheet Approval
                 </Text>
                 {isWeb ? (
                   <Text className="mt-2 text-sm leading-6 text-neutral-500">
@@ -136,18 +168,18 @@ export default function WorkerApproveModal({
 
               {isWeekDropdownOpen ? (
                 <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-                  {WEEK_DAY_OPTIONS.map((weekDay, index) => (
+                  {weekOptions.map((weekLabel, index) => (
                     <TouchableOpacity
-                      key={weekDay}
-                      onPress={() => onSelectWeek(weekDay)}
+                      key={weekLabel}
+                      onPress={() => onSelectWeek(weekLabel)}
                       className={`${isWeb ? "px-4 py-3.5" : "px-3 py-3"} active:bg-neutral-50 ${
-                        index < WEEK_DAY_OPTIONS.length - 1
+                        index < weekOptions.length - 1
                           ? "border-b border-neutral-100"
                           : ""
                       }`}
                     >
                       <Text className="text-sm font-medium text-neutral-800">
-                        {weekDay}
+                        {weekLabel}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -173,12 +205,24 @@ export default function WorkerApproveModal({
                   </View>
 
                   <TouchableOpacity
-                    className={`rounded-xl border border-neutral-200 bg-white active:opacity-80 ${isWeb ? "px-4 py-2.5" : "px-4 py-2"}`}
+                    onPress={() => handleApproveDay(item.day)}
+                    disabled={selectedApprovedDays.includes(item.day)}
+                    className={`rounded-xl border active:opacity-80 ${isWeb ? "px-4 py-2.5" : "px-4 py-2"} ${
+                      selectedApprovedDays.includes(item.day)
+                        ? "border-orange-200 bg-orange-50"
+                        : "border-neutral-200 bg-white"
+                    }`}
                   >
                     <Text
-                      className={`${isWeb ? "text-sm" : "text-xs"} font-medium text-neutral-500`}
+                      className={`${isWeb ? "text-sm" : "text-xs"} font-medium ${
+                        selectedApprovedDays.includes(item.day)
+                          ? "text-orange-600"
+                          : "text-neutral-500"
+                      }`}
                     >
-                      Approve
+                      {selectedApprovedDays.includes(item.day)
+                        ? "Approved"
+                        : "Approve"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -187,11 +231,13 @@ export default function WorkerApproveModal({
 
             <View className={`${isWeb ? "mt-6 border-t border-neutral-100 pt-5" : "mt-5"}`}>
               <TouchableOpacity
-                onPress={onClose}
+                onPress={handleApproveAll}
                 style={{ backgroundColor: "#1F2937" }}
                 className={`items-center justify-center rounded-xl px-4 active:opacity-90 ${isWeb ? "min-h-14" : "min-h-12 py-3"}`}
               >
-                <Text className="text-base font-medium text-white">Approve</Text>
+                <Text className="text-base font-medium text-white">
+                  Approve all
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

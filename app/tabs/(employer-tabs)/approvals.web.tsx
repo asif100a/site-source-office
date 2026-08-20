@@ -8,18 +8,42 @@ import JobRequests from "@/components/modules/employer/home/JobRequests";
 import WorkerApproveModal from "@/components/modules/employer/worker-details/WorkerApproveModal";
 import WebApprovalTabs from "@/components/modules/employer/approvals/WebApprovalTabs";
 import WebTimesheetApprovalList from "@/components/modules/employer/approvals/WebTimesheetApprovalList";
+import { TimesheetApproval } from "@/types";
 
 type ApprovalTab = "timesheets" | "requests";
 
-type TimesheetApproval = {
-  id: string;
-  workerId: string;
-  workerName: string;
-  role: string;
-  location: string;
-  submittedAt: string;
-  weekLabel: string;
-  totalHours: string;
+const getOrdinalSuffix = (day: number) => {
+  if (day >= 11 && day <= 13) return "th";
+
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+};
+
+const formatWeekOptionLabel = (weekLabel: string) => {
+  const match = weekLabel.match(/^Week\s+(\d+)\s+-\s+([A-Za-z]+)\s+(\d{1,2})/);
+
+  if (!match) {
+    return weekLabel;
+  }
+
+  const [, weekNumber, monthName, dayValue] = match;
+  const day = Number(dayValue);
+  const parsedDate = new Date(`${monthName} ${day}, 2026`);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return weekLabel;
+  }
+
+  const month = parsedDate.toLocaleDateString("en-US", { month: "short" });
+  return `Week ${weekNumber} - ${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
 const TIMESHEET_APPROVALS: TimesheetApproval[] = [
@@ -30,7 +54,7 @@ const TIMESHEET_APPROVALS: TimesheetApproval[] = [
     role: "Groundworker",
     location: "Shoreditch - 2.4 mi away",
     submittedAt: "Submitted on August 17, 2026",
-    weekLabel: "Week 1 - August 17 to August 21, 2026",
+    weekLabel: "Week 1 - 17th Aug",
     totalHours: "45 hrs approved time",
   },
   {
@@ -40,19 +64,9 @@ const TIMESHEET_APPROVALS: TimesheetApproval[] = [
     role: "Labour",
     location: "Bethnal Green - 3.1 mi away",
     submittedAt: "Scheduled for review on August 24, 2026",
-    weekLabel: "Week 2 - August 24 to August 28, 2026",
+    weekLabel: "Week 2 - 24th Aug",
     totalHours: "40 hrs approved time",
   },
-];
-
-const WEEK_OPTIONS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
 ];
 
 export default function EmployerApprovalsScreenWeb() {
@@ -61,6 +75,9 @@ export default function EmployerApprovalsScreenWeb() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
+  const weekOptions = TIMESHEET_APPROVALS.map((item) =>
+    formatWeekOptionLabel(item.weekLabel),
+  );
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -70,10 +87,7 @@ export default function EmployerApprovalsScreenWeb() {
   };
 
   const handleApproveTimesheet = (item: TimesheetApproval) => {
-    const matchedWeek =
-      WEEK_OPTIONS.find((weekDay) => item.weekLabel.includes(weekDay)) ??
-      "Select Week";
-    setSelectedWeek(matchedWeek);
+    setSelectedWeek(formatWeekOptionLabel(item.weekLabel));
     setIsWeekDropdownOpen(false);
     setShowApprovalModal(true);
   };
@@ -138,24 +152,24 @@ export default function EmployerApprovalsScreenWeb() {
               </View>
             </View>
 
-            <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
+            {/* <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
               <WebApprovalTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-            </View>
+            </View> */}
 
-            {activeTab === "timesheets" ? (
+            {/* {activeTab === "timesheets" ? ( */}
               <WebTimesheetApprovalList
                 items={TIMESHEET_APPROVALS}
                 onApprove={handleApproveTimesheet}
                 openWorkerDetails={openWorkerDetails}
               />
-            ) : (
+            {/* ) : ( */}
               <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
                 <JobRequests
                   openWorkerDetails={openWorkerDetails}
                   containerStyle={{ marginTop: 0, paddingHorizontal: 0 }}
                 />
               </View>
-            )}
+            {/* )} */}
           </View>
         </View>
       </ScrollView>
@@ -163,12 +177,13 @@ export default function EmployerApprovalsScreenWeb() {
       <WorkerApproveModal
         visible={showApprovalModal}
         selectedWeek={selectedWeek}
+        weekOptions={weekOptions}
         isWeekDropdownOpen={isWeekDropdownOpen}
         onToggleWeekDropdown={() =>
           setIsWeekDropdownOpen((current) => !current)
         }
-        onSelectWeek={(weekDay) => {
-          setSelectedWeek(weekDay);
+        onSelectWeek={(weekLabel) => {
+          setSelectedWeek(weekLabel);
           setIsWeekDropdownOpen(false);
         }}
         onClose={handleCloseApprovalModal}
