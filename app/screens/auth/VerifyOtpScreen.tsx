@@ -152,16 +152,7 @@ export default function VerifyOtpScreen({
         <View className="gap-6">
           <View className="gap-2">
             <Text className="text-lg font-semibold text-[#1B2530]">
-              {flow === "password_reset"
-                ? "Enter the reset code"
-                : name
-                  ? `Hi ${name}, enter your code`
-                  : "Enter your code"}
-            </Text>
-            <Text className="text-sm leading-6 text-neutral-500">
-              {flow === "password_reset"
-                ? "Type the code we sent to verify your password reset request."
-                : "Type the code we sent to finish setting up your account."}
+              Enter the code we have sent to your email to finish your Registration
             </Text>
           </View>
 

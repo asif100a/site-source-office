@@ -158,7 +158,7 @@ export default function RegisterGeneralScreenWeb({
   return (
     <AuthWebShell
       eyebrow="Profile setup"
-      title="Add your work details"
+      title="Add Your Trade Details"
       subtitle="Employers can understand your trade, experience, and availability faster when your profile is complete."
       onBackPress={handleBack}
     >
@@ -179,13 +179,13 @@ export default function RegisterGeneralScreenWeb({
           "Select experience",
         )}
 
-        {renderDropdown(
+        {/* {renderDropdown(
           "availableTime",
           "Available times",
           selectedTime,
           times,
           "Select availability",
-        )}
+        )} */}
       </View>
 
       <View className="mt-6 gap-4">

@@ -7,7 +7,7 @@ import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 
-const tabOptions = ["Job Offers", "Confirmed", "Completed"];
+const tabOptions = ["Job Offers", "Confirmed Jobs", "Completed"];
 
 export default function MyJobsScreen() {
   const router = useRouter();

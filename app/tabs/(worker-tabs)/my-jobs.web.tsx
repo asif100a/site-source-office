@@ -8,7 +8,7 @@ import MyJobToggleChips from "@/components/modules/worker/my-jobs/MyJobToggleChi
 import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import { Colors } from "@/constants/Colors";
 
-const tabOptions = ["Job Offers", "Confirmed", "Completed"];
+const tabOptions = ["Job Offers", "Confirmed Jobs", "Completed"];
 
 export default function MyJobsWebScreen() {
   const router = useRouter();

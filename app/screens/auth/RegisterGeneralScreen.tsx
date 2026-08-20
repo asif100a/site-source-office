@@ -146,7 +146,7 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
             <LogoWhite />
           </View>
           <Text className="text-white text-3xl font-bold tracking-tight">
-            Add Your Work Details
+           Add Your Trade Details
           </Text>
           <Text className="text-white/85 text-sm mt-1.5 font-medium">
             Tell employers about your trade, experience, and availability.
@@ -171,13 +171,13 @@ export default function RegisterGeneralScreen({ role, onContinue, onLoginPress }
             "Select experience",
           )}
 
-          {renderDropdown(
+          {/* {renderDropdown(
             "availableTime",
             "Available times",
             selectedTime,
             times,
             "Select available times",
-          )}
+          )} */}
 
           {/* Continue Button */}
           <TouchableOpacity
