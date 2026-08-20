@@ -53,16 +53,28 @@ export function ProfileHeader({
       <View className="flex-row justify-between items-end">
         <TouchableOpacity
           onPress={handleBackPress}
-          className="flex-row items-center gap-1 active:opacity-75"
+          className="flex-row items-start gap-1 active:opacity-75"
         >
-          <ChevronLeft size={22} color="#FFFFFF" />
-          <Text className="text-white text-lg font-extrabold tracking-tight">
+          <ChevronLeft size={22} color="#FFFFFF" style={{ marginTop: 2 }} />
+          <Text className="min-w-32 max-w-32 text-white text-lg font-extrabold tracking-tight">
             {title}
           </Text>
         </TouchableOpacity>
 
-        <View className="-mb-3 mr-10">
-          <LogoWhite size={{ width: "124", height: "84" }} />
+        <View
+          className="mb-0 mr-0"
+          style={
+            { minWidth: "100", minHeight: "72", position: "relative" } as any
+          }
+        >
+          <View
+            style={{
+              position: "absolute",
+              right: "37%",
+            }}
+          >
+            <LogoWhite size={{ width: "124", height: "84" }} />
+          </View>
         </View>
 
         <TouchableOpacity className="w-11 h-11 rounded-full bg-white/15 items-center justify-center active:opacity-75">
@@ -278,4 +290,8 @@ export function VersionBanner() {
       </Text>
     </View>
   );
+}
+
+export default function ProfileComponentsRoute() {
+  return null;
 }

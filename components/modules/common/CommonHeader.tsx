@@ -30,15 +30,15 @@ export default function CommonHeader({
         {withBackButton ? (
           <TouchableOpacity
             onPress={handleNavigateBack}
-            className="flex-row items-center"
+            className="flex-row items-start"
           >
-            <ChevronLeft size={20} color="#FFFFFF" />
-            <Text className="min-w-32 text-white text-xl font-extrabold tracking-tight">
+            <ChevronLeft size={20} color="#FFFFFF" style={{ marginTop: 2 }} />
+            <Text className="min-w-32 max-w-32 text-white text-xl font-extrabold tracking-tight">
               {headerTitle}
             </Text>
           </TouchableOpacity>
         ) : (
-          <Text className="min-w-32 text-white text-xl font-extrabold tracking-tight">
+          <Text className="min-w-32 max-w-32 text-white text-xl font-extrabold tracking-tight">
             {headerTitle}
           </Text>
         )}
