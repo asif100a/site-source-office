@@ -1,4 +1,5 @@
 import BackButton from "@/components/standard_ui/buttons/BackButton";
+import LogoWhite from "@/assets/icons/LogoWhite";
 import { Colors } from "@/constants/Colors";
 import React from "react";
 import { Text, View } from "react-native";
@@ -33,6 +34,10 @@ export default function AuthWebShell({
               }}
               iconColor={Colors.common.WHITE}
             />
+          </View>
+
+          <View className="mb-5 items-center">
+            <LogoWhite size={{ width: "144", height: "100" }} />
           </View>
 
           {eyebrow ? (
