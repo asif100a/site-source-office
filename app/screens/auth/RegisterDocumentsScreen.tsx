@@ -17,9 +17,13 @@ interface DocumentItem {
 interface RegisterDocumentsScreenProps {
   role?: UserRole;
   onContinue?: (documents: DocumentItem[]) => void;
+  onBackPress?: () => void;
 }
 
-export default function RegisterDocumentsScreen({ role, onContinue }: RegisterDocumentsScreenProps) {
+export default function RegisterDocumentsScreen({
+  role,
+  onContinue,
+}: RegisterDocumentsScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
   const [documents, setDocuments] = useState<DocumentItem[]>([

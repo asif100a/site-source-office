@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/ui/text";
@@ -6,7 +6,7 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import { ChevronDown } from "lucide-react-native";
 import { normalizeUserRole, UserRole } from "@/constants/Routes";
-import { useState } from "react";
+import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
@@ -17,6 +17,7 @@ interface RegisterGeneralScreenProps {
     address: string;
   }) => void;
   onLoginPress?: () => void;
+  onBackPress?: () => void;
 }
 
 export default function RegisterGeneralScreen({
@@ -30,7 +31,7 @@ export default function RegisterGeneralScreen({
     "trade" | "experience" | "availableTime" | null
   >(null);
 
-  const { handleSubmit, watch, setValue } = useForm({
+  const { control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       trade: "Groundworker",
       experience: "6 years",
@@ -60,16 +61,8 @@ export default function RegisterGeneralScreen({
     { label: "7+ years", value: "7+ years" },
   ];
 
-  const times = [
-    { label: "8 am - 5 pm", value: "8 am - 5 pm" },
-    { label: "7 am - 4 pm", value: "7 am - 4 pm" },
-    { label: "9 am - 6 pm", value: "9 am - 6 pm" },
-    { label: "Night shift", value: "Night shift" },
-    { label: "Flexible", value: "Flexible" },
-  ];
   const selectedTrade = watch("trade");
   const selectedExperience = watch("experience");
-  const selectedTime = watch("availableTime");
 
   const renderDropdown = (
     field: "trade" | "experience" | "availableTime",
@@ -188,6 +181,14 @@ export default function RegisterGeneralScreen({
             times,
             "Select available times",
           )} */}
+
+          <StandardInputField
+            label="Address"
+            id="address"
+            control={control}
+            required={true}
+            placeholder="Enter your Address"
+          />
 
           {/* Continue Button */}
           <TouchableOpacity

@@ -7,11 +7,14 @@ import CheckmarkImg from '@/assets/images/auth/checkmark.png';
 
 interface CompletePayrollScreenProps {
   onComplete: () => void;
+  onBackPress?: () => void;
 }
 
 type SubStep = 'initial' | 'review' | 'completed';
 
-export default function CompletePayrollScreen({ onComplete }: CompletePayrollScreenProps) {
+export default function CompletePayrollScreen({
+  onComplete,
+}: CompletePayrollScreenProps) {
   const [subStep, setSubStep] = useState<SubStep>('initial');
 
   useEffect(() => {

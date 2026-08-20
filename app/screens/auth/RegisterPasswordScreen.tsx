@@ -12,9 +12,13 @@ import { getDashboardRouteForRole, normalizeUserRole, UserRole } from '@/constan
 interface RegisterPasswordScreenProps {
   role?: UserRole;
   onComplete?: (password: string) => void;
+  onBackPress?: () => void;
 }
 
-export default function RegisterPasswordScreen({ role, onComplete }: RegisterPasswordScreenProps) {
+export default function RegisterPasswordScreen({
+  role,
+  onComplete,
+}: RegisterPasswordScreenProps) {
   const router = useRouter();
   const [rememberMe, setRememberMe] = useState(false);
   const activeRole = normalizeUserRole(role);

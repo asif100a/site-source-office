@@ -7,7 +7,15 @@ import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 
-const tabOptions = ["Job Offers", "Confirmed Jobs", "Completed"];
+const tabOptions = ["My Offers", "Active Jobs", "Completed"];
+const tabByQueryParam: Record<string, string> = {
+  offers: "My Offers",
+  offer: "My Offers",
+  confirmed: "Active Jobs",
+  active: "Active Jobs",
+  completed: "Completed",
+  cancelled: "Completed",
+};
 
 export default function MyJobsScreen() {
   const router = useRouter();
@@ -17,24 +25,8 @@ export default function MyJobsScreen() {
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
-    if (
-      requestedTab === "confirmed" ||
-      requestedTab === "offers" ||
-      requestedTab === "completed" ||
-      requestedTab === "cancelled" ||
-      requestedTab === "active"
-    ) {
-      if (requestedTab === "offers") {
-        setActiveTab("Job Offers");
-        return;
-      }
-
-      if (requestedTab === "confirmed" || requestedTab === "active") {
-        setActiveTab("Confirmed");
-        return;
-      }
-
-      setActiveTab("Completed");
+    if (requestedTab && tabByQueryParam[requestedTab]) {
+      setActiveTab(tabByQueryParam[requestedTab]);
     }
   }, [tab]);
 

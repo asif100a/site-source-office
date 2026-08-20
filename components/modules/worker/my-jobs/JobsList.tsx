@@ -127,7 +127,7 @@ export default function JobsList({
   handleOpenJobDetails: (id: string, status: string) => void;
   activeTab: string;
 }) {
-  if (activeTab === "Job Offers") {
+  if (activeTab === "My Offers") {
     return (
       <VerticalOfferListings
         offers={OFFER_JOBS}
@@ -137,8 +137,7 @@ export default function JobsList({
     );
   }
 
-  const jobs =
-    activeTab === "Completed" ? COMPLETED_JOBS : CONFIRMED_JOBS;
+  const jobs = activeTab === "Completed" ? COMPLETED_JOBS : CONFIRMED_JOBS;
 
   return (
     <View className="gap-4">

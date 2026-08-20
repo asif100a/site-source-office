@@ -72,14 +72,6 @@ export default function RegisterSsoScreenWeb({
           placeholder="Enter your email"
         />
 
-        <StandardInputField
-          label="Address"
-          id="address"
-          control={control}
-          required
-          placeholder="Enter your address"
-        />
-
         <TouchableOpacity
           onPress={handleSubmit(handleManualContinue)}
           activeOpacity={0.9}

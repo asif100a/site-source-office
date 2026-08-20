@@ -45,7 +45,7 @@ export default function CommonHeader({
 
         <View
           className="-mb-3 mr-8"
-          style={{ minWidth: "100", minHeight: "72", position: "relative" }}
+          style={{ minWidth: "100", minHeight: "72", position: "relative" } as any}
         >
           <View style={{
             position: 'absolute',

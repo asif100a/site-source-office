@@ -8,7 +8,15 @@ import MyJobToggleChips from "@/components/modules/worker/my-jobs/MyJobToggleChi
 import JobsList from "@/components/modules/worker/my-jobs/JobsList";
 import { Colors } from "@/constants/Colors";
 
-const tabOptions = ["Job Offers", "Confirmed Jobs", "Completed"];
+const tabOptions = ["My Offers", "Active Jobs", "Completed"];
+const tabByQueryParam: Record<string, string> = {
+  offers: "My Offers",
+  offer: "My Offers",
+  confirmed: "Active Jobs",
+  active: "Active Jobs",
+  completed: "Completed",
+  cancelled: "Completed",
+};
 
 export default function MyJobsWebScreen() {
   const router = useRouter();
@@ -18,24 +26,8 @@ export default function MyJobsWebScreen() {
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
-    if (
-      requestedTab === "confirmed" ||
-      requestedTab === "offers" ||
-      requestedTab === "completed" ||
-      requestedTab === "cancelled" ||
-      requestedTab === "active"
-    ) {
-      if (requestedTab === "offers") {
-        setActiveTab("Job Offers");
-        return;
-      }
-
-      if (requestedTab === "confirmed" || requestedTab === "active") {
-        setActiveTab("Confirmed");
-        return;
-      }
-
-      setActiveTab("Completed");
+    if (requestedTab && tabByQueryParam[requestedTab]) {
+      setActiveTab(tabByQueryParam[requestedTab]);
     }
   }, [tab]);
 
@@ -73,9 +65,9 @@ export default function MyJobsWebScreen() {
 
   const pageTitle = useMemo(
     () =>
-      activeTab === "Job Offers"
+      activeTab === "My Offers"
         ? "Job offers"
-        : activeTab === "Confirmed"
+        : activeTab === "Active Jobs"
           ? "Confirmed jobs"
           : "Completed jobs",
     [activeTab],

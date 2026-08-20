@@ -357,7 +357,7 @@ export default function PostAJob() {
                       activeThumbColor={Colors.common.BRAND}
                       thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
                       ios_backgroundColor="#E6E6E6"
-                      style={WEB_SWITCH_STYLE}
+                      style={WEB_SWITCH_STYLE as any}
                     />
                     <Text className="text-[13px] font-bold text-[#202020]">
                       {day.label}

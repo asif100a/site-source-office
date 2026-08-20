@@ -13,6 +13,7 @@ interface RegisterSsoScreenProps {
     email?: string;
   }) => void;
   onLoginPress?: () => void;
+  onBackPress?: () => void;
 }
 
 export default function RegisterSsoScreen({
@@ -72,15 +73,6 @@ export default function RegisterSsoScreen({
               control={control}
               required={true}
               placeholder="Enter your email"
-            />
-
-            {/* Address */}
-            <StandardInputField
-              label="Address"
-              id="address"
-              control={control}
-              required={true}
-              placeholder="Enter your Address"
             />
 
             <TouchableOpacity

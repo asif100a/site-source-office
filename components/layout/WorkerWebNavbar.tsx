@@ -67,7 +67,7 @@ export default function WorkerWebNavbar() {
       href === "/tabs/(worker-tabs)/profile";
 
     if (isProtectedLink && !isUserAuthenticated()) {
-      router.push(getWorkerLoginRoute(href));
+      router.push(getWorkerLoginRoute(href) as any);
       return;
     }
 
@@ -110,7 +110,7 @@ export default function WorkerWebNavbar() {
 
         <View className="ml-auto hidden lg:flex">
           <Pressable
-            onPress={() => router.push(getWorkerLoginRoute())}
+            onPress={() => router.push(getWorkerLoginRoute() as any)}
             className="flex-row items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 active:opacity-90"
           >
             <Text className="text-sm font-semibold text-white">Login</Text>
@@ -154,7 +154,7 @@ export default function WorkerWebNavbar() {
             <Pressable
               onPress={() => {
                 setMenuOpen(false);
-                router.push(getWorkerLoginRoute());
+                router.push(getWorkerLoginRoute() as any);
               }}
               className="mt-2 flex-row items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-4 py-3.5 active:opacity-90"
             >

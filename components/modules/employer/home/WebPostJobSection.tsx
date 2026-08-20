@@ -367,7 +367,7 @@ export default function WebPostJobSection({
                           activeThumbColor={Colors.common.BRAND}
                           thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
                           ios_backgroundColor="#E6E6E6"
-                          style={WEB_SWITCH_STYLE}
+                          style={WEB_SWITCH_STYLE as any}
                         />
                         <Text className="text-sm font-bold text-[#202020]">
                           {day.label}

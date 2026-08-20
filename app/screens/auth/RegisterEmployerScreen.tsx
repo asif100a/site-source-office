@@ -18,11 +18,13 @@ interface RegisterEmployerScreenProps {
     address: string;
   }) => void;
   onLoginPress?: () => void;
+  onBackPress?: () => void;
 }
 
 export default function RegisterEmployerScreen({
   onContinue,
   onLoginPress,
+  onBackPress,
 }: RegisterEmployerScreenProps) {
   const router = useRouter();
   const [logo, setLogo] = useState<any>(null);
@@ -208,7 +210,14 @@ export default function RegisterEmployerScreen({
             Already have an account?{" "}
           </Text>
           <TouchableOpacity
-            onPress={onLoginPress ?? (() => router.push({ pathname: "/auth", params: { step: "login", role: "employer" } }))}
+            onPress={
+              onLoginPress ??
+              (() =>
+                router.push({
+                  pathname: "/auth",
+                  params: { step: "login", role: "employer" },
+                }))
+            }
             activeOpacity={0.7}
           >
             <Text className="text-[#1B2530] text-sm font-bold underline">

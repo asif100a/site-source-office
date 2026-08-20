@@ -168,7 +168,7 @@ export default function SearchWorkerModal({
           </View>
 
           <View className="gap-3 mb-8">
-            <FilterSelectField
+            {/* <FilterSelectField
               label="Project"
               id="project"
               control={control}
@@ -186,7 +186,7 @@ export default function SearchWorkerModal({
               placeholder="Select job posting"
               openField={openField}
               setOpenField={setOpenField}
-            />
+            /> */}
 
             <FilterSelectField
               label="Trade / Skill"

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { ArrowRight, ChevronDown } from "lucide-react-native";
 import AuthWebShell from "./_web-shell";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
@@ -30,7 +31,7 @@ export default function RegisterGeneralScreenWeb({
     "trade" | "experience" | "availableTime" | null
   >(null);
 
-  const { handleSubmit, watch, setValue } = useForm({
+  const { control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       trade: "Groundworker",
       experience: "6 years",
@@ -60,17 +61,8 @@ export default function RegisterGeneralScreenWeb({
     { label: "7+ years", value: "7+ years" },
   ];
 
-  const times = [
-    { label: "8 am - 5 pm", value: "8 am - 5 pm" },
-    { label: "7 am - 4 pm", value: "7 am - 4 pm" },
-    { label: "9 am - 6 pm", value: "9 am - 6 pm" },
-    { label: "Night shift", value: "Night shift" },
-    { label: "Flexible", value: "Flexible" },
-  ];
-
   const selectedTrade = watch("trade");
   const selectedExperience = watch("experience");
-  const selectedTime = watch("availableTime");
 
   const renderDropdown = (
     field: "trade" | "experience" | "availableTime",
@@ -187,6 +179,15 @@ export default function RegisterGeneralScreenWeb({
           times,
           "Select availability",
         )} */}
+
+        {/* Address */}
+        <StandardInputField
+          label="Address"
+          id="address"
+          control={control}
+          required={true}
+          placeholder="Enter your Address"
+        />
       </View>
 
       <View className="mt-6 gap-4">
