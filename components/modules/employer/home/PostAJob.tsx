@@ -20,6 +20,7 @@ import DateRangeCalendar, {
   formatDateLabel,
   formatDateRange,
 } from "@/components/modules/common/DateRangeCalendar";
+import Toast from "react-native-toast-message";
 
 const TRADE_OPTIONS = [
   { label: "Groundworker", value: "Groundworker" },
@@ -59,10 +60,12 @@ export default function PostAJob() {
   );
 
   const handleCreateJobPost = () => {
-    router.push({
-      pathname: "/screens/job/CreateJobPost",
-      params: { origin: "employer" },
-    });
+    Toast.show({
+      type: "success",
+      text1: "Job post created",
+      text2: "Your job post has been created.",
+    })
+    console.log("Job post created...!")
   };
 
   const toggleMustHave = (option: MustHaveOption) => {

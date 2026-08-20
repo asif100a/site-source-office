@@ -207,7 +207,7 @@ export default function WorkerDetailsScreen() {
             </Text>
             <WorkerDetailsReviews worker={STATIC_WORKER} />
 
-            <StaticTimesheetCard />
+            {/* <StaticTimesheetCard /> */}
           </View>
         </View>
       </ScrollView>

@@ -478,7 +478,7 @@ export default function WorkerDetailsWebScreen() {
               </View>
 
               <View className="flex-1 gap-4">
-                <TimesheetCard />
+                {/* <TimesheetCard /> */}
                 <SummaryCard onBack={() => router.back()} />
               </View>
             </View>

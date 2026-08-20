@@ -27,6 +27,7 @@ import {
 import WebMapHeroCard from "@/components/modules/employer/home/WebMapHeroCard";
 import WebTopSection from "@/components/modules/employer/home/WebTopSection";
 import WebPostJobSection from "@/components/modules/employer/home/WebPostJobSection";
+import Toast from "react-native-toast-message";
 
 type MapRegion = {
   latitude: number;
@@ -64,10 +65,12 @@ export default function EmployerHomeScreenWeb() {
   );
 
   const handleCreateJobPost = () => {
-    router.push({
-      pathname: "/screens/job/CreateJobPost",
-      params: { origin: "employer" },
-    });
+     Toast.show({
+      type: "success",
+      text1: "Job post created",
+      text2: "Your job post has been created.",
+    })
+    console.log("Job post created...!")
   };
 
   const openWorkerDetails = (workerId: string) => {
