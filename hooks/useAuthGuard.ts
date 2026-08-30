@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import type { RootState } from "@/store/store";
+import { setToken } from "@/store/slices/authSlice";
 
 const protectedWorkerTabRoutes = new Set(["my-jobs", "chats", "profile"]);
 
@@ -11,6 +12,7 @@ export function useAuthToken() {
 }
 
 export function useAuthGuardState() {
+  const dispatch = useDispatch();
   const token = useAuthToken();
   const [storedToken, setStoredToken] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(!token);
@@ -32,6 +34,10 @@ export function useAuthGuardState() {
       .then((nextToken) => {
         if (isMounted) {
           setStoredToken(nextToken);
+
+          if (nextToken) {
+            dispatch(setToken(nextToken));
+          }
         }
       })
       .catch(() => {
@@ -48,7 +54,7 @@ export function useAuthGuardState() {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [dispatch, token]);
 
   const resolvedToken = token ?? storedToken;
 

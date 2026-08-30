@@ -1,18 +1,16 @@
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
-import { getDashboardRouteForRole, normalizeUserRole } from "@/constants/Routes";
-import { safeGetWebStorageItem } from "@/constants/webStorage";
-
-const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
+import { getDashboardRouteForRole } from "@/constants/Routes";
+import { getActiveRole } from "@/constants/authState";
 
 export default function TabsIndexWeb() {
   const router = useRouter();
 
   useEffect(() => {
-    const storedRole = normalizeUserRole(safeGetWebStorageItem(WEB_ROLE_STORAGE_KEY) ?? undefined);
-
-    router.replace(getDashboardRouteForRole(storedRole) as any);
+    getActiveRole().then((storedRole) => {
+      router.replace(getDashboardRouteForRole(storedRole) as any);
+    });
   }, [router]);
 
   return (

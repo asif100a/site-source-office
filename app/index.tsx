@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Animated } from "react-native";
+import { useRouter } from "expo-router";
 import SplashScreenComponent from "./screens/SplashScreen";
 import OnboardingScreenComponent from "./screens/OnboardingScreen";
+import { getDashboardRouteForRole } from "@/constants/Routes";
+import { getActiveRole } from "@/constants/authState";
+import { useAuthGuardState } from "@/hooks/useAuthGuard";
 
 export default function Home() {
+  const router = useRouter();
   const [showSplash, setShowSplash] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const { isAuthenticated, isCheckingAuth } = useAuthGuardState();
 
   useEffect(() => {
     // Show splash for 2.5s, then fade out and render the onboarding screens
@@ -20,7 +27,33 @@ export default function Home() {
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    if (showSplash || isCheckingAuth || !isAuthenticated) {
+      return;
+    }
+
+    let isMounted = true;
+
+    setIsRedirecting(true);
+
+    getActiveRole()
+      .then((activeRole) => {
+        if (isMounted) {
+          router.replace(getDashboardRouteForRole(activeRole));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsRedirecting(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, isCheckingAuth, router, showSplash]);
 
   if (showSplash) {
     return (
@@ -28,6 +61,10 @@ export default function Home() {
         <SplashScreenComponent />
       </Animated.View>
     );
+  }
+
+  if (isCheckingAuth || isRedirecting) {
+    return null;
   }
 
   return <OnboardingScreenComponent />;
