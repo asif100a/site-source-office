@@ -22,10 +22,7 @@ import {
   normalizeUserRole,
   UserRole,
 } from "@/constants/Routes";
-import {
-  markUserAuthenticated,
-  setActiveRole,
-} from "@/constants/authState";
+import { markUserAuthenticated, setActiveRole } from "@/constants/authState";
 
 type AuthStep =
   | "login"
@@ -97,9 +94,7 @@ export default function AuthFlow() {
   const goToRegisterForCurrentRole = () => {
     const currentRole = params.role ? normalizeUserRole(params.role) : role;
     setRole(currentRole);
-    setStep(
-      currentRole === "employer" ? "register_employer" : "register_sso",
-    );
+    setStep(currentRole === "employer" ? "register_employer" : "register_sso");
   };
 
   // Go back to the previous screen in the flow
@@ -111,7 +106,9 @@ export default function AuthFlow() {
     } else if (step === "register_documents") {
       setStep("register_general");
     } else if (step === "verify_otp") {
-      setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso");
+      setStep(
+        otpFlow === "password_reset" ? "forgot_password" : "register_sso",
+      );
     } else if (step === "forgot_password") {
       setStep("login");
     } else if (step === "reset_password") {
@@ -169,14 +166,26 @@ export default function AuthFlow() {
           <VerifyOtpScreen
             flow={otpFlow}
             role={role}
-            email={otpFlow === "password_reset" ? passwordResetEmail : registrationEmail}
+            email={
+              otpFlow === "password_reset"
+                ? passwordResetEmail
+                : registrationEmail
+            }
             name={registrationName}
             provider={registrationProvider}
             onBackPress={() =>
-              setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso")
+              setStep(
+                otpFlow === "password_reset"
+                  ? "forgot_password"
+                  : "register_sso",
+              )
             }
             onComplete={() =>
-              setStep(otpFlow === "password_reset" ? "reset_password" : "register_general")
+              setStep(
+                otpFlow === "password_reset"
+                  ? "reset_password"
+                  : "register_general",
+              )
             }
           />
         );
@@ -215,9 +224,12 @@ export default function AuthFlow() {
         return (
           <RegisterDocumentsScreen
             role={role}
-            onContinue={(docs) => {
-              console.log("Uploaded documents:", docs);
-              setStep("register_password");
+            onContinue={() => {
+              if (role === "employer") {
+                setStep("review");
+              } else {
+                setStep("complete_payroll");
+              }
             }}
           />
         );
@@ -236,11 +248,7 @@ export default function AuthFlow() {
           />
         );
       case "complete_payroll":
-        return (
-          <CompletePayrollScreen
-            onComplete={goToPostRegistrationRoute}
-          />
-        );
+        return <CompletePayrollScreen onComplete={goToPostRegistrationRoute} />;
       case "review":
         return (
           <ReviewScreen
@@ -269,18 +277,18 @@ export default function AuthFlow() {
         style={{ flex: 1, backgroundColor: "white" }}
         edges={["bottom"]}
       >
-          <View
-            className="px-4 pt-16"
-            style={{ backgroundColor: Colors.common.BRAND }}
-          >
-            <BackButton
-              onPress={handleBack}
-              textStyle={{
-                color: Colors.common.WHITE,
-              }}
-              iconColor={Colors.common.WHITE}
-            />
-          </View>
+        <View
+          className="px-4 pt-16"
+          style={{ backgroundColor: Colors.common.BRAND }}
+        >
+          <BackButton
+            onPress={handleBack}
+            textStyle={{
+              color: Colors.common.WHITE,
+            }}
+            iconColor={Colors.common.WHITE}
+          />
+        </View>
 
         {/* Render Current Active Screen */}
         <View style={{ flex: 1 }} className="flex-1">

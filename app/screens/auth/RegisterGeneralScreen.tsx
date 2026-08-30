@@ -202,7 +202,7 @@ export default function RegisterGeneralScreen({
 
           {/* Skip Button */}
           <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
+            onPress={handleSkip}
             activeOpacity={0.9}
             className="w-full border border-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
           >

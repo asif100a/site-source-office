@@ -200,8 +200,7 @@ export default function AuthFlowWeb() {
         return (
           <RegisterGeneralScreen
             role={role}
-            onContinue={(data) => {
-              console.log("General register data:", data);
+            onContinue={() => {
               setStep("register_documents");
             }}
             onBackPress={handleBack}
@@ -212,8 +211,7 @@ export default function AuthFlowWeb() {
         return (
           <RegisterDocumentsScreen
             role={role}
-            onContinue={(docs) => {
-              console.log("Uploaded documents:", docs);
+            onContinue={() => {
               setStep("register_password");
             }}
             onBackPress={handleBack}

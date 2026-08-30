@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Text } from '@/components/ui/text';
-import LogoWhite from '@/assets/icons/LogoWhite';
-import { FileText, Trash2, Paperclip, Camera, Info } from 'lucide-react-native';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import { normalizeUserRole, UserRole } from '@/constants/Routes';
+import React, { useState } from "react";
+import { View, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { Text } from "@/components/ui/text";
+import LogoWhite from "@/assets/icons/LogoWhite";
+import { FileText, Trash2, Paperclip, Camera, Info } from "lucide-react-native";
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import { normalizeUserRole, UserRole } from "@/constants/Routes";
 
 interface DocumentItem {
   id: string;
@@ -16,7 +16,7 @@ interface DocumentItem {
 
 interface RegisterDocumentsScreenProps {
   role?: UserRole;
-  onContinue?: (documents: DocumentItem[]) => void;
+  onContinue?: () => void;
   onBackPress?: () => void;
 }
 
@@ -27,15 +27,15 @@ export default function RegisterDocumentsScreen({
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
   const [documents, setDocuments] = useState<DocumentItem[]>([
-    { id: '1', name: 'CSCS Gold Card', size: '1.1 MB' },
-    { id: '2', name: 'IPAF Certificate', size: '1.1 MB' },
-    { id: '3', name: 'PASMA Certificate', size: '1.1 MB' },
+    { id: "1", name: "CSCS Gold Card", size: "1.1 MB" },
+    { id: "2", name: "IPAF Certificate", size: "1.1 MB" },
+    { id: "3", name: "PASMA Certificate", size: "1.1 MB" },
   ]);
 
   const handleUpload = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'application/pdf'],
+        type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
@@ -43,38 +43,43 @@ export default function RegisterDocumentsScreen({
         const newDoc: DocumentItem = {
           id: Date.now().toString(),
           name: asset.name,
-          size: asset.size ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB` : '1.0 MB',
+          size: asset.size
+            ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
+            : "1.0 MB",
         };
         setDocuments((prev) => [...prev, newDoc]);
       }
     } catch (err) {
-      console.log('Error picking document:', err);
+      console.log("Error picking document:", err);
     }
   };
 
   const handleCamera = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera permission is required to capture photos.');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Camera permission is required to capture photos.",
+        );
         return;
       }
       const res = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         quality: 0.8,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
         const asset = res.assets[0];
-        const filename = asset.uri.split('/').pop() || 'camera_photo.jpg';
+        const filename = asset.uri.split("/").pop() || "camera_photo.jpg";
         const newDoc: DocumentItem = {
           id: Date.now().toString(),
           name: filename,
-          size: '1.2 MB',
+          size: "1.2 MB",
         };
         setDocuments((prev) => [...prev, newDoc]);
       }
     } catch (err) {
-      console.log('Error launching camera:', err);
+      console.log("Error launching camera:", err);
     }
   };
 
@@ -84,15 +89,24 @@ export default function RegisterDocumentsScreen({
 
   const handleContinue = () => {
     if (onContinue) {
-      onContinue(documents);
+      onContinue();
     } else {
-      router.push({ pathname: '/auth', params: { step: 'register_password', role: activeRole } });
+      router.push({
+        pathname: "/auth",
+        params: { step: "register_password", role: activeRole },
+      });
+    }
+  };
+
+  const handleSkip = () => {
+    if (onContinue) {
+      onContinue();
     }
   };
 
   return (
-    <ScrollView 
-      className="flex-1 bg-white" 
+    <ScrollView
+      className="flex-1 bg-white"
       contentContainerStyle={{ flexGrow: 1 }}
       bounces={false}
     >
@@ -105,7 +119,8 @@ export default function RegisterDocumentsScreen({
           Upload Your Certifications
         </Text>
         <Text className="text-white/85 text-sm mt-1.5 font-medium leading-relaxed">
-          Add certificates, cards, or accreditations relevant to the jobs you want.
+          Add certificates, cards, or accreditations relevant to the jobs you
+          want.
         </Text>
       </View>
 
@@ -117,14 +132,16 @@ export default function RegisterDocumentsScreen({
               <Info size={12} color="#FFFFFF" />
             </View>
             <Text className="flex-1 text-neutral-700 text-xs font-medium leading-relaxed">
-              Upload any relevant construction accreditations or certifications to demonstrate your qualifications, compliance, and industry standards.
+              Upload any relevant construction accreditations or certifications
+              to demonstrate your qualifications, compliance, and industry
+              standards.
             </Text>
           </View>
 
           {/* Dashed Upload Box */}
-          <View 
+          <View
             className="border-2 border-dashed border-neutral-200 rounded-2xl p-6 items-center"
-            style={{ borderStyle: 'dashed' }}
+            style={{ borderStyle: "dashed" }}
           >
             <Text className="text-neutral-500 text-xs font-semibold uppercase tracking-wider mb-1">
               Upload or Capture
@@ -157,7 +174,7 @@ export default function RegisterDocumentsScreen({
           {/* Document List */}
           <View className="gap-3">
             {documents.map((doc) => (
-              <View 
+              <View
                 key={doc.id}
                 className="border border-neutral-100 rounded-xl p-4 flex-row items-center justify-between"
               >
@@ -175,8 +192,8 @@ export default function RegisterDocumentsScreen({
                   </View>
                 </View>
 
-                <TouchableOpacity 
-                  onPress={() => handleDelete(doc.id)} 
+                <TouchableOpacity
+                  onPress={() => handleDelete(doc.id)}
                   className="p-1.5 rounded-full bg-neutral-50 hover:bg-neutral-100"
                   activeOpacity={0.7}
                 >
@@ -192,7 +209,8 @@ export default function RegisterDocumentsScreen({
               <Info size={12} color="#FFFFFF" />
             </View>
             <Text className="flex-1 text-[#3C3C3C] text-xs font-medium leading-relaxed">
-              Admin will review your documents within 4 hours. You will receive a push notification when approved.
+              Admin will review your documents within 4 hours. You will receive
+              a push notification when approved.
             </Text>
           </View>
         </View>
@@ -204,16 +222,29 @@ export default function RegisterDocumentsScreen({
             activeOpacity={0.9}
             className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
           >
-            <Text className="text-white text-base font-semibold">
-              Continue
+            <Text className="text-white text-base font-semibold">Continue</Text>
+          </TouchableOpacity>
+
+          {/* Skip Button */}
+          <TouchableOpacity
+            onPress={handleSkip}
+            activeOpacity={0.9}
+            className="w-full border border-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
+          >
+            <Text className="text-neutral-800 text-base font-semibold">
+              Skip for now
             </Text>
           </TouchableOpacity>
 
           <Text className="text-neutral-400 text-xs text-center px-4 leading-relaxed font-medium">
-            By continuing you agree to our{' '}
-            <Text className="text-[#FF5500] underline font-semibold text-xs">Terms of Service</Text>
-            {' '}and{' '}
-            <Text className="text-[#FF5500] underline font-semibold text-xs">Privacy policy</Text>
+            By continuing you agree to our{" "}
+            <Text className="text-[#FF5500] underline font-semibold text-xs">
+              Terms of Service
+            </Text>{" "}
+            and{" "}
+            <Text className="text-[#FF5500] underline font-semibold text-xs">
+              Privacy policy
+            </Text>
           </Text>
         </View>
       </View>

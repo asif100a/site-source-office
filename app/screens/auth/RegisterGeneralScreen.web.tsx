@@ -9,12 +9,7 @@ import StandardInputField from "@/components/standard_ui/form_fields/StandardInp
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
-  onContinue?: (data: {
-    trade: string;
-    experience: string;
-    availableTime: string;
-    address: string;
-  }) => void;
+  onContinue?: () => void;
   onLoginPress?: () => void;
   onBackPress?: () => void;
 }
@@ -139,7 +134,7 @@ export default function RegisterGeneralScreenWeb({
 
   const onSubmit = (data: any) => {
     if (onContinue) {
-      onContinue(data);
+      onContinue();
     } else {
       router.push({
         pathname: "/auth",
@@ -147,6 +142,12 @@ export default function RegisterGeneralScreenWeb({
       });
     }
   };
+
+  const handleSkip = () => {
+    if (onContinue) {
+      onContinue();
+    }
+  }
 
   return (
     <AuthWebShell
@@ -199,6 +200,15 @@ export default function RegisterGeneralScreenWeb({
           <Text className="text-base font-semibold text-white">Continue</Text>
           <ArrowRight size={16} color="#FFFFFF" />
         </TouchableOpacity>
+
+        {/* Skip Button */}
+          <TouchableOpacity
+            onPress={handleSkip}
+            activeOpacity={0.9}
+            className="w-full border border-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
+          >
+            <Text className="text-neutral-800 text-base font-semibold">Skip for now</Text>
+          </TouchableOpacity>
 
         <View className="flex-row items-center justify-center">
           <Text className="text-sm font-medium text-neutral-700">

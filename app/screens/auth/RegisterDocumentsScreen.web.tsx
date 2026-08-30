@@ -24,7 +24,7 @@ interface DocumentItem {
 
 interface RegisterDocumentsScreenProps {
   role?: UserRole;
-  onContinue?: (documents: DocumentItem[]) => void;
+  onContinue?: () => void;
   onBackPress?: () => void;
 }
 
@@ -111,7 +111,7 @@ export default function RegisterDocumentsScreenWeb({
 
   const handleContinue = () => {
     if (onContinue) {
-      onContinue(documents);
+      onContinue();
     } else {
       router.push({
         pathname: "/auth",
@@ -119,6 +119,12 @@ export default function RegisterDocumentsScreenWeb({
       });
     }
   };
+
+  const handleSkip = () => {
+    if (onContinue) {
+      onContinue();
+    }
+  }
 
   return (
     <AuthWebShell
@@ -240,6 +246,15 @@ export default function RegisterDocumentsScreenWeb({
           <Text className="text-base font-semibold text-white">Continue</Text>
           <ArrowRight size={16} color="#FFFFFF" />
         </TouchableOpacity>
+
+        {/* Skip Button */}
+          <TouchableOpacity
+            onPress={handleSkip}
+            activeOpacity={0.9}
+            className="w-full border border-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
+          >
+            <Text className="text-neutral-800 text-base font-semibold">Skip for now</Text>
+          </TouchableOpacity>
       </View>
     </AuthWebShell>
   );

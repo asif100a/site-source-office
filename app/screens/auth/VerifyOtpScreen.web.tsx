@@ -95,18 +95,21 @@ export default function VerifyOtpScreenWeb({
       const response = await verifyOTP({
         email: trimmedEmail,
         otp: code,
-        purpose: flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
+        purpose:
+          flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
       }).unwrap();
 
-      Toast.show({
-        type: "success",
-        text1: "OTP verified",
-        text2: response?.message ?? "Your code has been verified.",
-      });
+      if (response.success || response?.data?.success) {
+        Toast.show({
+          type: "success",
+          text1: "OTP verified",
+          text2: response?.message ?? "Your code has been verified.",
+        });
 
-      if (onComplete) {
-        onComplete();
-        return;
+        if (onComplete) {
+          onComplete();
+          return;
+        }
       }
 
       // if (flow === "password_reset") {
@@ -181,7 +184,8 @@ export default function VerifyOtpScreenWeb({
       <View className="grid gap-6">
         <View className="gap-2">
           <Text className="text-lg font-semibold text-[#1B2530]">
-              Enter the code we have sent to your email to finish your Registration
+            Enter the code we have sent to your email to finish your
+            Registration
           </Text>
         </View>
 

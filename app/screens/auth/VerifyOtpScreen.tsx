@@ -95,18 +95,22 @@ export default function VerifyOtpScreen({
       const response = await verifyOTP({
         email: trimmedEmail,
         otp: code,
-        purpose: flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
+        purpose:
+          flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
       }).unwrap();
+      console.log("OTP verification response: ", response);
 
-      Toast.show({
-        type: "success",
-        text1: "OTP verified",
-        text2: response?.message ?? "Your code has been verified.",
-      });
+      if (response.success || response?.data?.success) {
+        Toast.show({
+          type: "success",
+          text1: "OTP verified",
+          text2: response?.message ?? "Your code has been verified.",
+        });
 
-      if (onComplete) {
-        onComplete();
-        return;
+        if (onComplete) {
+          onComplete();
+          return;
+        }
       }
 
       // if (flow === "password_reset") {
@@ -176,7 +180,9 @@ export default function VerifyOtpScreen({
           <LogoWhite />
         </View>
         <Text className="text-3xl font-bold tracking-tight text-white">
-          {flow === "password_reset" ? "Verify Reset Code" : "Verify Your Email"}
+          {flow === "password_reset"
+            ? "Verify Reset Code"
+            : "Verify Your Email"}
         </Text>
         <Text className="mt-1.5 text-sm font-medium text-white/85">
           {flow === "password_reset"
@@ -189,7 +195,8 @@ export default function VerifyOtpScreen({
         <View className="gap-6">
           <View className="gap-2">
             <Text className="text-lg font-semibold text-[#1B2530]">
-              Enter the code we have sent to your email to finish your Registration
+              Enter the code we have sent to your email to finish your
+              Registration
             </Text>
           </View>
 
@@ -275,7 +282,9 @@ export default function VerifyOtpScreen({
           >
             <Text
               className={`text-sm font-semibold ${
-                secondsLeft > 0 ? "text-neutral-400" : "text-[#1B2530] underline"
+                secondsLeft > 0
+                  ? "text-neutral-400"
+                  : "text-[#1B2530] underline"
               }`}
             >
               {flow === "password_reset" ? "Send again" : "Resend code"}
