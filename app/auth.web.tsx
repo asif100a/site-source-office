@@ -77,17 +77,12 @@ export default function AuthFlowWeb() {
     router.replace(getDashboardRouteForRole(role));
   };
 
-  const goToPostRegistrationRoute = () => {
-    const returnTo = Array.isArray(params.returnTo)
-      ? params.returnTo[0]
-      : params.returnTo;
-
-    if (returnTo) {
-      router.replace(returnTo as any);
-      return;
-    }
-
-    goToRoleDashboard();
+  const goToLoginAfterRegistration = () => {
+    setStep("login");
+    router.replace({
+      pathname: "/auth",
+      params: { step: "login", role },
+    });
   };
 
   const goToRegisterForCurrentRole = () => {
@@ -239,7 +234,7 @@ export default function AuthFlowWeb() {
         return (
           <CompletePayrollScreen
             onBackPress={handleBack}
-            onComplete={goToPostRegistrationRoute}
+            onComplete={goToLoginAfterRegistration}
           />
         );
       case "review":

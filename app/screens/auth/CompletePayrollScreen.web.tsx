@@ -138,7 +138,7 @@ export default function CompletePayrollScreenWeb({
                 className="mt-8 w-full rounded-2xl bg-[#1B2530] py-4 items-center justify-center"
               >
                 <Text className="text-base font-semibold text-white">
-                  Go to dashboard
+                  Login now
                 </Text>
               </TouchableOpacity>
             </View>

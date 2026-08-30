@@ -15,6 +15,7 @@ import {
   type UserRole,
 } from "@/constants/Routes";
 import AuthWebShell from "./_web-shell";
+import { passwordSchema } from "@/zod/authSchema";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -139,6 +140,12 @@ export default function LoginScreenWeb({
           type="password"
           control={control}
           required
+          rules={{
+            validate: (value: string) => {
+              const result = passwordSchema.safeParse(value);
+              return result.success || result.error.errors[0]?.message;
+            },
+          }}
           placeholder="Enter your password"
         />
 

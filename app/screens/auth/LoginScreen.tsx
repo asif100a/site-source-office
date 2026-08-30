@@ -14,6 +14,7 @@ import {
   normalizeUserRole,
   UserRole,
 } from "@/constants/Routes";
+import { passwordSchema } from "@/zod/authSchema";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -153,6 +154,12 @@ export default function LoginScreen({
             type="password"
             control={control}
             required={true}
+            rules={{
+              validate: (value: string) => {
+                const result = passwordSchema.safeParse(value);
+                return result.success || result.error.errors[0]?.message;
+              },
+            }}
             placeholder="•••••••"
           />
 
