@@ -35,8 +35,10 @@ function SectionHeading({ title }: { title: string }) {
 
 function MenuSection({
   items,
+  isLoggingOut = false,
 }: {
   items: MenuItem[];
+  isLoggingOut?: boolean;
 }) {
   return (
     <View className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm">
@@ -44,6 +46,7 @@ function MenuSection({
         <TouchableOpacity
           key={item.label}
           onPress={item.onPress}
+          disabled={item.label === "Log out" && isLoggingOut}
           activeOpacity={0.85}
           className={`flex-row items-center justify-between px-5 py-4 ${
             index !== items.length - 1 ? "border-b border-neutral-100" : ""
@@ -62,7 +65,9 @@ function MenuSection({
                   : { color: "#171717" }
               }
             >
-              {item.label}
+              {item.label === "Log out" && isLoggingOut
+                ? "Logging out..."
+                : item.label}
             </Text>
           </View>
           <ChevronRight size={20} color="#737373" />
@@ -76,6 +81,30 @@ export default function WorkerProfileWebScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const [available] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem("token"),
+        AsyncStorage.removeItem("otpToken"),
+        AsyncStorage.removeItem("forgotToken"),
+      ]);
+    } catch (error) {
+      console.error("Failed to clear all auth storage during logout.", error);
+    }
+
+    dispatch(logout());
+    clearUserAuthenticated();
+    router.replace({
+      pathname: "/auth",
+      params: { currentStep: "login", role: "worker" },
+    });
+  };
 
   const menuItems: { account: MenuItem[]; more: MenuItem[] } = {
     account: [
@@ -147,15 +176,7 @@ export default function WorkerProfileWebScreen() {
       {
         icon: LogOut,
         label: "Log out",
-        onPress: async () => {
-          await AsyncStorage.removeItem("token");
-          dispatch(logout());
-          clearUserAuthenticated();
-          return router.replace({
-            pathname: "/auth",
-            params: { currentStep: "login", role: "worker" },
-          });
-        },
+        onPress: handleLogout,
       },
     ],
   };
@@ -219,7 +240,10 @@ export default function WorkerProfileWebScreen() {
 
               <View className="flex-1 gap-5">
                 <SectionHeading title="More" />
-                <MenuSection items={menuItems.more} />
+                <MenuSection
+                  items={menuItems.more}
+                  isLoggingOut={isLoggingOut}
+                />
               </View>
             </View>
           </View>

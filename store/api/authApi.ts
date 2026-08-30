@@ -144,22 +144,6 @@ export const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: [tagTypes.user, tagTypes.auth],
     }),
-    logout: builder.mutation({
-      query: (data) => ({
-        url: BASE_POINT + "/logout",
-        method: "POST",
-        body: data,
-      }),
-      async onQueryStarted(args, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          dispatch(logout());
-        } catch (error) {
-          console.error("Reset password failed:", error);
-        }
-      },
-      invalidatesTags: [tagTypes.user, tagTypes.auth],
-    }),
   }),
 
   overrideExisting: true,
@@ -173,6 +157,5 @@ export const {
   useResendOTPMutation,
   useChangePasswordMutation,
   useForgotPasswordMutation,
-  useResetPasswordMutation,
-  useLogoutMutation,
+  useResetPasswordMutation
 } = authApi;
