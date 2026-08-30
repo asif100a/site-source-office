@@ -11,6 +11,9 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { persistor, store } from "@/store/store";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -46,23 +49,25 @@ function RootLayoutNav() {
 
   return (
     // <ThemeProvider value={colorMode === 'dark' ? DarkTheme : DefaultTheme}>
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <GluestackUIProvider mode={colorMode}>
-        {/* <StatusBar style={colorMode === 'dark' ? 'light' : 'dark'} /> */}
-        <StatusBar style={"light"} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "slide_from_right",
-            animationDuration: 200,
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="auth" />
-        </Stack>
-        <Toast />
-      </GluestackUIProvider>
-      {/*
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <GluestackUIProvider mode={colorMode}>
+            {/* <StatusBar style={colorMode === 'dark' ? 'light' : 'dark'} /> */}
+            <StatusBar style={"light"} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "slide_from_right",
+                animationDuration: 200,
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="auth" />
+            </Stack>
+            <Toast />
+          </GluestackUIProvider>
+          {/*
           {pathname === '/' && (
             <Fab
               onPress={() =>
@@ -75,7 +80,9 @@ function RootLayoutNav() {
             </Fab>
           )}
          */}
-    </GestureHandlerRootView>
+        </GestureHandlerRootView>
+      </PersistGate>
+    </Provider>
     // </ThemeProvider>
   );
 }

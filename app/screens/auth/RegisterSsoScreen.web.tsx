@@ -1,9 +1,12 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
+import Toast from "react-native-toast-message";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
+import { normalizeUserRole } from "@/constants/Routes";
+import { useRegisterMutation } from "@/store/api/authApi";
 import AuthWebShell from "./_web-shell";
 
 interface RegisterSsoScreenProps {
@@ -22,11 +25,15 @@ export default function RegisterSsoScreenWeb({
   onBackPress,
 }: RegisterSsoScreenProps) {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const activeRole = normalizeUserRole(params.role);
+  const [register, { isLoading }] = useRegisterMutation();
   const { control, handleSubmit } = useForm({
     defaultValues: {
       name: "",
       email: "",
-      address: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -34,8 +41,39 @@ export default function RegisterSsoScreenWeb({
     onContinue?.({ provider });
   };
 
-  const handleManualContinue = (data: { name: string; email: string }) => {
-    onContinue?.(data);
+  const handleManualContinue = async (data: {
+    name: string;
+    email: string;
+  }) => {
+    try {
+      const response = await register({
+        name: data.name,
+        email: data.email,
+      }).unwrap();
+
+      Toast.show({
+        type: "success",
+        text1: "Registration successful",
+        text2: response.message ?? "Your account has been created.",
+      });
+
+      router.push({
+        pathname: "/auth",
+        params: {
+          step: "register_general",
+          role: activeRole,
+        },
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Registration failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Unable to complete registration right now.",
+      });
+    }
   };
 
   const handleBack = () => {
@@ -72,12 +110,33 @@ export default function RegisterSsoScreenWeb({
           placeholder="Enter your email"
         />
 
+        <StandardInputField
+          label="Password"
+          id="password"
+          type="password"
+          control={control}
+          required
+          placeholder="Enter your password"
+        />
+
+        <StandardInputField
+          label="Confirm Password"
+          id="confirmPassword"
+          type="password"
+          control={control}
+          required
+          placeholder="Confirm your password"
+        />
+
         <TouchableOpacity
           onPress={handleSubmit(handleManualContinue)}
           activeOpacity={0.9}
+          disabled={isLoading}
           className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
         >
-          <Text className="text-base font-semibold text-white">Continue</Text>
+          <Text className="text-base font-semibold text-white">
+            {isLoading ? "Creating Account..." : "Continue"}
+          </Text>
           <ArrowRight size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -119,7 +178,8 @@ export default function RegisterSsoScreenWeb({
         <TouchableOpacity
           onPress={
             onLoginPress ??
-            (() => router.push({ pathname: "/auth", params: { step: "login" } }))
+            (() =>
+              router.push({ pathname: "/auth", params: { step: "login" } }))
           }
           activeOpacity={0.7}
         >

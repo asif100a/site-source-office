@@ -1,10 +1,13 @@
 import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
+import Toast from "react-native-toast-message";
+import { normalizeUserRole } from "@/constants/Routes";
+import { useRegisterMutation } from "@/store/api/authApi";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -21,11 +24,15 @@ export default function RegisterSsoScreen({
   onLoginPress,
 }: RegisterSsoScreenProps) {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const activeRole = normalizeUserRole(params.role);
+  const [register, { isLoading }] = useRegisterMutation();
   const { control, handleSubmit } = useForm({
     defaultValues: {
       name: "",
       email: "",
-      address: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -33,10 +40,57 @@ export default function RegisterSsoScreen({
     onContinue?.({ provider });
   };
 
-  const handleManualContinue = (data: { name: string; email: string }) => {
-    // TODO: handle manual continue
-    
-    onContinue?.(data);
+  const handleManualContinue = async (data: {
+    name: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    if (data.password !== data.confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Passwords do not match.'
+      });
+      return;
+    }
+
+    try {
+      const payload = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: activeRole.toUpperCase(),
+      }
+      console.log("Sso Registration payload: ", payload);
+      return;
+      const response = await register(payload).unwrap();
+      console.log("Sso Registration response: ", response);
+
+      Toast.show({
+        type: "success",
+        text1: "Registration successful",
+        text2: response.message ?? "Your account has been created.",
+      });
+
+      router.push({
+        pathname: "/auth",
+        params: {
+          step: "register_general",
+          role: activeRole,
+        },
+      });
+    } catch (error: any) {
+      console.error("Sso Registration error: ", error);
+      Toast.show({
+        type: "error",
+        text1: "Registration failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Unable to complete registration right now.",
+      });
+    }
   };
 
   return (
@@ -77,13 +131,34 @@ export default function RegisterSsoScreen({
               placeholder="Enter your email"
             />
 
+            {/* Password */}
+            <StandardInputField
+              label="Password"
+              id="password"
+              type="password"
+              control={control}
+              required={true}
+              placeholder="•••••••"
+            />
+
+            {/* Confirm Password */}
+            <StandardInputField
+              label="Confirm Password"
+              id="confirmPassword"
+              type="password"
+              control={control}
+              required={true}
+              placeholder="•••••••"
+            />
+
             <TouchableOpacity
               onPress={handleSubmit(handleManualContinue)}
               activeOpacity={0.9}
+              disabled={isLoading}
               className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-1"
             >
               <Text className="text-white text-base font-semibold">
-                Continue
+                {isLoading ? "Creating Account..." : "Continue"}
               </Text>
             </TouchableOpacity>
           </View>
