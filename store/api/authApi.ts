@@ -3,7 +3,7 @@ import {
   GoogleLoginRequest,
   LoginRequest,
   RegisterData,
-  VerifyOTPType,
+  VerifyOTPRequest,
 } from "@/types/redux.type";
 import {
   clearForgotToken,
@@ -59,11 +59,11 @@ export const authApi = baseApi.injectEndpoints({
       // },
       invalidatesTags: [tagTypes.auth],
     }),
-    verifyOTP: builder.mutation<any, { otp: string; type: VerifyOTPType }>({
-      query: ({ otp, type }) => ({
-        url: `/otp/verify?type=${type}`,
+    verifyOTP: builder.mutation<any, VerifyOTPRequest>({
+      query: (data) => ({
+        url: `/otp/verify`,
         method: "POST",
-        body: { otp },
+        body: data,
       }),
       async onQueryStarted(args, { queryFulfilled }) {
         try {

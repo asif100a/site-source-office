@@ -38,6 +38,7 @@ export interface GoogleLoginRequest {
 export interface RegisterData {
   name?: string;
   email?: string;
+  role?: string;
   countryCode?: string;
   phone?: string;
   address?: string;
@@ -45,4 +46,10 @@ export interface RegisterData {
   isLegalTermsAccepted?: boolean;
 }
 
-export type VerifyOTPType = "signup" | "forgot" | "login" | "changeEmail" | "changePhone";
+export type VerifyOTPPurpose = "VERIFY_ACCOUNT" | "RESET_PASSWORD";
+
+export interface VerifyOTPRequest {
+  email: string;
+  otp: string;
+  purpose: VerifyOTPPurpose;
+}

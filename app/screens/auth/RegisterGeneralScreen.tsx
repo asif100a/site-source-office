@@ -10,12 +10,7 @@ import StandardInputField from "@/components/standard_ui/form_fields/StandardInp
 
 interface RegisterGeneralScreenProps {
   role?: UserRole;
-  onContinue?: (data: {
-    trade: string;
-    experience: string;
-    availableTime: string;
-    address: string;
-  }) => void;
+  onContinue?: () => void;
   onLoginPress?: () => void;
   onBackPress?: () => void;
 }
@@ -33,10 +28,10 @@ export default function RegisterGeneralScreen({
 
   const { control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
-      trade: "Groundworker",
-      experience: "6 years",
-      availableTime: "8 am - 5 pm",
-      address: "2972 Westheimer Rd. Santa A...",
+      trade: "",
+      experience: "",
+      availableTime: "",
+      address: "",
     },
   });
 
@@ -127,7 +122,7 @@ export default function RegisterGeneralScreen({
 
   const onSubmit = (data: any) => {
     if (onContinue) {
-      onContinue(data);
+      onContinue();
     } else {
       router.push({
         pathname: "/auth",
@@ -135,6 +130,12 @@ export default function RegisterGeneralScreen({
       });
     }
   };
+
+  const handleSkip = () => {
+    if (onContinue) {
+      onContinue();
+    }
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ flex: 1 }}>
@@ -197,6 +198,15 @@ export default function RegisterGeneralScreen({
             className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
           >
             <Text className="text-white text-base font-semibold">Continue</Text>
+          </TouchableOpacity>
+
+          {/* Skip Button */}
+          <TouchableOpacity
+            onPress={handleSubmit(onSubmit)}
+            activeOpacity={0.9}
+            className="w-full border border-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm mt-4"
+          >
+            <Text className="text-neutral-800 text-base font-semibold">Skip for now</Text>
           </TouchableOpacity>
 
           <View className="flex-row justify-center items-center mt-6">

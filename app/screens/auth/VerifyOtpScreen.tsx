@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ArrowRight, RotateCcw } from "lucide-react-native";
+import Toast from "react-native-toast-message";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import { useVerifyOTPMutation } from "@/store/api/authApi";
 
 interface VerifyOtpScreenProps {
   flow?: "registration" | "password_reset";
@@ -12,13 +14,13 @@ interface VerifyOtpScreenProps {
   name?: string;
   email?: string;
   provider?: "google" | "apple" | "manual";
-  onComplete?: (code: string) => void;
+  onComplete?: () => void;
   onBackPress?: () => void;
   onResend?: () => void;
 }
 
 const OTP_LENGTH = 6;
-const RESEND_DELAY = 30;
+const RESEND_DELAY = 120;
 
 export default function VerifyOtpScreen({
   flow = "registration",
@@ -36,6 +38,7 @@ export default function VerifyOtpScreen({
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(RESEND_DELAY);
+  const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
 
   const verificationTarget = useMemo(() => {
     const trimmedEmail = email?.trim();
@@ -75,29 +78,63 @@ export default function VerifyOtpScreen({
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (code.length !== OTP_LENGTH) {
       setError(`Enter the full ${OTP_LENGTH}-digit code.`);
       return;
     }
 
-    if (onComplete) {
-      onComplete(code);
+    const trimmedEmail = email?.trim();
+
+    if (!trimmedEmail) {
+      setError("Email is required to verify this code.");
       return;
     }
 
-    if (flow === "password_reset") {
-      router.push({
-        pathname: "/auth",
-        params: { step: "login", role: activeRole },
+    try {
+      const response = await verifyOTP({
+        email: trimmedEmail,
+        otp: code,
+        purpose: flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
+      }).unwrap();
+
+      Toast.show({
+        type: "success",
+        text1: "OTP verified",
+        text2: response?.message ?? "Your code has been verified.",
+      });
+
+      if (onComplete) {
+        onComplete();
+        return;
+      }
+
+      // if (flow === "password_reset") {
+      //   router.push({
+      //     pathname: "/auth",
+      //     params: { step: "login", role: activeRole },
+      //   });
+      //   return;
+      // }
+
+      // router.push({
+      //   pathname: "/auth",
+      //   params: { step: "register_general", role: activeRole },
+      // });
+    } catch (error: any) {
+      const message =
+        error?.data?.message ??
+        error?.message ??
+        "Unable to verify this code right now.";
+
+      setError(message);
+      Toast.show({
+        type: "error",
+        text1: "OTP verification failed",
+        text2: message,
       });
       return;
     }
-
-    router.push({
-      pathname: "/auth",
-      params: { step: "register_general", role: activeRole },
-    });
   };
 
   const handleResend = () => {
@@ -217,10 +254,15 @@ export default function VerifyOtpScreen({
           <TouchableOpacity
             onPress={handleVerify}
             activeOpacity={0.9}
+            disabled={isLoading}
             className="flex-row items-center justify-center gap-2 rounded-xl bg-[#1B2530] py-4"
           >
             <Text className="text-base font-semibold text-white">
-              {flow === "password_reset" ? "Verify code" : "Verify and continue"}
+              {isLoading
+                ? "Verifying..."
+                : flow === "password_reset"
+                  ? "Verify code"
+                  : "Verify and continue"}
             </Text>
             <ArrowRight size={16} color="#FFFFFF" />
           </TouchableOpacity>

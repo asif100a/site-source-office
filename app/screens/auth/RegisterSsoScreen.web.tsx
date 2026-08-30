@@ -57,13 +57,7 @@ export default function RegisterSsoScreenWeb({
         text2: response.message ?? "Your account has been created.",
       });
 
-      router.push({
-        pathname: "/auth",
-        params: {
-          step: "register_general",
-          role: activeRole,
-        },
-      });
+      onContinue?.({ email: data.email, name: data.name });
     } catch (error: any) {
       Toast.show({
         type: "error",

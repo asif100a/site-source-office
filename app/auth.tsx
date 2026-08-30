@@ -205,8 +205,7 @@ export default function AuthFlow() {
         return (
           <RegisterGeneralScreen
             role={role}
-            onContinue={(data) => {
-              console.log("General register data:", data);
+            onContinue={() => {
               setStep("register_documents");
             }}
             onLoginPress={() => setStep("login")}

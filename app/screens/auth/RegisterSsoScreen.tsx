@@ -48,9 +48,9 @@ export default function RegisterSsoScreen({
   }) => {
     if (data.password !== data.confirmPassword) {
       Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Passwords do not match.'
+        type: "error",
+        text1: "Error",
+        text2: "Passwords do not match.",
       });
       return;
     }
@@ -61,9 +61,9 @@ export default function RegisterSsoScreen({
         email: data.email,
         password: data.password,
         role: activeRole.toUpperCase(),
-      }
+      };
       console.log("Sso Registration payload: ", payload);
-      return;
+      // return;
       const response = await register(payload).unwrap();
       console.log("Sso Registration response: ", response);
 
@@ -73,13 +73,7 @@ export default function RegisterSsoScreen({
         text2: response.message ?? "Your account has been created.",
       });
 
-      router.push({
-        pathname: "/auth",
-        params: {
-          step: "register_general",
-          role: activeRole,
-        },
-      });
+      onContinue?.({ email: data.email, name: data.name });
     } catch (error: any) {
       console.error("Sso Registration error: ", error);
       Toast.show({
@@ -175,6 +169,7 @@ export default function RegisterSsoScreen({
             <TouchableOpacity
               onPress={() => handleContinue("google")}
               activeOpacity={0.9}
+              disabled={isLoading}
               className="w-full border border-neutral-200 bg-white py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-[#1B2530] text-base font-semibold">
@@ -185,6 +180,7 @@ export default function RegisterSsoScreen({
             <TouchableOpacity
               onPress={() => handleContinue("apple")}
               activeOpacity={0.9}
+              disabled={isLoading}
               className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-white text-base font-semibold">
