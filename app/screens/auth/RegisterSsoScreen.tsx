@@ -8,6 +8,7 @@ import StandardInputField from "@/components/standard_ui/form_fields/StandardInp
 import Toast from "react-native-toast-message";
 import { normalizeUserRole } from "@/constants/Routes";
 import { useRegisterMutation } from "@/store/api/authApi";
+import { passwordSchema } from "@/zod/authSchema";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -62,10 +63,7 @@ export default function RegisterSsoScreen({
         password: data.password,
         role: activeRole.toUpperCase(),
       };
-      console.log("Sso Registration payload: ", payload);
-      // return;
       const response = await register(payload).unwrap();
-      console.log("Sso Registration response: ", response);
 
       Toast.show({
         type: "success",
@@ -132,6 +130,12 @@ export default function RegisterSsoScreen({
               type="password"
               control={control}
               required={true}
+              rules={{
+                validate: (value: string) => {
+                  const result = passwordSchema.safeParse(value);
+                  return result.success || result.error.errors[0]?.message;
+                },
+              }}
               placeholder="•••••••"
             />
 

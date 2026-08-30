@@ -1,10 +1,14 @@
 import React from "react";
 import { View, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { useDispatch } from "react-redux";
+import Toast from "react-native-toast-message";
 import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
+import { useLoginMutation } from "@/store/api/authApi";
+import { setToken } from "@/store/slices/authSlice";
 import {
   getDashboardRouteForRole,
   normalizeUserRole,
@@ -25,7 +29,9 @@ export default function LoginScreen({
   onLoginPress,
 }: LoginScreenProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const activeRole = normalizeUserRole(role);
+  const [login, { isLoading }] = useLoginMutation();
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -34,11 +40,45 @@ export default function LoginScreen({
     },
   });
 
-  const onSubmit = (data: any) => {
-    if (onLoginPress) {
-      onLoginPress(data.email);
-    } else {
-      router.replace(getDashboardRouteForRole(activeRole));
+  const onSubmit = async (data: { email: string; password: string }) => {
+    try {
+      const response = await login({
+        email: data.email,
+        password: data.password,
+      }).unwrap();
+      console.log("Login response: ", response);
+
+      if (response.success || (response?.data as any)?.success) {
+        const token =
+          response.accessToken ??
+          response.data?.accessToken ??
+          (response.data as any)?.token;
+
+        if (token) {
+          dispatch(setToken(token));
+        }
+
+        Toast.show({
+          type: "success",
+          text1: "Login successful",
+          text2: response.message ?? "Welcome back.",
+        });
+
+        if (onLoginPress) {
+          onLoginPress(data.email);
+        } else {
+          router.replace(getDashboardRouteForRole(activeRole));
+        }
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Login failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Please check your email and password.",
+      });
     }
   };
 
@@ -131,9 +171,12 @@ export default function LoginScreen({
           <TouchableOpacity
             onPress={handleSubmit(onSubmit)}
             activeOpacity={0.9}
+            disabled={isLoading}
             className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
           >
-            <Text className="text-white text-base font-semibold">Login</Text>
+            <Text className="text-white text-base font-semibold">
+              {isLoading ? "Logging in..." : "Login"}
+            </Text>
           </TouchableOpacity>
 
           <View className="gap-3">

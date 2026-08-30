@@ -7,6 +7,7 @@ import Toast from "react-native-toast-message";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole } from "@/constants/Routes";
 import { useRegisterMutation } from "@/store/api/authApi";
+import { passwordSchema } from "@/zod/authSchema";
 import AuthWebShell from "./_web-shell";
 
 interface RegisterSsoScreenProps {
@@ -44,11 +45,24 @@ export default function RegisterSsoScreenWeb({
   const handleManualContinue = async (data: {
     name: string;
     email: string;
+    password: string;
+    confirmPassword: string;
   }) => {
+    if (data.password !== data.confirmPassword) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Passwords do not match.",
+      });
+      return;
+    }
+
     try {
       const response = await register({
         name: data.name,
         email: data.email,
+        password: data.password,
+        role: activeRole.toUpperCase(),
       }).unwrap();
 
       Toast.show({
@@ -110,6 +124,12 @@ export default function RegisterSsoScreenWeb({
           type="password"
           control={control}
           required
+          rules={{
+            validate: (value: string) => {
+              const result = passwordSchema.safeParse(value);
+              return result.success || result.error.errors[0]?.message;
+            },
+          }}
           placeholder="Enter your password"
         />
 

@@ -3,8 +3,12 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
+import { useDispatch } from "react-redux";
+import Toast from "react-native-toast-message";
 import { Text as UiText } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
+import { useLoginMutation } from "@/store/api/authApi";
+import { setToken } from "@/store/slices/authSlice";
 import {
   getDashboardRouteForRole,
   normalizeUserRole,
@@ -26,7 +30,9 @@ export default function LoginScreenWeb({
   onLoginPress,
 }: LoginScreenProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const activeRole = normalizeUserRole(role);
+  const [login, { isLoading }] = useLoginMutation();
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -35,11 +41,44 @@ export default function LoginScreenWeb({
     },
   });
 
-  const onSubmit = (data: any) => {
-    if (onLoginPress) {
-      onLoginPress(data.email);
-    } else {
-      router.replace(getDashboardRouteForRole(activeRole));
+  const onSubmit = async (data: { email: string; password: string }) => {
+    try {
+      const response = await login({
+        email: data.email,
+        password: data.password,
+      }).unwrap();
+
+      if (response.success || (response?.data as any)?.success) {
+        const token =
+          response.accessToken ??
+          response.data?.accessToken ??
+          (response.data as any)?.token;
+
+        if (token) {
+          dispatch(setToken(token));
+        }
+
+        Toast.show({
+          type: "success",
+          text1: "Login successful",
+          text2: response.message ?? "Welcome back.",
+        });
+
+        if (onLoginPress) {
+          onLoginPress(data.email);
+        } else {
+          router.replace(getDashboardRouteForRole(activeRole));
+        }
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Login failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Please check your email and password.",
+      });
     }
   };
 
@@ -118,9 +157,12 @@ export default function LoginScreenWeb({
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
           activeOpacity={0.9}
+          disabled={isLoading}
           className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
         >
-          <UiText className="text-base font-semibold text-white">Login</UiText>
+          <UiText className="text-base font-semibold text-white">
+            {isLoading ? "Logging in..." : "Login"}
+          </UiText>
           <ArrowRight size={16} color="#FFFFFF" />
         </TouchableOpacity>
 

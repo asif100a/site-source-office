@@ -212,7 +212,11 @@ export default function AuthFlowWeb() {
           <RegisterDocumentsScreen
             role={role}
             onContinue={() => {
-              setStep("register_password");
+              if (role === "employer") {
+                setStep("review");
+              } else {
+                setStep("complete_payroll");
+              }
             }}
             onBackPress={handleBack}
           />
