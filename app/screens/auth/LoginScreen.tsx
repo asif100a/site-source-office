@@ -3,6 +3,7 @@ import { View, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
@@ -57,6 +58,7 @@ export default function LoginScreen({
 
         if (token) {
           dispatch(setToken(token));
+          await AsyncStorage.setItem("token", token);
         }
 
         Toast.show({

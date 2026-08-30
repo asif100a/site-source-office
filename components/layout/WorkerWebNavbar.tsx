@@ -5,10 +5,11 @@ import { usePathname, useRouter } from "expo-router";
 import { ArrowRight, Menu, X } from "lucide-react-native";
 
 import Logo from "@/assets/images/app-logo.png";
+import { getWorkerLoginRoute } from "@/constants/authState";
 import {
-  getWorkerLoginRoute,
-  isUserAuthenticated,
-} from "@/constants/authState";
+  isProtectedWorkerTabRoute,
+  useIsAuthenticated,
+} from "@/hooks/useAuthGuard";
 
 const NAV_LINKS = [
   {
@@ -57,16 +58,15 @@ export default function WorkerWebNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAuthenticated = useIsAuthenticated();
 
   const handleNavigate = (href: string) => {
     setMenuOpen(false);
 
-    const isProtectedLink =
-      href === "/tabs/(worker-tabs)/my-jobs" ||
-      href === "/tabs/(worker-tabs)/chats" ||
-      href === "/tabs/(worker-tabs)/profile";
+    const routeName = href.split("/").pop();
+    const isProtectedLink = isProtectedWorkerTabRoute(routeName);
 
-    if (isProtectedLink && !isUserAuthenticated()) {
+    if (isProtectedLink && !isAuthenticated) {
       router.push(getWorkerLoginRoute(href) as any);
       return;
     }

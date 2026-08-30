@@ -13,10 +13,8 @@ import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
-import {
-  getWorkerLoginRoute,
-  isUserAuthenticated,
-} from "@/constants/authState";
+import { getWorkerLoginRoute } from "@/constants/authState";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
   filterWorkerHomeJobs,
@@ -61,6 +59,7 @@ export default function WorkerHomeScreen() {
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
   const mapEmbedUrl = useMemo(() => getGoogleMapEmbedUrl(MAP_REGION), []);
+  const isAuthenticated = useIsAuthenticated();
 
   const filteredJobs = useMemo(
     () =>
@@ -95,7 +94,7 @@ export default function WorkerHomeScreen() {
     WORKER_HOME_JOBS[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
-    if (isUserAuthenticated()) {
+    if (isAuthenticated) {
       return false;
     }
 

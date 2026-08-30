@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
 import { useDispatch } from "react-redux";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text as UiText } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { useLoginMutation } from "@/store/api/authApi";
@@ -57,6 +58,7 @@ export default function LoginScreenWeb({
 
         if (token) {
           dispatch(setToken(token));
+          await AsyncStorage.setItem("token", token);
         }
 
         Toast.show({

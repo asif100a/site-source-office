@@ -1,5 +1,7 @@
 import React, { useState, type ComponentType } from "react";
 import { useRouter } from "expo-router";
+import { useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   AlertCircle,
   BellRing,
@@ -14,6 +16,8 @@ import {
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import { clearUserAuthenticated } from "@/constants/authState";
+import { logout } from "@/store/slices/authSlice";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
@@ -70,6 +74,7 @@ function MenuSection({
 
 export default function WorkerProfileWebScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [available] = useState(true);
 
   const menuItems: { account: MenuItem[]; more: MenuItem[] } = {
@@ -142,10 +147,13 @@ export default function WorkerProfileWebScreen() {
       {
         icon: LogOut,
         label: "Log out",
-        onPress: () => {
+        onPress: async () => {
+          await AsyncStorage.removeItem("token");
+          dispatch(logout());
+          clearUserAuthenticated();
           return router.replace({
             pathname: "/auth",
-            params: { currentStep: "login" },
+            params: { currentStep: "login", role: "worker" },
           });
         },
       },

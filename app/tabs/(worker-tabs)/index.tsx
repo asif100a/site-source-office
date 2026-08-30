@@ -15,10 +15,8 @@ import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { Colors } from "@/constants/Colors";
-import {
-  getWorkerLoginRoute,
-  isUserAuthenticated,
-} from "@/constants/authState";
+import { getWorkerLoginRoute } from "@/constants/authState";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
   filterWorkerHomeJobs,
@@ -210,6 +208,7 @@ export default function WorkerHomeScreen() {
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
+  const isAuthenticated = useIsAuthenticated();
 
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
@@ -249,7 +248,7 @@ export default function WorkerHomeScreen() {
     WORKER_HOME_JOBS[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
-    if (isUserAuthenticated()) {
+    if (isAuthenticated) {
       return false;
     }
 

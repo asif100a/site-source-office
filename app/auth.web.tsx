@@ -72,8 +72,18 @@ export default function AuthFlowWeb() {
   }, [params.step]);
 
   const goToRoleDashboard = () => {
+    const returnTo = Array.isArray(params.returnTo)
+      ? params.returnTo[0]
+      : params.returnTo;
+
     setActiveRole(role);
     markUserAuthenticated();
+
+    if (returnTo) {
+      router.replace(returnTo as any);
+      return;
+    }
+
     router.replace(getDashboardRouteForRole(role));
   };
 

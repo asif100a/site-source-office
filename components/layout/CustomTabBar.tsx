@@ -5,10 +5,11 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/Colors";
+import { getWorkerLoginRoute } from "@/constants/authState";
 import {
-  getWorkerLoginRoute,
-  isUserAuthenticated,
-} from "@/constants/authState";
+  isProtectedWorkerTabRoute,
+  useIsAuthenticated,
+} from "@/hooks/useAuthGuard";
 
 type CustomTabBarProps = BottomTabBarProps;
 
@@ -19,6 +20,7 @@ export function CustomTabBar({
 }: CustomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
 
   const triggerTabHaptic = async () => {
     try {
@@ -40,8 +42,7 @@ export function CustomTabBar({
     const inactiveColor = Colors.common.GRAY_NORMAL;
     const iconColor = isFocused ? activeColor : inactiveColor;
     const labelColor = isFocused ? activeColor : inactiveColor;
-    const isProtectedWorkerRoute =
-      route.name === "my-jobs" || route.name === "chats" || route.name === "profile";
+    const isProtectedWorkerRoute = isProtectedWorkerTabRoute(route.name);
 
     const onPress = () => {
       void triggerTabHaptic();
@@ -55,7 +56,7 @@ export function CustomTabBar({
         return;
       }
 
-      if (isProtectedWorkerRoute && !isUserAuthenticated()) {
+      if (isProtectedWorkerRoute && !isAuthenticated) {
         router.push(
           getWorkerLoginRoute(`/tabs/(worker-tabs)/${route.name}`) as any,
         );

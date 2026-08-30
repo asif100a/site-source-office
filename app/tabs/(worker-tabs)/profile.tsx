@@ -1,6 +1,8 @@
 import React, { useState, type ComponentType } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   User,
   Clock,
@@ -19,6 +21,8 @@ import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import StandardToggle from "@/components/standard_ui/StandardToggle";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
+import { clearUserAuthenticated } from "@/constants/authState";
+import { logout } from "@/store/slices/authSlice";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
@@ -29,6 +33,7 @@ type MenuItem = {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [available, setAvailable] = useState(true);
   // Support Modal State
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -116,10 +121,13 @@ export default function ProfileScreen() {
       {
         icon: LogOut,
         label: "Log out",
-        onPress: () => {
+        onPress: async () => {
+          await AsyncStorage.removeItem("token");
+          dispatch(logout());
+          clearUserAuthenticated();
           return router.replace({
             pathname: "/auth",
-            params: { currentStep: "login" },
+            params: { currentStep: "login", role: "worker" },
           });
         },
       },
