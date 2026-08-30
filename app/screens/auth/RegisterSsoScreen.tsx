@@ -34,6 +34,8 @@ export default function RegisterSsoScreen({
   };
 
   const handleManualContinue = (data: { name: string; email: string }) => {
+    // TODO: handle manual continue
+    
     onContinue?.(data);
   };
 

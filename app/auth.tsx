@@ -132,8 +132,7 @@ export default function AuthFlow() {
     ) {
       return (
         <RegisterEmployerScreen
-          onContinue={(data) => {
-            console.log("Employer register data:", data);
+          onContinue={() => {
             setStep("complete_payroll");
           }}
           onLoginPress={() => setStep("login")}
