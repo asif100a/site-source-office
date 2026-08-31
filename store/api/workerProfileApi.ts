@@ -3,24 +3,26 @@ import { baseApi } from "./_base/baseApi";
 import { logout } from "../slices/authSlice";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const userApi = baseApi.injectEndpoints({
+const BASE_POINT = "/workers";
+
+export const workerProfileApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getMe: builder.query<any, void>({
+    getWorkerProfile: builder.query<any, void>({
       query: () => ({
-        url: "/user/me",
+        url: BASE_POINT + "/profile",
         method: "GET",
       }),
       providesTags: [tagTypes.user],
     }),
-    updateMe: builder.mutation<any, any>({
+    updateWorkerProfile: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/user/me",
-        method: "PUT",
+        url: BASE_POINT + "/profile",
+        method: "PATCH",
         body: data,
       }),
       invalidatesTags: [tagTypes.user],
     }),
-    deleteMe: builder.mutation<any, void>({
+    deleteWorkerProfile: builder.mutation<any, void>({
       query: () => ({
         url: "/user/me",
         method: "DELETE",
@@ -43,7 +45,7 @@ export const userApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetMeQuery,
-  useUpdateMeMutation,
-  useDeleteMeMutation,
-} = userApi;
+  useGetWorkerProfileQuery,
+  useUpdateWorkerProfileMutation,
+  useDeleteWorkerProfileMutation,
+} = workerProfileApi;

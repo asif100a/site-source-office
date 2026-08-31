@@ -64,11 +64,17 @@ function withReactNativeMapsPlugin(plugins, googleMapsApiKey) {
   });
 }
 
-const googleMapsApiKey = getEnvValue("GOOGLE_MAPS_API_KEY");
+const googleMapsApiKey =
+  getEnvValue("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ||
+  getEnvValue("GOOGLE_MAPS_API_KEY");
 
 module.exports = ({ config }) => ({
   ...config,
   plugins: withReactNativeMapsPlugin(config.plugins || [], googleMapsApiKey),
+  extra: {
+    ...config.extra,
+    ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
+  },
   ios: {
     ...config.ios,
     bundleIdentifier:

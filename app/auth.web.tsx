@@ -205,6 +205,7 @@ export default function AuthFlowWeb() {
         return (
           <RegisterGeneralScreen
             role={role}
+            name={registrationName}
             onContinue={() => {
               setStep("register_documents");
             }}
