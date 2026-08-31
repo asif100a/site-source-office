@@ -1,12 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useForm } from "react-hook-form";
 import { ChevronDown } from "lucide-react-native";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import StandardFileUploadBox, {
   UploadedFile,
 } from "@/components/standard_ui/form_fields/StandardFileUploadBox";
-import { Avatar, FileChip, profilePhoto, ScreenShell } from "./_components";
+import ScreenLoader from "@/components/ui/screen-loader";
+import { Avatar, FileChip, ScreenShell } from "./_components";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import {
@@ -43,6 +50,11 @@ const getProfileEmail = (response: any) =>
   response?.email ??
   "";
 
+const getProfileImage = (response: any) =>
+  getAccountData(response)?.profile?.image ??
+  getAccountData(response)?.workerProfile?.image ??
+  null;
+
 const getProfileCertificates = (response: any) => {
   const certificates = getAccountData(response)?.workerProfile?.certificates;
   return Array.isArray(certificates) ? certificates : [];
@@ -67,6 +79,7 @@ export default function EditProfileScreen() {
     null,
   );
   const [certificate, setCertificate] = useState<UploadedFile | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<EditProfileFormValues>({
       defaultValues: {
@@ -82,12 +95,14 @@ export default function EditProfileScreen() {
   const {
     data: workerProfile,
     isFetching: isFetchingWorkerProfile,
+    refetch: refetchWorkerProfile,
   } = useGetWorkerAccountProfileQuery(undefined, {
     skip: !isWorker,
   });
   const {
     data: employerProfile,
     isFetching: isFetchingEmployerProfile,
+    refetch: refetchEmployerProfile,
   } = useGetEmployerAccountProfileQuery(undefined, {
     skip: isWorker,
   });
@@ -101,13 +116,19 @@ export default function EditProfileScreen() {
     [activeProfile],
   );
   const existingTrades = useMemo(() => getProfileTrades(activeProfile), [activeProfile]);
+  const existingProfileImage = useMemo(
+    () => getProfileImage(activeProfile),
+    [activeProfile],
+  );
   const currentName = watch("fullName");
   const currentEmail = watch("email");
   const selectedTrade = watch("trade");
+  const avatarUri = profileImageFile?.uri ?? existingProfileImage ?? null;
   const isSaving = isWorker ? isUpdatingWorkerProfile : isUpdatingEmployerProfile;
   const isLoadingProfile = isWorker
     ? isFetchingWorkerProfile
     : isFetchingEmployerProfile;
+  const showInitialLoader = isLoadingProfile && !activeProfile;
 
   useEffect(() => {
     reset({
@@ -129,6 +150,16 @@ export default function EditProfileScreen() {
 
     return nextCertificates;
   }, [certificate, existingCertificates]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+
+    try {
+      await (isWorker ? refetchWorkerProfile() : refetchEmployerProfile());
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const renderTradeDropdown = () => {
     const isOpen = openField === "trade";
@@ -197,7 +228,6 @@ export default function EditProfileScreen() {
       ...(data.fullName.trim() ? { name: data.fullName.trim() } : {}),
       ...(isWorker
         ? {
-            certificates: displayedCertificates,
             trades: data.trade ? [data.trade] : [],
           }
         : {}),
@@ -207,6 +237,7 @@ export default function EditProfileScreen() {
       const formData = await buildProfileEditFormData({
         payload,
         image: profileImageFile,
+        certificates: certificate ? [certificate] : [],
       });
 
       await (isWorker
@@ -239,7 +270,7 @@ export default function EditProfileScreen() {
         <View className="px-5 pb-16 pt-4 bg-neutral-50">
           <TouchableOpacity
             onPress={handleSubmit(handleSave)}
-            disabled={isSaving || isLoadingProfile}
+            disabled={isSaving || showInitialLoader}
             style={{ backgroundColor: "#1E2933" }}
             className="h-14 rounded-lg items-center justify-center"
           >
@@ -250,82 +281,94 @@ export default function EditProfileScreen() {
         </View>
       }
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20, paddingBottom: 24 }}
-      >
-        <View className="flex-row items-center justify-between mb-8">
-          <View className="flex-row items-center gap-3">
-            <Avatar uri={profilePhoto} size={44} />
-            <View>
-              <Text className="text-slate-900 text-base font-extrabold">
-                {currentName || "Profile"}
-              </Text>
-              <Text className="text-neutral-500 text-sm">
-                {currentEmail || "No email available"}
-              </Text>
+      {showInitialLoader ? (
+        <ScreenLoader />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 20, paddingBottom: 24 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#FF5500"
+              colors={["#FF5500"]}
+            />
+          }
+        >
+          <View className="flex-row items-center justify-between mb-8">
+            <View className="flex-row items-center gap-3">
+              <Avatar uri={avatarUri} size={44} fallbackLabel={currentName} />
+              <View>
+                <Text className="text-slate-900 text-base font-extrabold">
+                  {currentName || "Profile"}
+                </Text>
+                <Text className="text-neutral-500 text-sm">
+                  {currentEmail || "No email available"}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <StandardInputField<EditProfileFormValues>
-          label="Full Name"
-          id="fullName"
-          control={control}
-          placeholder="Enter Your Full Name"
-          textInputProps={{
-            className: "text-neutral-900 text-sm font-semibold",
-          }}
-        />
+          <StandardInputField<EditProfileFormValues>
+            label="Full Name"
+            id="fullName"
+            control={control}
+            placeholder="Enter Your Full Name"
+            textInputProps={{
+              className: "text-neutral-900 text-sm font-semibold",
+            }}
+          />
 
-        <StandardInputField<EditProfileFormValues>
-          label="Email Address"
-          id="email"
-          type="email"
-          control={control}
-          placeholder="Enter Your Email"
-          textInputProps={{
-            className: "text-neutral-900 text-sm font-semibold",
-          }}
-          readOnly
-        />
+          <StandardInputField<EditProfileFormValues>
+            label="Email Address"
+            id="email"
+            type="email"
+            control={control}
+            placeholder="Enter Your Email"
+            textInputProps={{
+              className: "text-neutral-900 text-sm font-semibold",
+            }}
+            readOnly
+          />
 
-        <StandardFileUploadBox
-          label="Profile Image"
-          file={profileImageFile}
-          setFile={setProfileImageFile}
-          mode="image"
-          title="Upload Profile Image"
-          description="JPG or PNG (max 10MB)"
-          optional
-        />
+          <StandardFileUploadBox
+            label="Profile Image"
+            file={profileImageFile}
+            setFile={setProfileImageFile}
+            mode="image"
+            title="Upload Profile Image"
+            description="JPG or PNG (max 10MB)"
+            optional
+          />
 
-        {isWorker && (
-          <>
-            {renderTradeDropdown()}
+          {isWorker && (
+            <>
+              {renderTradeDropdown()}
 
-            <StandardFileUploadBox
-              label="Upload Certificate"
-              file={certificate}
-              setFile={setCertificate}
-              mode="both"
-              title="Upload Certificate"
-              description="PDF, PNG, JPG or other files (max 10MB)"
-              optional
-            />
-          </>
-        )}
+              <StandardFileUploadBox
+                label="Upload Certificate"
+                file={certificate}
+                setFile={setCertificate}
+                mode="both"
+                title="Upload Certificate"
+                description="PDF, PNG, JPG or other files (max 10MB)"
+                optional
+              />
+            </>
+          )}
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 10, paddingRight: 20 }}
-        >
-          {displayedCertificates.map((item) => (
-            <FileChip key={item} label={item} />
-          ))}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 10, paddingRight: 20 }}
+          >
+            {displayedCertificates.map((item) => (
+              <FileChip key={item} label={item} />
+            ))}
+          </ScrollView>
         </ScrollView>
-      </ScrollView>
+      )}
     </ScreenShell>
   );
 }

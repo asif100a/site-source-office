@@ -112,6 +112,8 @@ export default function StandardInputField<T extends FieldValues>({
               autoCapitalize={type === "text" ? "sentences" : "none"}
               secureTextEntry={type === "password" && !showPassword}
               readOnly={readOnly}
+              editable={!readOnly}
+              selectTextOnFocus={!readOnly}
               className="text-sm text-[#222]"
               {...textInputProps}
             />

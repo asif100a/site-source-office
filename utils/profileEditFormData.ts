@@ -10,30 +10,40 @@ type UploadedAsset = {
 type BuildProfileEditFormDataInput = {
   payload: Record<string, unknown>;
   image?: UploadedAsset | null;
+  certificates?: UploadedAsset[];
 };
 
-async function appendImage(formData: FormData, image: UploadedAsset) {
+async function appendFile(
+  formData: FormData,
+  fieldName: string,
+  fileAsset: UploadedAsset,
+) {
   if (Platform.OS === "web") {
-    const response = await fetch(image.uri);
+    const response = await fetch(fileAsset.uri);
     const blob = await response.blob();
-    formData.append("image", blob, image.name);
+    formData.append(fieldName, blob, fileAsset.name);
     return;
   }
 
-  const file = new ExpoFile(image.uri);
-  formData.append("image", file, image.name);
+  const file = new ExpoFile(fileAsset.uri);
+  formData.append(fieldName, file, fileAsset.name);
 }
 
 export async function buildProfileEditFormData({
   payload,
   image,
+  certificates = [],
 }: BuildProfileEditFormDataInput) {
   const formData = new FormData();
 
   formData.append("payload", JSON.stringify(payload));
 
   if (image) {
-    await appendImage(formData, image);
+    await appendFile(formData, "image", image);
+  }
+
+  for (const certificate of certificates) {
+    await appendFile(formData, "certificates", certificate);
   }
 
   return formData;

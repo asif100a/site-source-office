@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -258,15 +258,47 @@ export function FileChip({ label = "CSCS Gold Card" }: { label?: string }) {
 export function Avatar({
   uri,
   size = 42,
+  fallbackLabel,
 }: {
-  uri: string | ImageSourcePropType;
+  uri?: string | ImageSourcePropType | null;
   size?: number;
+  fallbackLabel?: string;
 }) {
+  const [hasImageError, setHasImageError] = useState(false);
   const source = typeof uri === "string" ? { uri } : uri;
+  const trimmedFallback = fallbackLabel?.trim() ?? "";
+  const firstWord = trimmedFallback.split(/\s+/)[0] ?? "";
+  const shouldShowFallback =
+    hasImageError ||
+    !source ||
+    (typeof uri === "string" && uri.trim().length === 0);
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [uri]);
+
+  if (shouldShowFallback) {
+    return (
+      <View
+        className="items-center justify-center bg-neutral-200"
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      >
+        <Text
+          className="font-extrabold text-neutral-700"
+          style={{ fontSize: Math.max(12, size * 0.22) }}
+          numberOfLines={1}
+        >
+          {firstWord || "Profile"}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <Image
       source={source}
       style={{ width: size, height: size, borderRadius: size / 2 }}
+      onError={() => setHasImageError(true)}
     />
   );
 }
