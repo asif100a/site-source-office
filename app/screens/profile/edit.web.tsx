@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useForm } from "react-hook-form";
 import { ChevronDown } from "lucide-react-native";
@@ -13,38 +13,232 @@ import {
   profilePhoto,
   ScreenShell,
 } from "./_components";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import { safeGetWebStorageItem } from "@/constants/webStorage";
+import Toast from "react-native-toast-message";
+import {
+  useGetWorkerProfileQuery as useGetWorkerAccountProfileQuery,
+  useUpdateWorkerProfileMutation,
+} from "@/store/api/workerProfileApi";
+import {
+  useGetWorkerProfileQuery as useGetEmployerAccountProfileQuery,
+  useUpdateWorkerProfileMutation as useUpdateEmployerProfileMutation,
+} from "@/store/api/employerProfileApi";
+import { buildProfileEditFormData } from "@/utils/profileEditFormData";
+import { TRADES } from "@/assets/data";
 
 const WEB_ROLE_STORAGE_KEY = "site-source.active-role";
 
 type EditProfileFormValues = {
   fullName: string;
   email: string;
+  trade: string;
 };
 
+const getAccountData = (response: any) => response?.data ?? response;
+
+const getProfileName = (response: any) =>
+  getAccountData(response)?.profile?.name ??
+  getAccountData(response)?.workerProfile?.name ??
+  "";
+
+const getProfileEmail = (response: any) =>
+  getAccountData(response)?.email ??
+  response?.email ??
+  "";
+
+const getProfileCertificates = (response: any) => {
+  const certificates = getAccountData(response)?.workerProfile?.certificates;
+  return Array.isArray(certificates) ? certificates : [];
+};
+
+const getProfileTrades = (response: any) => {
+  const trades = getAccountData(response)?.workerProfile?.trades;
+  return Array.isArray(trades) ? trades : [];
+};
+
+function getOptionLabel(
+  options: { label: string; value: string }[],
+  value: string,
+) {
+  return options.find((option) => option.value === value)?.label || "";
+}
+
 export default function EditProfileScreenWeb() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ origin?: string | string[] }>();
   const [userRole, setUserRole] = useState<UserRole>("worker");
+  const [openField, setOpenField] = useState<"trade" | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<UploadedFile | null>(
     null,
   );
   const [certificate, setCertificate] = useState<UploadedFile | null>(null);
   const isWorker = userRole === "worker";
 
-  const { control } = useForm<EditProfileFormValues>({
-    defaultValues: {
-      fullName: "",
-      email: "",
-    },
+  const { control, handleSubmit, reset, setValue, watch } =
+    useForm<EditProfileFormValues>({
+      defaultValues: {
+        fullName: "",
+        email: "",
+        trade: "",
+      },
+    });
+  const {
+    data: workerProfile,
+    isFetching: isFetchingWorkerProfile,
+  } = useGetWorkerAccountProfileQuery(undefined, {
+    skip: !isWorker,
   });
+  const {
+    data: employerProfile,
+    isFetching: isFetchingEmployerProfile,
+  } = useGetEmployerAccountProfileQuery(undefined, {
+    skip: isWorker,
+  });
+  const [updateWorkerProfile, { isLoading: isUpdatingWorkerProfile }] =
+    useUpdateWorkerProfileMutation();
+  const [updateEmployerProfile, { isLoading: isUpdatingEmployerProfile }] =
+    useUpdateEmployerProfileMutation();
+  const activeProfile = isWorker ? workerProfile : employerProfile;
+  const currentName = watch("fullName");
+  const currentEmail = watch("email");
+  const selectedTrade = watch("trade");
+  const existingCertificates = useMemo(
+    () => getProfileCertificates(activeProfile),
+    [activeProfile],
+  );
+  const existingTrades = useMemo(() => getProfileTrades(activeProfile), [activeProfile]);
+  const displayedCertificates = useMemo(
+    () =>
+      certificate?.name && !existingCertificates.includes(certificate.name)
+        ? [...existingCertificates, certificate.name]
+        : existingCertificates,
+    [certificate, existingCertificates],
+  );
+  const isSaving = isWorker ? isUpdatingWorkerProfile : isUpdatingEmployerProfile;
+  const isLoadingProfile = isWorker
+    ? isFetchingWorkerProfile
+    : isFetchingEmployerProfile;
 
   useEffect(() => {
+    const origin = Array.isArray(params.origin) ? params.origin[0] : params.origin;
     setUserRole(
       normalizeUserRole(
-        safeGetWebStorageItem(WEB_ROLE_STORAGE_KEY) ?? undefined,
+        origin ?? safeGetWebStorageItem(WEB_ROLE_STORAGE_KEY) ?? undefined,
       ),
     );
-  }, []);
+  }, [params.origin]);
+
+  useEffect(() => {
+    reset({
+      fullName: getProfileName(activeProfile),
+      email: getProfileEmail(activeProfile),
+      trade: existingTrades[0] ?? "",
+    });
+  }, [activeProfile, existingTrades, reset]);
+
+  const renderTradeDropdown = () => {
+    const isOpen = openField === "trade";
+    const displayValue = getOptionLabel(TRADES, selectedTrade);
+
+    return (
+      <View className="mb-1">
+        <Text className="mb-2 text-xs font-semibold text-neutral-500">
+          Trade / Skill
+        </Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setOpenField(isOpen ? null : "trade")}
+          className="flex-row h-14 items-center justify-between rounded-xl border border-neutral-200 bg-white px-4"
+        >
+          <Text
+            className={`text-sm font-semibold ${
+              displayValue ? "text-neutral-900" : "text-neutral-400"
+            }`}
+          >
+            {displayValue || "Select trade / skill"}
+          </Text>
+          <ChevronDown size={17} color="#171717" />
+        </TouchableOpacity>
+
+        {isOpen ? (
+          <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            {TRADES.map((option) => {
+              const selected = selectedTrade === option.value;
+
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setValue("trade", option.value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                    });
+                    setOpenField(null);
+                  }}
+                  className={`min-h-[48px] justify-center px-4 ${
+                    selected ? "bg-[#FFF5F2]" : "bg-white"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm ${
+                      selected
+                        ? "font-bold text-[#FF5500]"
+                        : "font-medium text-neutral-800"
+                    }`}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
+
+  const handleSave = async (data: EditProfileFormValues) => {
+    const payload = {
+      ...(data.fullName.trim() ? { name: data.fullName.trim() } : {}),
+      ...(isWorker
+        ? {
+            certificates: displayedCertificates,
+            trades: data.trade ? [data.trade] : [],
+          }
+        : {}),
+    };
+
+    try {
+      const formData = await buildProfileEditFormData({
+        payload,
+        image: profileImageFile,
+      });
+
+      await (isWorker
+        ? updateWorkerProfile(formData).unwrap()
+        : updateEmployerProfile(formData).unwrap());
+
+      Toast.show({
+        type: "success",
+        text1: "Profile updated",
+        text2: "Your profile changes have been saved.",
+      });
+      setCertificate(null);
+      router.back();
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Unable to update profile",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Please try again in a moment.",
+      });
+    }
+  };
 
   return (
     <ScreenShell
@@ -53,11 +247,13 @@ export default function EditProfileScreenWeb() {
         <View className="border-t border-neutral-200 bg-neutral-50 px-6 pb-6 pt-4 md:px-10 xl:px-12">
           <View className="mx-auto w-full max-w-7xl">
             <TouchableOpacity
+              onPress={handleSubmit(handleSave)}
+              disabled={isSaving || isLoadingProfile}
               style={{ backgroundColor: Colors.common.GRAY_DARK }}
               className="h-14 items-center justify-center rounded-xl active:opacity-90"
             >
               <Text className="text-sm font-extrabold text-white">
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -77,10 +273,10 @@ export default function EditProfileScreenWeb() {
                       <Avatar uri={profilePhoto} size={52} />
                       <View>
                         <Text className="text-base font-bold text-neutral-950">
-                          Wade Warren
+                          {currentName || "Profile"}
                         </Text>
                         <Text className="text-sm text-neutral-500">
-                          tan@gmail.com
+                          {currentEmail || "No email available"}
                         </Text>
                       </View>
                     </View>
@@ -120,6 +316,7 @@ export default function EditProfileScreenWeb() {
                       textInputProps={{
                         className: "text-sm font-semibold text-neutral-900",
                       }}
+                      readOnly
                     />
 
                     <StandardFileUploadBox
@@ -132,19 +329,9 @@ export default function EditProfileScreenWeb() {
                       optional
                     />
 
-                    {!isWorker ? (
+                    {isWorker ? (
                       <>
-                        <View className="mb-1">
-                          <Text className="mb-2 text-xs font-semibold text-neutral-500">
-                            Trade / Skill
-                          </Text>
-                          <View className="flex-row h-14 items-center justify-between rounded-xl border border-neutral-200 bg-white px-4">
-                            <Text className="text-sm font-semibold text-neutral-400">
-                              Groundworker
-                            </Text>
-                            <ChevronDown size={17} color="#171717" />
-                          </View>
-                        </View>
+                        {renderTradeDropdown()}
 
                         <StandardFileUploadBox
                           label="Upload Certificate"
@@ -168,9 +355,9 @@ export default function EditProfileScreenWeb() {
                               paddingRight: 20,
                             }}
                           >
-                            <FileChip />
-                            <FileChip />
-                            <FileChip />
+                            {displayedCertificates.map((item) => (
+                              <FileChip key={item} label={item} />
+                            ))}
                           </ScrollView>
                         </View>
                       </>

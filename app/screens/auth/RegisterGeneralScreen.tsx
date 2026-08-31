@@ -19,6 +19,7 @@ import {
   type AddressSuggestion,
 } from "@/utils/googlePlaces";
 import { buildWorkerProfileFormData } from "@/utils/workerProfileFormData";
+import { EXPERIENCES, TRADES } from "@/assets/data";
 
 type RegisterGeneralFormValues = {
   trade: string;
@@ -33,27 +34,6 @@ interface RegisterGeneralScreenProps {
   onLoginPress?: () => void;
   onBackPress?: () => void;
 }
-
-const trades = [
-  { label: "Groundworker", value: "GROUNDWORKER" },
-  { label: "Carpenter", value: "CARPENTER" },
-  { label: "Electrician", value: "ELECTRICIAN" },
-  { label: "Plumber", value: "PLUMBER" },
-  { label: "Bricklayer", value: "BRICKLAYER" },
-  { label: "Painter", value: "PAINTER" },
-  { label: "Scaffolder", value: "SCAFFOLDER" },
-];
-
-const experiences = [
-  { label: "0-1 year", value: "0" },
-  { label: "1 year", value: "1" },
-  { label: "2 years", value: "2" },
-  { label: "3 years", value: "3" },
-  { label: "4 years", value: "4" },
-  { label: "5 years", value: "5" },
-  { label: "6 years", value: "6" },
-  { label: "7+ years", value: "7" },
-];
 
 function getOptionLabel(
   options: { label: string; value: string }[],
@@ -417,7 +397,7 @@ export default function RegisterGeneralScreen({
             "trade",
             "Trade / Skill",
             selectedTrade,
-            trades,
+            TRADES,
             "Select trade / skill",
           )}
 
@@ -425,7 +405,7 @@ export default function RegisterGeneralScreen({
             "experience",
             "Experience",
             selectedExperience,
-            experiences,
+            EXPERIENCES,
             "Select experience",
           )}
 
