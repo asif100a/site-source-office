@@ -5,10 +5,12 @@ import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
 import { useForm } from "react-hook-form";
 import { ArrowRight, Camera, ChevronDown } from "lucide-react-native";
+import { useSelector } from "react-redux";
 import AuthWebShell from "./_web-shell";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { useUpdateWorkerProfileMutation } from "@/store/api/workerProfileApi";
+import type { RootState } from "@/store/store";
 import {
   getAddressDetails,
   getAddressSuggestions,
@@ -68,6 +70,7 @@ export default function RegisterGeneralScreenWeb({
 }: RegisterGeneralScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
+  const authToken = useSelector((state: RootState) => state.auth.token);
   const [openField, setOpenField] = useState<"trade" | "experience" | null>(
     null,
   );
@@ -270,7 +273,29 @@ export default function RegisterGeneralScreenWeb({
     });
   };
 
+  const redirectToLogin = () => {
+    if (onLoginPress) {
+      onLoginPress();
+      return;
+    }
+
+    router.replace({
+      pathname: "/auth",
+      params: { step: "login", role: activeRole },
+    });
+  };
+
   const onSubmit = async (data: RegisterGeneralFormValues) => {
+    if (!authToken) {
+      Toast.show({
+        type: "error",
+        text1: "Login required",
+        text2: "Please log in again before updating your profile.",
+      });
+      redirectToLogin();
+      return;
+    }
+
     if (!data.trade || !data.experience) {
       Toast.show({
         type: "error",
@@ -314,8 +339,18 @@ export default function RegisterGeneralScreenWeb({
           params: { step: "register_documents", role: activeRole },
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update worker profile failed:", error);
+      if (error?.status === 401) {
+        Toast.show({
+          type: "error",
+          text1: "Session expired",
+          text2: "Please log in again before updating your profile.",
+        });
+        redirectToLogin();
+        return;
+      }
+
       Toast.show({
         type: "error",
         text1: "Unable to update profile",

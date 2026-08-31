@@ -1,6 +1,5 @@
 import { tagTypes } from "../type/tagType";
-import { baseApi } from "./_base/baseApi";
-import { getAuthorizationHeader } from "./_base/baseApi";
+import { baseApi, getAuthorizationHeader } from "./_base/baseApi";
 import { BACKEND_URL } from "@/constants/env";
 import type { RootState } from "@/store/store";
 import { File as ExpoFile, UploadType } from "expo-file-system";
