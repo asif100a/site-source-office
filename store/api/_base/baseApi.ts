@@ -30,6 +30,12 @@ const getAuthToken = (url: string, state: RootState) => {
   return state.auth.token;
 };
 
+export const getAuthorizationHeader = (token?: string | null) => {
+  if (!token) return undefined;
+
+  return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+};
+
 const baseQuery = fetchBaseQuery({
   baseUrl: BACKEND_URL,
 });
@@ -44,13 +50,12 @@ const baseQueryWithAuth: BaseQueryFn<
   const url = getUrl(args);
   const token = getAuthToken(url, state);
   let authArgs = args;
-  // console.log("Token from the base api: ", token);
 
   if (token) {
     const headers = new Headers(
       typeof args === "string" ? undefined : (args.headers as HeadersInit)
     );
-    headers.set("Authorization", token);
+    headers.set("Authorization", getAuthorizationHeader(token)!);
 
     authArgs =
       typeof args === "string"

@@ -42,21 +42,6 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body: userData,
       }),
-      // async onQueryStarted(args, { dispatch, queryFulfilled }) {
-      //   try {
-      //     const { data } = await queryFulfilled;
-      //     const token = data?.data?.otpToken?.verificationToken;
-
-      //     // Remove if exists
-      //     dispatch(clearOtpToken());
-      //     if (token) {
-      //       dispatch(setOtpToken(token));
-      //       await AsyncStorage.setItem("otpToken", token);
-      //     }
-      //   } catch (error) {
-      //     console.error("Registration failed:", error);
-      //   }
-      // },
       invalidatesTags: [tagTypes.auth],
     }),
     verifyOTP: builder.mutation<any, VerifyOTPRequest>({

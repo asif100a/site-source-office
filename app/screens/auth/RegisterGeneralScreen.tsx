@@ -288,6 +288,8 @@ export default function RegisterGeneralScreen({
         image: profileImage,
       });
 
+      console.log("Update worker profile formData:", formData.get("image"));
+
       const response = await updateWorkerProfile(formData).unwrap();
       console.log("Update worker profile response:", response);
 

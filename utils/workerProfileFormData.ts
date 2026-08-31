@@ -1,4 +1,5 @@
 import type { ImagePickerAsset } from "expo-image-picker";
+import { File as ExpoFile } from "expo-file-system";
 import { Platform } from "react-native";
 
 type WorkerProfileFormInput = {
@@ -35,15 +36,14 @@ async function appendImage(formData: FormData, image: ImagePickerAsset) {
   if (Platform.OS === "web") {
     const response = await fetch(image.uri);
     const blob = await response.blob();
-    (formData as any).append("image", blob, fileName);
+    formData.append("image", blob, fileName);
     return;
   }
 
-  (formData as any).append("image", {
-    uri: image.uri,
-    name: fileName,
-    type: mimeType,
-  } as any);
+  // Expo fetch supports its File type, which streams bytes from the local URI.
+  // React Native's legacy { uri, name, type } parts are not supported here.
+  const file = new ExpoFile(image.uri);
+  formData.append("image", file, fileName);
 }
 
 export async function buildWorkerProfileFormData({

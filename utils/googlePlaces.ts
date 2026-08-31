@@ -81,14 +81,23 @@ async function getWebAddressSuggestions(
 ): Promise<AddressSuggestion[]> {
   await loadGooglePlacesScript(apiKey);
 
-  return new Promise((resolve) => {
+  if (!window.google?.maps?.places?.AutocompleteService) {
+    throw new Error("Google Places autocomplete is unavailable.");
+  }
+
+  return new Promise((resolve, reject) => {
     const service = new window.google.maps.places.AutocompleteService();
 
     service.getPlacePredictions(
       { input, types: ["geocode"] },
       (predictions: any[] | null, status: string) => {
-        if (status !== "OK" || !predictions) {
+        if (status === "ZERO_RESULTS") {
           resolve([]);
+          return;
+        }
+
+        if (status !== "OK" || !predictions) {
+          reject(new Error(`Google Places autocomplete failed: ${status}`));
           return;
         }
 
@@ -114,6 +123,18 @@ async function getNativeAddressSuggestions(
   );
   const result = await response.json();
 
+  if (result.status === "ZERO_RESULTS") {
+    return [];
+  }
+
+  if (result.status !== "OK") {
+    throw new Error(
+      `Google Places autocomplete failed: ${result.status}${
+        result.error_message ? ` - ${result.error_message}` : ""
+      }`,
+    );
+  }
+
   return (result.predictions ?? []).map((prediction: any) => ({
     placeId: prediction.place_id,
     description: prediction.description,
@@ -121,10 +142,14 @@ async function getNativeAddressSuggestions(
 }
 
 export async function getAddressSuggestions(input: string) {
-  const apiKey = getGoogleMapsApiKey();
+  const apiKey = getGoogleMapsApiKey().trim();
 
-  if (!apiKey || input.trim().length < 3) {
+  if (input.trim().length < 3) {
     return [];
+  }
+
+  if (!apiKey) {
+    throw new Error("Google Maps API key is missing.");
   }
 
   if (Platform.OS === "web") {
@@ -181,6 +206,14 @@ async function getNativeAddressDetails(
   const result = await response.json();
   const location = result.result?.geometry?.location;
 
+  if (result.status !== "OK") {
+    throw new Error(
+      `Google Places details failed: ${result.status}${
+        result.error_message ? ` - ${result.error_message}` : ""
+      }`,
+    );
+  }
+
   if (!location) {
     throw new Error("Unable to find address coordinates.");
   }
@@ -198,7 +231,7 @@ export async function getAddressDetails(
   placeId: string,
   fallbackDescription: string,
 ) {
-  const apiKey = getGoogleMapsApiKey();
+  const apiKey = getGoogleMapsApiKey().trim();
 
   if (!apiKey) {
     throw new Error("Google Maps API key is missing.");

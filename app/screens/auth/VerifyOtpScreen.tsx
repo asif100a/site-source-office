@@ -7,6 +7,9 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import { useVerifyOTPMutation } from "@/store/api/authApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch } from "react-redux";
+import { setToken } from "@/store/slices/authSlice";
 
 interface VerifyOtpScreenProps {
   flow?: "registration" | "password_reset";
@@ -34,6 +37,7 @@ export default function VerifyOtpScreen({
 }: VerifyOtpScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
+  const dispatch = useDispatch();
   const inputRef = useRef<TextInput>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -101,6 +105,16 @@ export default function VerifyOtpScreen({
       console.log("OTP verification response: ", response);
 
       if (response.success || response?.data?.success) {
+        const token =
+          response.accessToken ??
+          response.data?.accessToken ??
+          (response.data as any)?.token;
+
+        if (token) {
+          dispatch(setToken(token));
+          await AsyncStorage.setItem("token", token);
+        }
+
         Toast.show({
           type: "success",
           text1: "OTP verified",
