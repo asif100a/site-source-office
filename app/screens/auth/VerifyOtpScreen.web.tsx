@@ -6,6 +6,7 @@ import Toast from "react-native-toast-message";
 import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
 import {
+  useResendOTPMutation,
   useVerifyForgotOtpMutation,
   useVerifyOTPMutation,
 } from "@/store/api/authApi";
@@ -49,6 +50,7 @@ export default function VerifyOtpScreenWeb({
     useVerifyOTPMutation();
   const [verifyForgotOtp, { isLoading: isVerifyingForgotOtp }] =
     useVerifyForgotOtpMutation();
+  const [resendOTP, { isLoading: isResendingOtp }] = useResendOTPMutation();
   const isLoading =
     flow === "password_reset"
       ? isVerifyingForgotOtp
@@ -168,16 +170,49 @@ export default function VerifyOtpScreenWeb({
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (secondsLeft > 0) {
       return;
     }
 
-    setCode("");
-    setError("");
-    setSecondsLeft(RESEND_DELAY);
-    onResend?.();
-    inputRef.current?.focus();
+    const trimmedEmail = email?.trim();
+
+    if (!trimmedEmail) {
+      setError("Email is required to resend this code.");
+      return;
+    }
+
+    try {
+      const response = await resendOTP({
+        email: trimmedEmail,
+        purpose:
+          flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
+      }).unwrap();
+
+      setCode("");
+      setError("");
+      setSecondsLeft(RESEND_DELAY);
+      onResend?.();
+      inputRef.current?.focus();
+
+      Toast.show({
+        type: "success",
+        text1: "Code resent",
+        text2: response?.message ?? "A fresh OTP has been sent to your email.",
+      });
+    } catch (apiError: any) {
+      const message =
+        apiError?.data?.message ??
+        apiError?.message ??
+        "Unable to resend the code right now.";
+
+      setError(message);
+      Toast.show({
+        type: "error",
+        text1: "Resend failed",
+        text2: message,
+      });
+    }
   };
 
   const handleBack = () => {
@@ -304,7 +339,7 @@ export default function VerifyOtpScreenWeb({
           <TouchableOpacity
             onPress={handleResend}
             activeOpacity={0.7}
-            disabled={secondsLeft > 0}
+            disabled={secondsLeft > 0 || isResendingOtp}
           >
             <Text
               className={`text-sm font-semibold ${
@@ -313,7 +348,11 @@ export default function VerifyOtpScreenWeb({
                   : "text-[#1B2530] underline"
               }`}
             >
-              {flow === "password_reset" ? "Send again" : "Resend code"}
+              {isResendingOtp
+                ? "Sending..."
+                : flow === "password_reset"
+                  ? "Send again"
+                  : "Resend code"}
             </Text>
           </TouchableOpacity>
 

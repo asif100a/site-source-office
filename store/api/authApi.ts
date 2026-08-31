@@ -59,20 +59,35 @@ export const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: [tagTypes.user],
     }),
-    resendOTP: builder.mutation<any, { email: string }>({
-      query: ({ email }) => ({
-        url: `/otp/send-otp-in-email`,
+    resendOTP: builder.mutation<any, { email: string; purpose: "RESET_PASSWORD" | "VERIFY_ACCOUNT" }>({
+      query: ({ email, purpose }) => ({
+        url: `/otp/send`,
         method: "POST",
-        body: { email },
+        body: { email, purpose },
       }),
       async onQueryStarted(args, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
-          // const token = data?.data?.verificationToken || data?.data?.otpToken?.verificationToken;
-          // if (token) {
-          //   dispatch(setOtpToken(token));
-          //   await AsyncStorage.setItem("otpToken", token);
-          // }
+          const { data } = await queryFulfilled;
+          const token =
+            data?.data?.verificationToken ??
+            data?.data?.otpToken?.verificationToken ??
+            data?.data?.resetToken ??
+            data?.resetToken;
+
+          if (!token) {
+            return;
+          }
+
+          if (args.purpose === "RESET_PASSWORD") {
+            dispatch(clearForgotToken());
+            dispatch(setForgotToken(token));
+            await AsyncStorage.setItem("forgotToken", token);
+            return;
+          }
+
+          dispatch(clearOtpToken());
+          dispatch(setOtpToken(token));
+          await AsyncStorage.setItem("otpToken", token);
         } catch (error) {
           console.error("Resend OTP failed:", error);
         }
