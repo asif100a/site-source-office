@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
 import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { FileText, Trash2, Paperclip, Camera, Info } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { normalizeUserRole, UserRole } from "@/constants/Routes";
+import { useUpdateWorkerProfileMutation } from "@/store/api/workerProfileApi";
+import type { RootState } from "@/store/store";
+import Toast from "react-native-toast-message";
+import { buildWorkerProfileCertificatesFormData } from "@/utils/workerProfileFormData";
 
 interface DocumentItem {
   id: string;
@@ -26,11 +31,10 @@ export default function RegisterDocumentsScreen({
 }: RegisterDocumentsScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
-  const [documents, setDocuments] = useState<DocumentItem[]>([
-    { id: "1", name: "CSCS Gold Card", size: "1.1 MB" },
-    { id: "2", name: "IPAF Certificate", size: "1.1 MB" },
-    { id: "3", name: "PASMA Certificate", size: "1.1 MB" },
-  ]);
+  const authToken = useSelector((state: RootState) => state.auth.token);
+  const [updateWorkerProfile, { isLoading: isUpdatingProfile }] =
+    useUpdateWorkerProfileMutation();
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
 
   const handleUpload = async () => {
     try {
@@ -50,7 +54,7 @@ export default function RegisterDocumentsScreen({
         setDocuments((prev) => [...prev, newDoc]);
       }
     } catch (err) {
-      console.log("Error picking document:", err);
+      console.error("Error picking document:", err);
     }
   };
 
@@ -79,7 +83,7 @@ export default function RegisterDocumentsScreen({
         setDocuments((prev) => [...prev, newDoc]);
       }
     } catch (err) {
-      console.log("Error launching camera:", err);
+      console.error("Error launching camera:", err);
     }
   };
 
@@ -87,13 +91,71 @@ export default function RegisterDocumentsScreen({
     setDocuments((prev) => prev.filter((doc) => doc.id !== id));
   };
 
-  const handleContinue = () => {
+  const redirectToLogin = () => {
+    router.replace({
+      pathname: "/auth",
+      params: { step: "login", role: activeRole },
+    });
+  };
+
+  const goToNextStep = () => {
     if (onContinue) {
       onContinue();
     } else {
       router.push({
         pathname: "/auth",
         params: { step: "register_password", role: activeRole },
+      });
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!documents.length) {
+      goToNextStep();
+      return;
+    }
+
+    if (!authToken) {
+      Toast.show({
+        type: "error",
+        text1: "Login required",
+        text2: "Please log in again before updating your certificates.",
+      });
+      redirectToLogin();
+      return;
+    }
+
+    try {
+      const formData = buildWorkerProfileCertificatesFormData({
+        certificates: documents.map((document) => document.name),
+      });
+
+      await updateWorkerProfile(formData).unwrap();
+
+      Toast.show({
+        type: "success",
+        text1: "Certificates updated",
+        text2: "Your certificates have been saved.",
+      });
+
+      goToNextStep();
+    } catch (error: any) {
+      console.error("Update worker certificates failed:", error);
+
+      if (error?.status === 401) {
+        Toast.show({
+          type: "error",
+          text1: "Session expired",
+          text2: "Please log in again before updating your certificates.",
+        });
+        redirectToLogin();
+        return;
+      }
+
+      Toast.show({
+        type: "error",
+        text1: "Unable to update certificates",
+        text2: error?.data?.message ?? "Please try again in a moment.",
       });
     }
   };
@@ -219,10 +281,13 @@ export default function RegisterDocumentsScreen({
         <View className="mt-8 gap-4">
           <TouchableOpacity
             onPress={handleContinue}
+            disabled={isUpdatingProfile}
             activeOpacity={0.9}
             className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
           >
-            <Text className="text-white text-base font-semibold">Continue</Text>
+            <Text className="text-white text-base font-semibold">
+              {isUpdatingProfile ? "Updating..." : "Continue"}
+            </Text>
           </TouchableOpacity>
 
           {/* Skip Button */}

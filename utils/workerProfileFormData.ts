@@ -12,8 +12,16 @@ type WorkerProfileFormInput = {
   image?: ImagePickerAsset | null;
 };
 
+type WorkerProfileCertificatesInput = {
+  certificates: string[];
+};
+
 function normalizeTrade(trade: string) {
   return trade.trim().replace(/[^A-Za-z0-9]+/g, "_").toUpperCase();
+}
+
+function normalizeCertificate(certificate: string) {
+  return certificate.trim().replace(/[^A-Za-z0-9]+/g, "_").toUpperCase();
 }
 
 function normalizeExperience(experience: string) {
@@ -70,6 +78,21 @@ export async function buildWorkerProfileFormData({
   if (image) {
     await appendImage(formData, image);
   }
+
+  return formData;
+}
+
+export function buildWorkerProfileCertificatesFormData({
+  certificates,
+}: WorkerProfileCertificatesInput) {
+  const payload = {
+    certificates: certificates
+      .map(normalizeCertificate)
+      .filter((certificate) => Boolean(certificate)),
+  };
+  const formData = new FormData();
+
+  formData.append("payload", JSON.stringify(payload));
 
   return formData;
 }
