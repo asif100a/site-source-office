@@ -7,6 +7,8 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import { useForgotPasswordMutation } from "@/store/api/authApi";
+import Toast from "react-native-toast-message";
 
 interface ForgotPasswordScreenProps {
   role?: UserRole;
@@ -21,6 +23,7 @@ export default function ForgotPasswordScreen({
 }: ForgotPasswordScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
+  const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -28,16 +31,37 @@ export default function ForgotPasswordScreen({
     },
   });
 
-  const handleSend = (data: { email: string }) => {
-    if (onSubmitEmail) {
-      onSubmitEmail(data.email);
-      return;
-    }
+  const handleSend = async (data: { email: string }) => {
+    try {
+      const response = await forgotPassword({
+        email: data.email.trim(),
+        purpose: "RESET_PASSWORD",
+      }).unwrap();
 
-    router.push({
-      pathname: "/auth",
-      params: { step: "verify_otp", role: activeRole },
-    });
+      console.log("Forgot password response: ", response);
+
+      if (response.success || (response?.data as any)?.success) {
+        Toast.show({
+          type: "success",
+          text1: "Verification code sent",
+          text2: response?.message ?? "Check your email for the reset code.",
+        });
+
+        if (onSubmitEmail) {
+          onSubmitEmail(data.email.trim());
+          return;
+        }
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Unable to send code",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Please try again in a moment.",
+      });
+    }
   };
 
   const handleBack = () => {
@@ -93,11 +117,12 @@ export default function ForgotPasswordScreen({
 
           <TouchableOpacity
             onPress={handleSubmit(handleSend)}
+            disabled={isLoading}
             activeOpacity={0.9}
             className="w-full flex-row items-center justify-center gap-2 rounded-xl bg-[#1B2530] py-4 shadow-sm"
           >
             <Text className="text-base font-semibold text-white">
-              Send verification code
+              {isLoading ? "Sending..." : "Send verification code"}
             </Text>
             <ArrowRight size={16} color="#FFFFFF" />
           </TouchableOpacity>

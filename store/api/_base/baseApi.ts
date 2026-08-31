@@ -14,10 +14,7 @@ const getUrl = (args: string | FetchArgs) =>
 
 const getAuthToken = (url: string, state: RootState) => {
   if (url.includes("/auth/reset-password")) {
-    // console.log("Access token from the base api: ", state.auth.token);
-    // console.log("OTP token from the base api: ", state.auth.otpToken);
-    // console.log("Forgot token from the base api: ", state.auth.forgotToken);
-    return state.auth.token;
+    return state.auth.forgotToken;
   }
 
   if (url.includes("/otp/verify")) {

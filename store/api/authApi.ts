@@ -87,9 +87,12 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user, tagTypes.auth, tagTypes.profile],
     }),
-    forgotPassword: builder.mutation<AuthResponse, { email: string }>({
+    forgotPassword: builder.mutation<
+      AuthResponse,
+      { email: string; purpose: "RESET_PASSWORD" }
+    >({
       query: (data) => ({
-        url: BASE_POINT + "/forgot-password",
+        url: "/otp/send",
         method: "POST",
         body: data,
       }),
@@ -108,6 +111,31 @@ export const authApi = baseApi.injectEndpoints({
         }
       },
       invalidatesTags: [tagTypes.auth],
+    }),
+    verifyForgotOtp: builder.mutation<any, VerifyOTPRequest>({
+      query: (data) => {
+        console.log("Data from the verifyForgotOtp: ", data);
+        return {
+          url: `/otp/verify`,
+          method: "POST",
+          body: data,
+        };
+      },
+
+      async onQueryStarted(args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const token = data?.data?.resetToken ?? data?.resetToken;
+
+          if (token) {
+            dispatch(setForgotToken(token));
+            await AsyncStorage.setItem("forgotToken", token);
+          }
+        } catch (error) {
+          console.error("Forgot OTP verification failed:", error);
+        }
+      },
+      invalidatesTags: [tagTypes.user],
     }),
     resetPassword: builder.mutation<
       any,
@@ -142,5 +170,6 @@ export const {
   useResendOTPMutation,
   useChangePasswordMutation,
   useForgotPasswordMutation,
-  useResetPasswordMutation
+  useVerifyForgotOtpMutation,
+  useResetPasswordMutation,
 } = authApi;

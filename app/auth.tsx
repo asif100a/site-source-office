@@ -102,6 +102,22 @@ export default function AuthFlow() {
     setStep(currentRole === "employer" ? "register_employer" : "register_sso");
   };
 
+  const goToRegistrationOtp = () => {
+    setOtpFlow("registration");
+    setStep("verify_otp");
+  };
+
+  const goToForgotPassword = () => {
+    setOtpFlow("password_reset");
+    setStep("forgot_password");
+  };
+
+  const goToPasswordResetOtp = (email: string) => {
+    setPasswordResetEmail(email);
+    setOtpFlow("password_reset");
+    setStep("verify_otp");
+  };
+
   // Go back to the previous screen in the flow
   const handleBack = () => {
     if (step === "register_sso" || step === "register_employer") {
@@ -111,12 +127,15 @@ export default function AuthFlow() {
     } else if (step === "register_documents") {
       setStep("register_general");
     } else if (step === "verify_otp") {
-      setStep(
-        otpFlow === "password_reset" ? "forgot_password" : "register_sso",
-      );
+      if (otpFlow === "password_reset") {
+        goToForgotPassword();
+      } else {
+        setStep("register_sso");
+      }
     } else if (step === "forgot_password") {
       setStep("login");
     } else if (step === "reset_password") {
+      setOtpFlow("password_reset");
       setStep("verify_otp");
     } else if (step === "register_password") {
       setStep("register_documents");
@@ -148,7 +167,7 @@ export default function AuthFlow() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
-            onForgotPasswordPress={() => setStep("forgot_password")}
+            onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
           />
         );
@@ -161,7 +180,7 @@ export default function AuthFlow() {
               setRegistrationProvider(
                 (data.provider ?? "manual") as "google" | "apple" | "manual",
               );
-              setStep("verify_otp");
+              goToRegistrationOtp();
             }}
             onLoginPress={() => setStep("login")}
           />
@@ -179,11 +198,9 @@ export default function AuthFlow() {
             name={registrationName}
             provider={registrationProvider}
             onBackPress={() =>
-              setStep(
-                otpFlow === "password_reset"
-                  ? "forgot_password"
-                  : "register_sso",
-              )
+              otpFlow === "password_reset"
+                ? goToForgotPassword()
+                : setStep("register_sso")
             }
             onComplete={() =>
               setStep(
@@ -198,11 +215,7 @@ export default function AuthFlow() {
         return (
           <ForgotPasswordScreen
             role={role}
-            onSubmitEmail={(email) => {
-              setPasswordResetEmail(email);
-              setOtpFlow("password_reset");
-              setStep("verify_otp");
-            }}
+            onSubmitEmail={goToPasswordResetOtp}
             onBackToLogin={() => setStep("login")}
           />
         );
@@ -268,6 +281,7 @@ export default function AuthFlow() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
+            onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
           />
         );

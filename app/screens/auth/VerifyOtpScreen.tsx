@@ -6,7 +6,10 @@ import Toast from "react-native-toast-message";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
-import { useVerifyOTPMutation } from "@/store/api/authApi";
+import {
+  useVerifyForgotOtpMutation,
+  useVerifyOTPMutation,
+} from "@/store/api/authApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDispatch } from "react-redux";
 import { setToken } from "@/store/slices/authSlice";
@@ -42,7 +45,12 @@ export default function VerifyOtpScreen({
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(RESEND_DELAY);
-  const [verifyOTP, { isLoading }] = useVerifyOTPMutation();
+  const [verifyOTP, { isLoading: isVerifyingRegistration }] =
+    useVerifyOTPMutation();
+  const [verifyForgotOtp, { isLoading: isVerifyingForgotOtp }] =
+    useVerifyForgotOtpMutation();
+  const isLoading =
+    flow === "password_reset" ? isVerifyingForgotOtp : isVerifyingRegistration;
 
   const verificationTarget = useMemo(() => {
     const trimmedEmail = email?.trim();
@@ -94,25 +102,31 @@ export default function VerifyOtpScreen({
       setError("Email is required to verify this code.");
       return;
     }
-
+    console.log("Flow: ", flow);
     try {
-      const response = await verifyOTP({
+      const payload = {
         email: trimmedEmail,
         otp: code,
         purpose:
           flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
-      }).unwrap();
+      };
+      const response =
+        flow === "password_reset"
+          ? await verifyForgotOtp(payload as any).unwrap()
+          : await verifyOTP(payload as any).unwrap();
       console.log("OTP verification response: ", response);
 
       if (response.success || response?.data?.success) {
-        const token =
-          response.accessToken ??
-          response.data?.accessToken ??
-          (response.data as any)?.token;
+        if (flow !== "password_reset") {
+          const token =
+            response.accessToken ??
+            response.data?.accessToken ??
+            (response.data as any)?.token;
 
-        if (token) {
-          dispatch(setToken(token));
-          await AsyncStorage.setItem("token", token);
+          if (token) {
+            dispatch(setToken(token));
+            await AsyncStorage.setItem("token", token);
+          }
         }
 
         Toast.show({

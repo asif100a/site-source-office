@@ -101,6 +101,22 @@ export default function AuthFlowWeb() {
     setStep(currentRole === "employer" ? "register_employer" : "register_sso");
   };
 
+  const goToRegistrationOtp = () => {
+    setOtpFlow("registration");
+    setStep("verify_otp");
+  };
+
+  const goToForgotPassword = () => {
+    setOtpFlow("password_reset");
+    setStep("forgot_password");
+  };
+
+  const goToPasswordResetOtp = (email: string) => {
+    setPasswordResetEmail(email);
+    setOtpFlow("password_reset");
+    setStep("verify_otp");
+  };
+
   const handleBack = () => {
     if (step === "register_sso" || step === "register_employer") {
       setStep("login");
@@ -109,10 +125,15 @@ export default function AuthFlowWeb() {
     } else if (step === "register_documents") {
       setStep("register_general");
     } else if (step === "verify_otp") {
-      setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso");
+      if (otpFlow === "password_reset") {
+        goToForgotPassword();
+      } else {
+        setStep("register_sso");
+      }
     } else if (step === "forgot_password") {
       setStep("login");
     } else if (step === "reset_password") {
+      setOtpFlow("password_reset");
       setStep("verify_otp");
     } else if (step === "register_password") {
       setStep("register_documents");
@@ -146,10 +167,11 @@ export default function AuthFlowWeb() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
+            onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
           />
         );
-    case "register_sso":
+      case "register_sso":
         return (
           <RegisterSsoScreen
             onContinue={(data) => {
@@ -158,37 +180,43 @@ export default function AuthFlowWeb() {
               setRegistrationProvider(
                 (data.provider ?? "manual") as "google" | "apple" | "manual",
               );
-              setStep("verify_otp");
+              goToRegistrationOtp();
             }}
             onBackPress={handleBack}
             onLoginPress={() => setStep("login")}
           />
         );
       case "verify_otp":
-      return (
-        <VerifyOtpScreen
-          flow={otpFlow}
-          role={role}
-          email={otpFlow === "password_reset" ? passwordResetEmail : registrationEmail}
-          name={registrationName}
-          provider={registrationProvider}
-          onBackPress={() =>
-            setStep(otpFlow === "password_reset" ? "forgot_password" : "register_sso")
-          }
-          onComplete={() =>
-            setStep(otpFlow === "password_reset" ? "reset_password" : "register_general")
-          }
-        />
-      );
+        return (
+          <VerifyOtpScreen
+            flow={otpFlow}
+            role={role}
+            email={
+              otpFlow === "password_reset"
+                ? passwordResetEmail
+                : registrationEmail
+            }
+            name={registrationName}
+            provider={registrationProvider}
+            onBackPress={() =>
+              otpFlow === "password_reset"
+                ? goToForgotPassword()
+                : setStep("register_sso")
+            }
+            onComplete={() =>
+              setStep(
+                otpFlow === "password_reset"
+                  ? "reset_password"
+                  : "register_general",
+              )
+            }
+          />
+        );
       case "forgot_password":
         return (
           <ForgotPasswordScreen
             role={role}
-            onSubmitEmail={(email) => {
-              setPasswordResetEmail(email);
-              setOtpFlow("password_reset");
-              setStep("verify_otp");
-            }}
+            onSubmitEmail={goToPasswordResetOtp}
             onBackToLogin={() => setStep("login")}
           />
         );
@@ -255,7 +283,7 @@ export default function AuthFlowWeb() {
           <LoginScreen
             role={role}
             onRegisterPress={goToRegisterForCurrentRole}
-            onForgotPasswordPress={() => setStep("forgot_password")}
+            onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
           />
         );
