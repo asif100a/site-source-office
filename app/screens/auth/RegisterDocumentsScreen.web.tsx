@@ -20,11 +20,13 @@ import { useUpdateWorkerProfileMutation } from "@/store/api/workerProfileApi";
 import type { RootState } from "@/store/store";
 import Toast from "react-native-toast-message";
 import { buildWorkerProfileCertificatesFormData } from "@/utils/workerProfileFormData";
+import type { UploadedFile } from "@/components/standard_ui/form_fields/StandardFileUploadBox";
 
 interface DocumentItem {
   id: string;
   name: string;
   size: string;
+  file: UploadedFile;
 }
 
 interface RegisterDocumentsScreenProps {
@@ -59,6 +61,12 @@ export default function RegisterDocumentsScreenWeb({
           size: asset.size
             ? `${(asset.size / (1024 * 1024)).toFixed(1)} MB`
             : "1.0 MB",
+          file: {
+            uri: asset.uri,
+            name: asset.name,
+            type: asset.mimeType || "application/octet-stream",
+            size: asset.size ?? undefined,
+          },
         };
         setDocuments((prev) => [...prev, newDoc]);
       }
@@ -89,6 +97,12 @@ export default function RegisterDocumentsScreenWeb({
           id: Date.now().toString(),
           name: filename,
           size: "1.2 MB",
+          file: {
+            uri: asset.uri,
+            name: filename,
+            type: asset.mimeType || "image/jpeg",
+            size: asset.fileSize ?? undefined,
+          },
         };
         setDocuments((prev) => [...prev, newDoc]);
       }
@@ -148,8 +162,8 @@ export default function RegisterDocumentsScreenWeb({
     }
 
     try {
-      const formData = buildWorkerProfileCertificatesFormData({
-        certificates: documents.map((document) => document.name),
+      const formData = await buildWorkerProfileCertificatesFormData({
+        certificates: documents.map((document) => document.file),
       });
 
       await updateWorkerProfile(formData).unwrap();

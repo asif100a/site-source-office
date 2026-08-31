@@ -1,10 +1,14 @@
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useForm } from "react-hook-form";
+import { useRouter } from "expo-router";
 import { ShieldCheck, Sparkles } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { ScreenShell } from "./_components";
+import { useChangePasswordMutation } from "@/store/api/authApi";
+import { passwordSchema } from "@/zod/authSchema";
+import Toast from "react-native-toast-message";
 
 type ChangePasswordFormValues = {
   previousPassword: string;
@@ -19,13 +23,61 @@ const PASSWORD_RULES = [
 ];
 
 export default function ChangePasswordScreenWeb() {
-  const { control } = useForm<ChangePasswordFormValues>({
+  const router = useRouter();
+  const [error, setError] = React.useState("");
+  const [changePassword, { isLoading }] = useChangePasswordMutation();
+  const { control, handleSubmit, reset } = useForm<ChangePasswordFormValues>({
     defaultValues: {
       previousPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
   });
+
+  const handleSave = async (data: ChangePasswordFormValues) => {
+    const passwordValidation = passwordSchema.safeParse(data.newPassword);
+
+    if (!passwordValidation.success) {
+      setError(
+        passwordValidation.error.errors[0]?.message ?? "Invalid password.",
+      );
+      return;
+    }
+
+    if (data.newPassword !== data.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const response = await changePassword({
+        oldPassword: data.previousPassword,
+        newPassword: data.newPassword,
+      }).unwrap();
+
+      setError("");
+      reset();
+      Toast.show({
+        type: "success",
+        text1: "Password updated",
+        text2:
+          response?.message ?? "Your password has been changed successfully.",
+      });
+      router.back();
+    } catch (apiError: any) {
+      const message =
+        apiError?.data?.message ??
+        apiError?.message ??
+        "Unable to change your password right now.";
+
+      setError(message);
+      Toast.show({
+        type: "error",
+        text1: "Change password failed",
+        text2: message,
+      });
+    }
+  };
 
   return (
     <ScreenShell
@@ -34,11 +86,13 @@ export default function ChangePasswordScreenWeb() {
         <View className="border-t border-neutral-200 bg-neutral-50 px-6 pb-6 pt-4 md:px-10 xl:px-12">
           <View className="mx-auto w-full max-w-7xl">
             <TouchableOpacity
+              onPress={handleSubmit(handleSave)}
+              disabled={isLoading}
               style={{ backgroundColor: Colors.common.GRAY_DARK }}
               className="h-14 items-center justify-center rounded-xl active:opacity-90"
             >
               <Text className="text-sm font-extrabold text-white">
-                Save Changes
+                {isLoading ? "Saving..." : "Save Changes"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -130,6 +184,15 @@ export default function ChangePasswordScreenWeb() {
                         id="newPassword"
                         type="password"
                         control={control}
+                        rules={{
+                          validate: (value: string) => {
+                            const result = passwordSchema.safeParse(value);
+                            return (
+                              result.success ||
+                              result.error.errors[0]?.message
+                            );
+                          },
+                        }}
                         placeholder="Enter your new password"
                         textInputProps={{
                           className: "text-sm font-semibold text-neutral-900",
@@ -146,6 +209,12 @@ export default function ChangePasswordScreenWeb() {
                           className: "text-sm font-semibold text-neutral-900",
                         }}
                       />
+
+                      {error ? (
+                        <Text className="text-sm font-medium text-[#D92D20]">
+                          {error}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 </View>

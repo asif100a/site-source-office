@@ -99,6 +99,7 @@ export default function EditProfileScreen() {
   } = useGetWorkerAccountProfileQuery(undefined, {
     skip: !isWorker,
   });
+  console.log(" worker profile: ", workerProfile);
   const {
     data: employerProfile,
     isFetching: isFetchingEmployerProfile,

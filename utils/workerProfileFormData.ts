@@ -1,6 +1,7 @@
 import type { ImagePickerAsset } from "expo-image-picker";
 import { File as ExpoFile } from "expo-file-system";
 import { Platform } from "react-native";
+import type { UploadedFile } from "@/components/standard_ui/form_fields/StandardFileUploadBox";
 
 type WorkerProfileFormInput = {
   name?: string;
@@ -13,7 +14,7 @@ type WorkerProfileFormInput = {
 };
 
 type WorkerProfileCertificatesInput = {
-  certificates: string[];
+  certificates: UploadedFile[];
 };
 
 function normalizeTrade(trade: string) {
@@ -82,17 +83,32 @@ export async function buildWorkerProfileFormData({
   return formData;
 }
 
-export function buildWorkerProfileCertificatesFormData({
+async function appendFile(formData: FormData, fieldName: string, file: UploadedFile) {
+  if (Platform.OS === "web") {
+    const response = await fetch(file.uri);
+    const blob = await response.blob();
+    formData.append(fieldName, blob, file.name);
+    return;
+  }
+
+  const expoFile = new ExpoFile(file.uri);
+  formData.append(fieldName, expoFile, file.name);
+}
+
+export async function buildWorkerProfileCertificatesFormData({
   certificates,
 }: WorkerProfileCertificatesInput) {
-  const payload = {
-    certificates: certificates
-      .map(normalizeCertificate)
-      .filter((certificate) => Boolean(certificate)),
-  };
   const formData = new FormData();
 
-  formData.append("payload", JSON.stringify(payload));
+  formData.append("payload", JSON.stringify({}));
+
+  for (const certificate of certificates) {
+    if (!certificate?.uri || !certificate?.name) {
+      continue;
+    }
+
+    await appendFile(formData, "certificates", certificate);
+  }
 
   return formData;
 }
