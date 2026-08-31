@@ -1,12 +1,23 @@
 import React, { useState } from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react-native";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ShieldCheck,
+} from "lucide-react-native";
 import { useForm } from "react-hook-form";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { Text } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import { useResetPasswordMutation } from "@/store/api/authApi";
+import { passwordSchema } from "@/zod/authSchema";
+import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store/store";
 
 type ResetPasswordFormValues = {
   password: string;
@@ -28,8 +39,10 @@ export default function ResetPasswordScreen({
 }: ResetPasswordScreenProps) {
   const router = useRouter();
   const activeRole = normalizeUserRole(role);
+  const forgotToken = useSelector((state: RootState) => state.auth.forgotToken);
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState("");
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
   const { control, handleSubmit } = useForm<ResetPasswordFormValues>({
     defaultValues: {
@@ -38,14 +51,74 @@ export default function ResetPasswordScreen({
     },
   });
 
-  const handleSave = (data: ResetPasswordFormValues) => {
+  const handleSave = async (data: ResetPasswordFormValues) => {
+    const passwordValidation = passwordSchema.safeParse(data.password);
+
+    if (!passwordValidation.success) {
+      setError(
+        passwordValidation.error.errors[0]?.message ?? "Invalid password.",
+      );
+      return;
+    }
+
     if (data.password !== data.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
-    setError("");
-    setIsSaved(true);
+    if (!email?.trim()) {
+      setError("Email is required to reset your password.");
+      return;
+    }
+
+    const resetToken =
+      forgotToken ?? (await AsyncStorage.getItem("forgotToken"));
+
+    if (!resetToken) {
+      const message =
+        "Your reset session has expired. Please request a new code.";
+      setError(message);
+      Toast.show({
+        type: "error",
+        text1: "Reset session expired",
+        text2: message,
+      });
+      return;
+    }
+
+    try {
+      console.log("Reset Token...: ", resetToken);
+      const response = await resetPassword({
+        email: email.trim(),
+        password: data.password,
+        resetToken,
+      }).unwrap();
+
+      console.log("Reset password response: ", response);
+
+      if (response.success || response?.data?.success) {
+        setError("");
+        setIsSaved(true);
+        Toast.show({
+          type: "success",
+          text1: "Password updated",
+          text2:
+            response?.message ?? "Your password has been reset successfully.",
+        });
+      }
+    } catch (apiError: any) {
+      const message =
+        apiError?.data?.message ??
+        apiError?.message ??
+        "Unable to reset your password right now.";
+
+      setError(message);
+      Toast.show({
+        type: "error",
+        text1: "Reset password failed",
+        text2: message,
+      });
+    }
   };
 
   const handleBack = () => {
@@ -110,6 +183,12 @@ export default function ResetPasswordScreen({
                 type="password"
                 control={control}
                 required={true}
+                rules={{
+                  validate: (value: string) => {
+                    const result = passwordSchema.safeParse(value);
+                    return result.success || result.error.errors[0]?.message;
+                  },
+                }}
                 placeholder="Enter your new password"
               />
 
@@ -124,7 +203,9 @@ export default function ResetPasswordScreen({
             </View>
 
             {error ? (
-              <Text className="text-sm font-medium text-[#D92D20]">{error}</Text>
+              <Text className="text-sm font-medium text-[#D92D20]">
+                {error}
+              </Text>
             ) : null}
           </View>
 
@@ -138,11 +219,12 @@ export default function ResetPasswordScreen({
 
             <TouchableOpacity
               onPress={handleSubmit(handleSave)}
+              disabled={isLoading}
               activeOpacity={0.9}
               className="flex-row items-center justify-center gap-2 rounded-xl bg-[#1B2530] py-4 shadow-sm"
             >
               <Text className="text-base font-semibold text-white">
-                Save new password
+                {isLoading ? "Saving..." : "Save new password"}
               </Text>
               <ArrowRight size={16} color="#FFFFFF" />
             </TouchableOpacity>
