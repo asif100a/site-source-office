@@ -22,6 +22,24 @@ export type JobPostPayload = {
   note: string;
 };
 
+type JobArgs = {
+  page: number;
+  limit: number;
+  status: "POSTED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  searchTerm: string;
+  hourlyRate: number;
+  filter: "best-match" | "nearby" | "closing-soon";
+  trade:
+    | "GROUND_WORKER"
+    | "CARPENTER"
+    | "ELECTRICIAN"
+    | "PLUMBER"
+    | "RICKLAYER"
+    | "PAINTER"
+    | "SCAFFOLDER";
+  radius: number;
+};
+
 const BASE_POINT = "/jobs";
 
 export const jobApi = baseApi.injectEndpoints({
@@ -31,6 +49,13 @@ export const jobApi = baseApi.injectEndpoints({
         url: BASE_POINT,
         method: "POST",
         body: payload,
+      }),
+    }),
+    getAllJobs: builder.query<any, JobArgs>({
+      query: (args) => ({
+        url: BASE_POINT,
+        method: "GET",
+        params: args,
       }),
     }),
     getMyJobs: builder.query<
