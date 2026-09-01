@@ -207,7 +207,7 @@ export default function AuthFlow() {
                 otpFlow === "password_reset"
                   ? "reset_password"
                   : role === "employer"
-                    ? "register_documents"
+                    ? "complete_payroll"
                     : "register_general",
               )
             }
