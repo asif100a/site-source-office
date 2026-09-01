@@ -9,13 +9,14 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { useLoginMutation } from "@/store/api/authApi";
-import { setToken } from "@/store/slices/authSlice";
+import { logout, setToken } from "@/store/slices/authSlice";
 import {
   getDashboardRouteForRole,
   normalizeUserRole,
   UserRole,
 } from "@/constants/Routes";
 import { passwordSchema } from "@/zod/authSchema";
+import { getRoleFromToken } from "@/utils/authToken";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -56,10 +57,21 @@ export default function LoginScreen({
           response.data?.accessToken ??
           (response.data as any)?.token;
 
-        if (token) {
-          dispatch(setToken(token));
-          await AsyncStorage.setItem("token", token);
+        const tokenRole = token ? getRoleFromToken(token) : null
+
+        if (!token || !tokenRole || tokenRole !== activeRole) {
+          dispatch(logout());
+          await AsyncStorage.removeItem("token");
+          Toast.show({
+            type: "error",
+            text1: "Wrong account type",
+            text2: `This account is not registered as a ${activeRole}.`,
+          });
+          return;
         }
+
+        dispatch(setToken(token));
+        await AsyncStorage.setItem("token", token);
 
         Toast.show({
           type: "success",

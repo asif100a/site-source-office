@@ -1,6 +1,8 @@
 import React, { useState, type ComponentType } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   User,
   Clock,
@@ -19,6 +21,8 @@ import {
 import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import StandardToggle from "@/components/standard_ui/StandardToggle";
+import { clearUserAuthenticated } from "@/constants/authState";
+import { logout } from "@/store/slices/authSlice";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
@@ -29,7 +33,32 @@ type MenuItem = {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [available, setAvailable] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem("token"),
+        AsyncStorage.removeItem("otpToken"),
+        AsyncStorage.removeItem("forgotToken"),
+      ]);
+    } catch (error) {
+      console.error("Failed to clear all auth storage during logout.", error);
+    }
+
+    dispatch(logout());
+    clearUserAuthenticated();
+    router.replace({
+      pathname: "/auth",
+      params: { currentStep: "login", role: "employer" },
+    });
+  };
 
   const menuItems: { account: MenuItem[]; more: MenuItem[] } = {
     account: [
@@ -129,12 +158,7 @@ export default function ProfileScreen() {
       {
         icon: LogOut,
         label: "Log out",
-       onPress: () => {
-          return router.replace({
-            pathname: "/auth",
-            params: { currentStep: "login" },
-          });
-        },
+        onPress: handleLogout,
       },
     ],
   };
@@ -196,6 +220,7 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 key={index}
                 onPress={item.onPress}
+                disabled={item.label === "Log out" && isLoggingOut}
                 className="flex-row items-center justify-between px-5 py-4 border-b border-neutral-50 last:border-b-0 active:opacity-70"
               >
                 <View className="flex-row items-center gap-3">
@@ -213,7 +238,9 @@ export default function ProfileScreen() {
                         : { color: "#171717" }
                     }
                   >
-                    {item.label}
+                    {item.label === "Log out" && isLoggingOut
+                      ? "Logging out..."
+                      : item.label}
                   </Text>
                 </View>
                 <ChevronRight size={20} color="#737373" />
