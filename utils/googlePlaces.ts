@@ -243,3 +243,20 @@ export async function getAddressDetails(
 
   return getNativeAddressDetails(placeId, fallbackDescription, apiKey);
 }
+
+export async function getAddressFromCoordinates(
+  coordinates: [number, number],
+) {
+  const apiKey = getGoogleMapsApiKey().trim();
+  if (!apiKey) throw new Error("Google Maps API key is missing.");
+
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinates[1]},${coordinates[0]}&key=${encodeURIComponent(apiKey)}`,
+  );
+  const result = await response.json();
+  if (result.status !== "OK" || !result.results?.[0]?.formatted_address) {
+    throw new Error("Unable to find an address for these coordinates.");
+  }
+
+  return result.results[0].formatted_address as string;
+}

@@ -15,8 +15,8 @@ export default function MyJobToggleChips({
     <View className="flex-row gap-2.5">
       {(
         [
+          { key: "upcoming", label: "New Jobs" },
           { key: "active", label: "Active Jobs" },
-          { key: "upcoming", label: "Upcoming" },
           { key: "completed", label: "Completed" },
         ] as const
       ).map((tab) => {

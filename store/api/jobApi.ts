@@ -22,17 +22,40 @@ export type JobPostPayload = {
   note: string;
 };
 
+const BASE_POINT = "/jobs";
+
 export const jobApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createJob: builder.mutation<any, JobPostPayload>({
       query: (payload) => ({
-        url: "/jobs",
+        url: BASE_POINT,
         method: "POST",
         body: payload,
+      }),
+    }),
+    getMyJobs: builder.query<
+      any,
+      {
+        page: number;
+        limit: number;
+        status: "POSTED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+      }
+    >({
+      query: (args) => ({
+        url: BASE_POINT + "/my-jobs",
+        method: "GET",
+        params: args,
+      }),
+    }),
+    getSingleJob: builder.query<any, string>({
+      query: (id) => ({
+        url: BASE_POINT + `/${id}`,
+        method: "GET",
       }),
     }),
   }),
   overrideExisting: true,
 });
 
-export const { useCreateJobMutation } = jobApi;
+export const { useCreateJobMutation, useGetMyJobsQuery, useGetSingleJobQuery } =
+  jobApi;

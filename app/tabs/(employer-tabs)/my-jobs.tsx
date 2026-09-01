@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +18,19 @@ import ScreenHeader from "@/components/layout/ScreenHeader";
 import StartProjectModal from "@/components/modules/employer/my-jobs/StartProjectModal";
 import ProjectDetailModal from "@/components/modules/employer/my-jobs/ProjectDetailModal";
 import ProjectJobModal from "@/components/modules/employer/my-jobs/ProjectJobModal";
-import { JobCard, JobStatus, JobTab, ProjectCard, ProjectForm, ProjectJob, ProjectJobDateRange, ProjectJobForm } from "@/types";
+import {
+  JobCard,
+  JobStatus,
+  JobTab,
+  ProjectCard,
+  ProjectForm,
+  ProjectJob,
+  ProjectJobDateRange,
+  ProjectJobForm,
+} from "@/types";
+import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
+import ScreenLoader from "@/components/ui/screen-loader";
 
 const EMPTY_PROJECT_FORM: ProjectForm = {
   name: "",
@@ -55,160 +70,21 @@ export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
   )}`;
 };
 
-const ACTIVE_JOBS: JobCard[] = [
-  {
-    id: "active-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-  {
-    id: "active-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-  {
-    id: "active-3",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-];
-
-const UPCOMING_JOBS: JobCard[] = [
-  {
-    id: "upcoming-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "120",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "upcoming",
-    rate: "Market Rate",
-    applicants: [
-      {
-        id: "1",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "2",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "3",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-    ],
-  },
-  {
-    id: "upcoming-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "80",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "upcoming",
-    rate: "Market Rate",
-    applicants: [
-      {
-        id: "1",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "2",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "3",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-    ],
-  },
-];
-
-const COMPLETED_JOBS: JobCard[] = [
-  {
-    id: "completed-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 20 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "completed",
-  },
-  {
-    id: "completed-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 20 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "completed",
-  },
-];
-
-const CANCELLED_JOBS: JobCard[] = [
-  {
-    id: "cancelled-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Cancelled",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "cancelled",
-  },
-];
-
 export default function EmployerMyJobsScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<JobTab>("active");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [jobs, setJobs] = useState<JobCard[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const requestedStatus = activeTab === "upcoming" ? "POSTED" : activeTab.toUpperCase() as "ACTIVE" | "COMPLETED";
+  const jobsQuery = useGetMyJobsQuery({
+    page,
+    limit: 10,
+    status: requestedStatus,
+  });
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
@@ -236,13 +112,37 @@ export default function EmployerMyJobsScreen() {
     }
   }, [tab]);
 
-  const jobsByTab: Record<JobTab, JobCard[]> = {
-    active: ACTIVE_JOBS,
-    upcoming: UPCOMING_JOBS,
-    completed: [...COMPLETED_JOBS, ...CANCELLED_JOBS],
+  useEffect(() => {
+    setPage(1);
+    setJobs([]);
+  }, [activeTab]);
+
+  console.log("jobsQuery: ", jobsQuery);
+
+  useEffect(() => {
+    if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
+    const nextJobs = getJobItems(jobsQuery.data)
+      .map(mapJobToCard)
+      .filter((job) =>
+        activeTab === "upcoming"
+          ? job.status === "upcoming"
+          : activeTab === "completed"
+            ? job.status === "completed" || job.status === "cancelled"
+            : job.status === "active",
+      );
+    setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
+    setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
+  }, [activeTab, jobsQuery.data, page]);
+
+  const refreshJobs = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setJobs([]);
+    await jobsQuery.refetch();
+    setRefreshing(false);
   };
 
-  const filteredJobs = jobsByTab[activeTab].filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
       return true;
@@ -263,6 +163,13 @@ export default function EmployerMyJobsScreen() {
   });
 
   const openJobDetails = (jobId: string, status: JobStatus = activeTab) => {
+    if (status === "upcoming") {
+      router.push({
+        pathname: "/screens/new-jobs/[id]",
+        params: { id: jobId, origin: "employer" },
+      });
+      return;
+    }
     if (status === "completed") {
       router.push({
         pathname: "/screens/completed-jobs/[id]",
@@ -367,6 +274,15 @@ export default function EmployerMyJobsScreen() {
     resetProjectJobForm();
   };
 
+  if (jobsQuery.isLoading) {
+    return (
+      <ScreenWrapper>
+        <ScreenHeader />
+        <ScreenLoader />
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper>
       <ScreenHeader />
@@ -375,6 +291,9 @@ export default function EmployerMyJobsScreen() {
         className="flex-1 px-5 pt-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshJobs} />
+        }
       >
         {/* Search & Filter Input */}
         <SearchAndFilterInput
@@ -461,6 +380,18 @@ export default function EmployerMyJobsScreen() {
               </Text>
             </View>
           )}
+
+          {hasNextPage && !jobsQuery.isFetching && (
+            <TouchableOpacity
+              onPress={() => setPage((current) => current + 1)}
+              className="items-center rounded-xl bg-white px-5 py-4"
+            >
+              <Text className="font-bold text-neutral-900">Load more jobs</Text>
+            </TouchableOpacity>
+          )}
+          {jobsQuery.isFetching && jobs.length > 0 ? (
+            <ActivityIndicator color="#FF5500" />
+          ) : null}
         </View>
       </ScrollView>
 

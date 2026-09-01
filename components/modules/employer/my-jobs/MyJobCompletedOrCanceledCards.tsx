@@ -3,6 +3,7 @@ import React from "react";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
 import AvatarStack from "./_ui/AvatarStack";
 import { Colors } from "@/constants/Colors";
+import JobLocationLabel from "./JobLocationLabel";
 
 export default function MyJobCompletedOrCanceledCards({
   filteredJobs,
@@ -60,7 +61,7 @@ export default function MyJobCompletedOrCanceledCards({
             <View className="gap-2.5">
               <View className="flex-row items-center gap-2">
                 <MapPin size={14} color="#C81E1E" />
-                <Text className="text-neutral-500 text-xs">{job.location}</Text>
+                <JobLocationLabel location={job.location} coordinates={job.coordinates} />
               </View>
               <View className="flex-row items-center gap-2">
                 <Users size={14} color="#737373" />

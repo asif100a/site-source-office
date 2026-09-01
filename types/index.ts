@@ -109,6 +109,7 @@ export interface JobCard {
   company: string;
   badge: string;
   location: string;
+  coordinates?: [number, number];
   team: string;
   duration: string;
   status: JobStatus;

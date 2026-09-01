@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowRight, BriefcaseBusiness } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import SearchAndFilterInput from "@/components/modules/common/job/SearchAndFilterInput";
 import MyJobToggleChips from "@/components/modules/employer/my-jobs/MyJobToggleChips";
@@ -10,6 +10,8 @@ import MyJobUpcomingCards from "@/components/modules/employer/my-jobs/MyJobUpcom
 import MyJobCompletedOrCanceledCards from "@/components/modules/employer/my-jobs/MyJobCompletedOrCanceledCards";
 import { Colors } from "@/constants/Colors";
 import { JobStatus, JobTab } from "@/types";
+import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
 
 type JobCard = {
   id: string;
@@ -186,6 +188,12 @@ export default function EmployerMyJobsScreenWeb() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<JobTab>("active");
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [jobs, setJobs] = useState<JobCard[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const requestedStatus = activeTab === "upcoming" ? "POSTED" : activeTab.toUpperCase() as "ACTIVE" | "COMPLETED";
+  const jobsQuery = useGetMyJobsQuery({ page, limit: 10, status: requestedStatus });
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
@@ -199,15 +207,37 @@ export default function EmployerMyJobsScreenWeb() {
     }
   }, [tab]);
 
-  const jobsByTab: Record<JobTab, JobCard[]> = {
-    active: ACTIVE_JOBS,
-    upcoming: UPCOMING_JOBS,
-    completed: [...COMPLETED_JOBS, ...CANCELLED_JOBS],
+  useEffect(() => {
+    setPage(1);
+    setJobs([]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
+    const nextJobs = getJobItems(jobsQuery.data)
+      .map(mapJobToCard)
+      .filter((job) =>
+        activeTab === "upcoming"
+          ? job.status === "upcoming"
+          : activeTab === "completed"
+            ? job.status === "completed" || job.status === "cancelled"
+            : job.status === "active",
+      );
+    setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
+    setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
+  }, [activeTab, jobsQuery.data, page]);
+
+  const refreshJobs = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setJobs([]);
+    await jobsQuery.refetch();
+    setRefreshing(false);
   };
 
   const filteredJobs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    return jobsByTab[activeTab].filter((job) => {
+    return jobs.filter((job) => {
       if (!query) {
         return true;
       }
@@ -225,9 +255,16 @@ export default function EmployerMyJobsScreenWeb() {
 
       return haystack.includes(query);
     });
-  }, [activeTab, jobsByTab, searchQuery]);
+  }, [jobs, searchQuery]);
 
   const openJobDetails = (jobId: string, status: JobStatus = activeTab) => {
+    if (status === "upcoming") {
+      router.push({
+        pathname: "/screens/new-jobs/[id]",
+        params: { id: jobId, origin: "employer" },
+      });
+      return;
+    }
     if (status === "completed") {
       router.push({
         pathname: "/screens/completed-jobs/[id]",
@@ -254,7 +291,7 @@ export default function EmployerMyJobsScreenWeb() {
     activeTab === "active"
       ? "Active jobs"
       : activeTab === "upcoming"
-        ? "Upcoming jobs"
+      ? "New jobs"
         : "Completed jobs";
 
   return (
@@ -263,6 +300,7 @@ export default function EmployerMyJobsScreenWeb() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 112 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshJobs} />}
       >
         <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -373,6 +411,17 @@ export default function EmployerMyJobsScreenWeb() {
                     </Text>
                   </View>
                 )}
+                {hasNextPage && !jobsQuery.isFetching && (
+                  <TouchableOpacity
+                    onPress={() => setPage((current) => current + 1)}
+                    className="items-center rounded-xl bg-neutral-50 px-5 py-4"
+                  >
+                    <Text className="font-bold text-neutral-900">Load more jobs</Text>
+                  </TouchableOpacity>
+                )}
+                {jobsQuery.isFetching && jobs.length > 0 ? (
+                  <ActivityIndicator color="#FF5500" />
+                ) : null}
               </View>
             </View>
           </View>
