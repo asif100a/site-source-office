@@ -1,23 +1,17 @@
 import React, { useState } from "react";
-import {
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import type { Region } from "react-native-maps";
-import {
-  MapPin,
-  Minus,
-  Plus,
-} from "lucide-react-native";
+import { MapPin, Minus, Plus } from "lucide-react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import PostAJob from "@/components/modules/employer/home/PostAJob";
+import Toast from "react-native-toast-message";
+import { useCreateJobMutation } from "@/store/api/jobApi";
+import type { JobPostPayload } from "@/store/api/jobApi";
 
 export const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
 
@@ -61,6 +55,32 @@ export default function EmployerHomeScreen() {
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
+  const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
+
+  const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
+    try {
+      console.log("Job post Payload: ", payload);
+      const response = await createJob(payload).unwrap();
+      console.log("Create job response: ", response);
+      if (response.success || (response?.data as any)?.success) {
+        Toast.show({
+          type: "success",
+          text1: "Job post created",
+          text2: "Your job post has been created.",
+        });
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Error creating job post:", error);
+      Toast.show({
+        type: "error",
+        text1: "Could not create job post",
+        text2: error?.data?.message ?? error?.message ?? "Please try again.",
+      });
+      return false;
+    }
+  };
 
   const adjustMapZoom = (direction: "in" | "out") => {
     setSiteRegion((current) => {
@@ -76,7 +96,6 @@ export default function EmployerHomeScreen() {
       };
     });
   };
-
 
   const handleWorkerDetails = (id: string) => {
     router.push({
@@ -193,7 +212,11 @@ export default function EmployerHomeScreen() {
         </View>
 
         {/* POST A JOB */}
-        <PostAJob />
+        <PostAJob
+          locationCoordinates={[siteRegion.longitude, siteRegion.latitude]}
+          onCreateJobPost={handleCreateJobPost}
+          isCreatingJob={isCreatingJob}
+        />
       </ScrollView>
     </ScreenWrapper>
   );

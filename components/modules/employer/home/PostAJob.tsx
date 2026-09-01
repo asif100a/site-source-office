@@ -14,6 +14,7 @@ import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
 import {
   MUST_HAVE_OPTIONS,
+  MUST_HAVE_VALUES,
   type JobDateRange,
   type MustHaveOption,
 } from "./job-post.constants";
@@ -24,53 +25,112 @@ import TimePickerField, {
   createTimeValue,
 } from "@/components/modules/common/TimePickerField";
 import Toast from "react-native-toast-message";
-
-const TRADE_OPTIONS = [
-  { label: "Groundworker", value: "Groundworker" },
-  { label: "Carpenter", value: "Carpenter" },
-  { label: "Electrician", value: "Electrician" },
-  { label: "Plumber", value: "Plumber" },
-  { label: "Bricklayer", value: "Bricklayer" },
-  { label: "Painter", value: "Painter" },
-  { label: "Scaffolder", value: "Scaffolder" },
-];
+import type { JobPostPayload } from "@/store/api/jobApi";
+import { TRADES } from "@/assets/data";
 
 const WORKING_DAY_OPTIONS = [
-  { key: "monday", label: "Monday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "tuesday", label: "Tuesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "wednesday", label: "Wednesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "thursday", label: "Thursday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "friday", label: "Friday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "saturday", label: "Saturday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
-  { key: "sunday", label: "Sunday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
+  {
+    key: "monday",
+    label: "Monday",
+    startTime: createTimeValue(7, 30),
+    endTime: createTimeValue(16, 30),
+    enabled: true,
+  },
+  {
+    key: "tuesday",
+    label: "Tuesday",
+    startTime: createTimeValue(7, 30),
+    endTime: createTimeValue(16, 30),
+    enabled: true,
+  },
+  {
+    key: "wednesday",
+    label: "Wednesday",
+    startTime: createTimeValue(7, 30),
+    endTime: createTimeValue(16, 30),
+    enabled: true,
+  },
+  {
+    key: "thursday",
+    label: "Thursday",
+    startTime: createTimeValue(7, 30),
+    endTime: createTimeValue(16, 30),
+    enabled: true,
+  },
+  {
+    key: "friday",
+    label: "Friday",
+    startTime: createTimeValue(7, 30),
+    endTime: createTimeValue(16, 30),
+    enabled: true,
+  },
+  {
+    key: "saturday",
+    label: "Saturday",
+    startTime: createTimeValue(8, 0),
+    endTime: createTimeValue(13, 0),
+    enabled: false,
+  },
+  {
+    key: "sunday",
+    label: "Sunday",
+    startTime: createTimeValue(8, 0),
+    endTime: createTimeValue(13, 0),
+    enabled: false,
+  },
 ] as const;
 
 type WorkingDayKey = (typeof WORKING_DAY_OPTIONS)[number]["key"];
 type WeekendPayRate = "standard" | "1.5x" | "2x";
 type WorkingDaySchedule = Record<
   WorkingDayKey,
-  { enabled: boolean; startTime: Date; endTime: Date; weekendRate: WeekendPayRate }
+  {
+    enabled: boolean;
+    startTime: Date;
+    endTime: Date;
+    weekendRate: WeekendPayRate;
+  }
 >;
 
 const WEEKEND_DAY_KEYS: WorkingDayKey[] = ["saturday", "sunday"];
-const WEEKEND_RATE_OPTIONS: Exclude<WeekendPayRate, "standard">[] = ["1.5x", "2x"];
-const WEB_SWITCH_STYLE = Platform.OS === "web"
-  ? ({ accentColor: Colors.common.BRAND } as const)
-  : undefined;
+const WEEKEND_RATE_OPTIONS: Exclude<WeekendPayRate, "standard">[] = [
+  "1.5x",
+  "2x",
+];
+const WEB_SWITCH_STYLE =
+  Platform.OS === "web"
+    ? ({ accentColor: Colors.common.BRAND } as const)
+    : undefined;
 
-export default function PostAJob() {
+const getInitialWorkingDaySchedule = (): WorkingDaySchedule =>
+  Object.fromEntries(
+    WORKING_DAY_OPTIONS.map((day) => [
+      day.key,
+      {
+        enabled: day.enabled,
+        startTime: day.startTime,
+        endTime: day.endTime,
+        weekendRate: "standard",
+      },
+    ]),
+  ) as WorkingDaySchedule;
+
+export default function PostAJob({
+  locationCoordinates,
+  onCreateJobPost,
+  isCreatingJob = false,
+}: {
+  locationCoordinates: [number, number];
+  onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
+  isCreatingJob?: boolean;
+}) {
+  const [title, setTitle] = useState("");
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([
-    "Groundworker",
-  ]);
-  const [notes, setNotes] = useState(
-    "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
-  );
-  const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([
-    "CSCS card",
-  ]);
+  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
     from: new Date(2026, 7, 18),
     to: new Date(2026, 7, 21),
@@ -131,10 +191,15 @@ export default function PostAJob() {
     }
 
     if (selectedTrades.length <= 2) {
-      return selectedTrades.join(", ");
+      return selectedTrades
+        .map((trade) => TRADES.find((option) => option.value === trade)?.label ?? trade)
+        .join(", ");
     }
 
-    return `${selectedTrades.slice(0, 2).join(", ")} +${selectedTrades.length - 2}`;
+    return `${selectedTrades
+      .slice(0, 2)
+      .map((trade) => TRADES.find((option) => option.value === trade)?.label ?? trade)
+      .join(", ")} +${selectedTrades.length - 2}`;
   }, [selectedTrades]);
 
   const totalEstimate = useMemo(
@@ -142,13 +207,51 @@ export default function PostAJob() {
     [hourlyRate, workersNeeded, workingDays],
   );
 
-  const handleCreateJobPost = () => {
-    Toast.show({
-      type: "success",
-      text1: "Job post created",
-      text2: "Your job post has been created.",
-    })
-    console.log("Job post created...!")
+  const handleCreateJobPost = async () => {
+    if (!title.trim()) {
+      Toast.show({ type: "error", text1: "Job title is required" });
+      return;
+    }
+    if (!selectedTrades.length || !jobDateRange.from || !jobDateRange.to) {
+      Toast.show({ type: "error", text1: "Complete the job details first" });
+      return;
+    }
+
+    const created = await onCreateJobPost({
+      title: title.trim(),
+      trades: selectedTrades,
+      hourlyRate,
+      workersNeeded,
+      location: { type: "Point", coordinates: locationCoordinates },
+      startDate: jobDateRange.from.toISOString(),
+      endDate: jobDateRange.to.toISOString(),
+      workingHours: WORKING_DAY_OPTIONS.filter(
+        (day) => workingDaySchedule[day.key].enabled,
+      ).map((day) => ({
+        day: day.label,
+        startTime: formatTime(workingDaySchedule[day.key].startTime),
+        endTime: formatTime(workingDaySchedule[day.key].endTime),
+        isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x",
+        isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x",
+      })),
+      mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]),
+      note: notes.trim(),
+    });
+
+    if (created) {
+      setTitle("");
+      setHourlyRate(24);
+      setWorkersNeeded(2);
+      setTradeMenuOpen(false);
+      setSelectedTrades([]);
+      setNotes("");
+      setSelectedMustHaves([]);
+      setJobDateRange({
+        from: new Date(2026, 7, 18),
+        to: new Date(2026, 7, 21),
+      });
+      setWorkingDaySchedule(getInitialWorkingDaySchedule());
+    }
   };
 
   const toggleMustHave = (option: MustHaveOption) => {
@@ -217,6 +320,16 @@ export default function PostAJob() {
         Post a job
       </Text>
 
+      <FormSectionLabel label="Job title" />
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="e.g. Senior Site Electrician Needed"
+        placeholderTextColor="#999999"
+        className="mt-3 rounded-xl border border-neutral-200/80 bg-white py-4 text-[13px] text-[#222222]"
+        style={{ paddingHorizontal: 16 }}
+      />
+
       <FormSectionLabel label="Trade needed" />
       <View className="mt-3">
         <TouchableOpacity
@@ -232,7 +345,7 @@ export default function PostAJob() {
 
         {tradeMenuOpen ? (
           <View className="mt-2 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
-            {TRADE_OPTIONS.map((option) => {
+            {TRADES.map((option) => {
               const selected = selectedTrades.includes(option.value);
 
               return (
@@ -253,7 +366,9 @@ export default function PostAJob() {
                   >
                     {option.label}
                   </Text>
-                  {selected ? <Check size={16} color={Colors.common.BRAND} /> : null}
+                  {selected ? (
+                    <Check size={16} color={Colors.common.BRAND} />
+                  ) : null}
                 </TouchableOpacity>
               );
             })}
@@ -412,7 +527,9 @@ export default function PostAJob() {
                                 : "border-[#CFCFCF] bg-white"
                             }`}
                           >
-                            {selected ? <Check size={11} color="#FFFFFF" /> : null}
+                            {selected ? (
+                              <Check size={11} color="#FFFFFF" />
+                            ) : null}
                           </View>
                           <Text className="text-[12px] font-bold text-[#202020]">
                             {rate} pay
@@ -486,10 +603,13 @@ export default function PostAJob() {
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={handleCreateJobPost}
+        disabled={isCreatingJob}
         className="mt-4 items-center justify-center rounded-[18px] py-4"
         style={{ backgroundColor: Colors.common.BRAND }}
       >
-        <Text className="text-[13px] font-black text-white">Post Job</Text>
+        <Text className="text-[13px] font-black text-white">
+          {isCreatingJob ? "Posting..." : "Post Job"}
+        </Text>
       </TouchableOpacity>
 
       <Text className="px-5 pb-2 pt-3 text-center text-[11px] leading-4 text-[#7D7D7D]">
@@ -530,3 +650,7 @@ const countWeekdaysInRange = (range: JobDateRange) => {
   return count;
 };
 
+const formatTime = (value: Date) =>
+  `${String(value.getHours()).padStart(2, "0")}:${String(
+    value.getMinutes(),
+  ).padStart(2, "0")}`;

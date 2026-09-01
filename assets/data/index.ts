@@ -1,5 +1,5 @@
 export const TRADES = [
-  { label: "Groundworker", value: "GROUNDWORKER" },
+  { label: "Groundworker", value: "GROUND_WORKER" },
   { label: "Carpenter", value: "CARPENTER" },
   { label: "Electrician", value: "ELECTRICIAN" },
   { label: "Plumber", value: "PLUMBER" },

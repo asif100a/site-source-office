@@ -13,6 +13,7 @@ import { Check, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import {
   MUST_HAVE_OPTIONS,
+  MUST_HAVE_VALUES,
   type JobDateRange,
   type MustHaveOption,
 } from "./job-post.constants";
@@ -22,15 +23,17 @@ import DateRangeCalendar, {
 import TimePickerField, {
   createTimeValue,
 } from "@/components/modules/common/TimePickerField";
+import Toast from "react-native-toast-message";
+import type { JobPostPayload } from "@/store/api/jobApi";
 
 const TRADE_OPTIONS = [
-  { label: "Groundworker", value: "Groundworker" },
-  { label: "Carpenter", value: "Carpenter" },
-  { label: "Electrician", value: "Electrician" },
-  { label: "Plumber", value: "Plumber" },
-  { label: "Bricklayer", value: "Bricklayer" },
-  { label: "Painter", value: "Painter" },
-  { label: "Scaffolder", value: "Scaffolder" },
+  { label: "Groundworker", value: "GROUND_WORKER" },
+  { label: "Carpenter", value: "CARPENTER" },
+  { label: "Electrician", value: "ELECTRICIAN" },
+  { label: "Plumber", value: "PLUMBER" },
+  { label: "Bricklayer", value: "BRICKLAYER" },
+  { label: "Painter", value: "PAINTER" },
+  { label: "Scaffolder", value: "SCAFFOLDER" },
 ];
 
 const WORKING_DAY_OPTIONS = [
@@ -56,20 +59,40 @@ const WEB_SWITCH_STYLE = Platform.OS === "web"
   ? ({ accentColor: Colors.common.BRAND } as const)
   : undefined;
 
+const getInitialWorkingDaySchedule = (): WorkingDaySchedule =>
+  Object.fromEntries(
+    WORKING_DAY_OPTIONS.map((day) => [
+      day.key,
+      {
+        enabled: day.enabled,
+        startTime: day.startTime,
+        endTime: day.endTime,
+        weekendRate: "standard",
+      },
+    ]),
+  ) as WorkingDaySchedule;
+
 export default function WebPostJobSection({
   hourlyRate,
   workersNeeded,
   setHourlyRate,
   setWorkersNeeded,
+  locationCoordinates,
+  onCreateJobPost,
+  isCreatingJob = false,
 }: {
   hourlyRate: number;
   workersNeeded: number;
   setHourlyRate: Dispatch<SetStateAction<number>>;
   setWorkersNeeded: Dispatch<SetStateAction<number>>;
+  locationCoordinates: [number, number];
+  onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
+  isCreatingJob?: boolean;
 }) {
+  const [title, setTitle] = useState("");
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([
-    "Groundworker",
+    "GROUND_WORKER",
   ]);
   const [notes, setNotes] = useState(
     "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
@@ -127,6 +150,55 @@ export default function WebPostJobSection({
       },
     });
 
+  const handleCreateJobPost = async () => {
+    if (!title.trim()) {
+      Toast.show({ type: "error", text1: "Job title is required" });
+      return;
+    }
+    if (!selectedTrades.length || !jobDateRange.from || !jobDateRange.to) {
+      Toast.show({ type: "error", text1: "Complete the job details first" });
+      return;
+    }
+
+    const created = await onCreateJobPost({
+      title: title.trim(),
+      trades: selectedTrades,
+      hourlyRate,
+      workersNeeded,
+      location: { type: "Point", coordinates: locationCoordinates },
+      startDate: jobDateRange.from.toISOString(),
+      endDate: jobDateRange.to.toISOString(),
+      workingHours: WORKING_DAY_OPTIONS.filter(
+        (day) => workingDaySchedule[day.key].enabled,
+      ).map((day) => ({
+        day: day.label,
+        startTime: formatTime(workingDaySchedule[day.key].startTime),
+        endTime: formatTime(workingDaySchedule[day.key].endTime),
+        isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x",
+        isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x",
+      })),
+      mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]),
+      note: notes.trim(),
+    });
+
+    if (created) {
+      setTitle("");
+      setHourlyRate(24);
+      setWorkersNeeded(2);
+      setTradeMenuOpen(false);
+      setSelectedTrades(["GROUND_WORKER"]);
+      setNotes(
+        "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
+      );
+      setSelectedMustHaves(["CSCS card"]);
+      setJobDateRange({
+        from: new Date(2026, 7, 24),
+        to: new Date(2026, 7, 28),
+      });
+      setWorkingDaySchedule(getInitialWorkingDaySchedule());
+    }
+  };
+
   const workingDays = useMemo(
     () => countWeekdaysInRange(jobDateRange),
     [jobDateRange],
@@ -137,10 +209,15 @@ export default function WebPostJobSection({
     }
 
     if (selectedTrades.length <= 2) {
-      return selectedTrades.join(", ");
+      return selectedTrades
+        .map((trade) => TRADE_OPTIONS.find((option) => option.value === trade)?.label ?? trade)
+        .join(", ");
     }
 
-    return `${selectedTrades.slice(0, 2).join(", ")} +${selectedTrades.length - 2}`;
+    return `${selectedTrades
+      .slice(0, 2)
+      .map((trade) => TRADE_OPTIONS.find((option) => option.value === trade)?.label ?? trade)
+      .join(", ")} +${selectedTrades.length - 2}`;
   }, [selectedTrades]);
 
   const toggleMustHave = (option: MustHaveOption) => {
@@ -207,9 +284,16 @@ export default function WebPostJobSection({
     <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
       <View className="mb-6 flex-row items-start justify-between gap-4">
         <View>
-          <Text className="text-[28px] font-bold tracking-tight text-neutral-950">
-            Post a job
-          </Text>
+      <Text className="text-[28px] font-bold tracking-tight text-neutral-950">
+        Post a job
+      </Text>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Job title"
+        placeholderTextColor="#999999"
+        className="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm text-[#222222]"
+      />
           <Text className="mt-2 text-sm text-neutral-500">
             Set the role, timing, and site requirements before you send this
             posting live.
@@ -476,9 +560,26 @@ export default function WebPostJobSection({
         placeholder="Add site notes, access details, or start instructions"
         className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222]"
       />
+
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={handleCreateJobPost}
+        disabled={isCreatingJob}
+        className="mt-5 items-center justify-center rounded-[18px] py-4"
+        style={{ backgroundColor: Colors.common.BRAND }}
+      >
+        <Text className="text-sm font-bold text-white">
+          {isCreatingJob ? "Posting..." : "Post Job"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const formatTime = (value: Date) =>
+  `${String(value.getHours()).padStart(2, "0")}:${String(
+    value.getMinutes(),
+  ).padStart(2, "0")}`;
 
 const countWeekdaysInRange = (range: JobDateRange) => {
   if (!range.from || !range.to) {

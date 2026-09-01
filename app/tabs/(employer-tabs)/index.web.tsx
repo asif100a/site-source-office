@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ChevronDown,
@@ -28,6 +28,8 @@ import WebMapHeroCard from "@/components/modules/employer/home/WebMapHeroCard";
 import WebTopSection from "@/components/modules/employer/home/WebTopSection";
 import WebPostJobSection from "@/components/modules/employer/home/WebPostJobSection";
 import Toast from "react-native-toast-message";
+import { useCreateJobMutation } from "@/store/api/jobApi";
+import type { JobPostPayload } from "@/store/api/jobApi";
 
 type MapRegion = {
   latitude: number;
@@ -55,6 +57,8 @@ export default function EmployerHomeScreenWeb() {
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [siteRegion, setSiteRegion] = useState<MapRegion>(SITE_REGION);
   const [mapZoom, setMapZoom] = useState(15);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
   const totalEstimate = useMemo(
     () => hourlyRate * 9 * 10 * workersNeeded,
     [hourlyRate, workersNeeded],
@@ -64,13 +68,28 @@ export default function EmployerHomeScreenWeb() {
     [mapZoom, siteRegion],
   );
 
-  const handleCreateJobPost = () => {
-     Toast.show({
-      type: "success",
-      text1: "Job post created",
-      text2: "Your job post has been created.",
-    })
-    console.log("Job post created...!")
+  const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
+    try {
+      const response = await createJob(payload).unwrap();
+      console.log("Create job response: ", response);
+      if (response.success || (response?.data as any)?.success) {
+        Toast.show({
+          type: "success",
+          text1: "Job post created",
+          text2: "Your job post has been created.",
+        });
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Error creating job post:", error);
+      Toast.show({
+        type: "error",
+        text1: "Could not create job post",
+        text2: error?.data?.message ?? error?.message ?? "Please try again.",
+      });
+      return false;
+    }
   };
 
   const openWorkerDetails = (workerId: string) => {
@@ -102,6 +121,7 @@ export default function EmployerHomeScreenWeb() {
   return (
     <ScreenWrapper>
       <ScrollView
+        ref={scrollViewRef}
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 112 }}
@@ -109,7 +129,11 @@ export default function EmployerHomeScreenWeb() {
         <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
             {/* Top section */}
-            <WebTopSection handleCreateJobPost={handleCreateJobPost} />
+            <WebTopSection
+              handleCreateJobPost={() =>
+                scrollViewRef.current?.scrollTo({ y: 560, animated: true })
+              }
+            />
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-1 gap-6">
@@ -125,6 +149,9 @@ export default function EmployerHomeScreenWeb() {
                   workersNeeded={workersNeeded}
                   setHourlyRate={setHourlyRate}
                   setWorkersNeeded={setWorkersNeeded}
+                  locationCoordinates={[siteRegion.longitude, siteRegion.latitude]}
+                  onCreateJobPost={handleCreateJobPost}
+                  isCreatingJob={isCreatingJob}
                 />
               </View>
 
@@ -152,7 +179,9 @@ export default function EmployerHomeScreenWeb() {
 
                   <TouchableOpacity
                     activeOpacity={0.9}
-                    onPress={handleCreateJobPost}
+                    onPress={() =>
+                      scrollViewRef.current?.scrollTo({ y: 560, animated: true })
+                    }
                     className="mt-6 items-center justify-center rounded-[18px] py-4"
                     style={{ backgroundColor: Colors.common.BRAND }}
                   >
