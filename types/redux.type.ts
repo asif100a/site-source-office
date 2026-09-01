@@ -41,7 +41,12 @@ export interface RegisterData {
   role?: string;
   countryCode?: string;
   phone?: string;
-  address?: string;
+  address?:
+    | string
+    | {
+        type: "Point";
+        coordinates: [number, number];
+      };
   password?: string;
   isLegalTermsAccepted?: boolean;
 }

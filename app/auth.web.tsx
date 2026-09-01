@@ -123,12 +123,12 @@ export default function AuthFlowWeb() {
     } else if (step === "register_general") {
       setStep(role === "worker" ? "register_sso" : "login");
     } else if (step === "register_documents") {
-      setStep("register_general");
+      setStep(role === "employer" ? "register_employer" : "register_general");
     } else if (step === "verify_otp") {
       if (otpFlow === "password_reset") {
         goToForgotPassword();
       } else {
-        setStep("register_sso");
+        setStep(role === "employer" ? "register_employer" : "register_sso");
       }
     } else if (step === "forgot_password") {
       setStep("login");
@@ -145,15 +145,14 @@ export default function AuthFlowWeb() {
   };
 
   const renderActiveScreen = () => {
-    if (
-      role === "employer" &&
-      (step === "register_general" || step === "register_employer")
-    ) {
+    if (role === "employer" && step === "register_employer") {
       return (
         <RegisterEmployerScreen
           onContinue={(data) => {
-            console.log("Employer register data:", data);
-            setStep("complete_payroll");
+            setRegistrationEmail(data.email ?? "");
+            setRegistrationName(data.name ?? "");
+            setRegistrationProvider("manual");
+            goToRegistrationOtp();
           }}
           onBackPress={handleBack}
           onLoginPress={() => setStep("login")}
@@ -201,13 +200,15 @@ export default function AuthFlowWeb() {
             onBackPress={() =>
               otpFlow === "password_reset"
                 ? goToForgotPassword()
-                : setStep("register_sso")
+                : setStep(role === "employer" ? "register_employer" : "register_sso")
             }
             onComplete={() =>
               setStep(
                 otpFlow === "password_reset"
                   ? "reset_password"
-                  : "register_general",
+                  : role === "employer"
+                    ? "register_documents"
+                    : "register_general",
               )
             }
           />

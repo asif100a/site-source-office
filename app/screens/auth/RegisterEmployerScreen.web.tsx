@@ -1,24 +1,37 @@
-import React, { useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
-import { Image } from "expo-image";
-import { Info, Sparkles, Upload } from "lucide-react-native";
-import * as ImagePicker from "expo-image-picker";
+import Toast from "react-native-toast-message";
+import { ArrowRight } from "lucide-react-native";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
-import StandardCheckbox from "@/components/standard_ui/form_fields/StandardCheckbox";
+import { normalizeUserRole, type UserRole } from "@/constants/Routes";
+import { useRegisterMutation } from "@/store/api/authApi";
+import { passwordSchema } from "@/zod/authSchema";
+import {
+  getAddressDetails,
+  getAddressSuggestions,
+  type AddressDetails,
+  type AddressSuggestion,
+} from "@/utils/googlePlaces";
 import AuthWebShell from "./_web-shell";
 
 interface RegisterEmployerScreenProps {
   onContinue?: (data: {
-    companyName: string;
-    logo: any;
-    password: string;
-    address: string;
+    email?: string;
+    name?: string;
   }) => void;
   onLoginPress?: () => void;
   onBackPress?: () => void;
 }
+
+type RegisterEmployerFormValues = {
+  companyName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  address: string;
+};
 
 export default function RegisterEmployerScreenWeb({
   onContinue,
@@ -26,26 +39,103 @@ export default function RegisterEmployerScreenWeb({
   onBackPress,
 }: RegisterEmployerScreenProps) {
   const router = useRouter();
-  const [logo, setLogo] = useState<any>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const params = useLocalSearchParams();
+  const activeRole = normalizeUserRole(params.role) as UserRole;
+  const [selectedAddress, setSelectedAddress] = useState<AddressDetails | null>(
+    null,
+  );
+  const [addressSuggestions, setAddressSuggestions] = useState<
+    AddressSuggestion[]
+  >([]);
+  const [isAddressLoading, setIsAddressLoading] = useState(false);
+  const [isSelectingAddress, setIsSelectingAddress] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [register, { isLoading }] = useRegisterMutation();
 
-  const { control, handleSubmit } = useForm({
-    defaultValues: {
-      companyName: "",
-      password: "",
-      confirmPassword: "",
-      address: "2972 Westheimer Rd. Santa A...",
-    },
-  });
-
-  const handleUploadLogo = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      quality: 0.8,
+  const { control, handleSubmit, setValue, watch } =
+    useForm<RegisterEmployerFormValues>({
+      defaultValues: {
+        companyName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        address: "",
+      },
     });
-    if (!res.canceled && res.assets && res.assets.length > 0) {
-      setLogo(res.assets[0]);
+
+  const addressValue = watch("address");
+
+  useEffect(() => {
+    const trimmedAddress = addressValue.trim();
+
+    if (selectedAddress && selectedAddress.description !== trimmedAddress) {
+      setSelectedAddress(null);
+    }
+
+    if (
+      trimmedAddress.length < 3 ||
+      selectedAddress?.description === trimmedAddress
+    ) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    let isMounted = true;
+    const timeoutId = setTimeout(async () => {
+      setIsAddressLoading(true);
+
+      try {
+        const suggestions = await getAddressSuggestions(trimmedAddress);
+
+        if (isMounted) {
+          setAddressSuggestions(suggestions);
+          setAddressError(null);
+        }
+      } catch (error) {
+        console.error("Employer address suggestion lookup failed:", error);
+
+        if (isMounted) {
+          setAddressSuggestions([]);
+          setAddressError("Unable to load address suggestions right now.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsAddressLoading(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [addressValue, selectedAddress]);
+
+  const handleSelectAddress = async (suggestion: AddressSuggestion) => {
+    setIsSelectingAddress(true);
+
+    try {
+      const details = await getAddressDetails(
+        suggestion.placeId,
+        suggestion.description,
+      );
+
+      setSelectedAddress(details);
+      setAddressSuggestions([]);
+      setAddressError(null);
+      setValue("address", details.description, {
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+    } catch (error) {
+      console.error("Employer address details lookup failed:", error);
+      Toast.show({
+        type: "error",
+        text1: "Address lookup failed",
+        text2: "Please choose another address suggestion.",
+      });
+    } finally {
+      setIsSelectingAddress(false);
     }
   };
 
@@ -57,28 +147,61 @@ export default function RegisterEmployerScreenWeb({
 
     router.push({
       pathname: "/auth",
-      params: { step: "login", role: "employer" },
+      params: { step: "login", role: activeRole },
     });
   };
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: RegisterEmployerFormValues) => {
     if (data.password !== data.confirmPassword) {
-      alert("Passwords do not match.");
+      Toast.show({
+        type: "error",
+        text1: "Password mismatch",
+        text2: "Passwords do not match.",
+      });
       return;
     }
-    if (!termsAccepted) {
-      Alert.alert(
-        "Terms required",
-        "Please accept the terms and privacy policy to continue.",
-      );
+
+    if (!selectedAddress) {
+      Toast.show({
+        type: "error",
+        text1: "Select an address",
+        text2:
+          "Please choose an address suggestion so we can save coordinates.",
+      });
       return;
     }
-    if (onContinue) {
-      onContinue({
-        companyName: data.companyName,
-        logo,
+
+    try {
+      const response = await register({
+        email: data.email,
         password: data.password,
-        address: data.address,
+        name: data.companyName,
+        role: "EMPLOYER",
+        address: {
+          type: "Point",
+          coordinates: selectedAddress.coordinates,
+        },
+      }).unwrap();
+
+      Toast.show({
+        type: "success",
+        text1: "Registration successful",
+        text2: response.message ?? "Your employer account has been created.",
+      });
+
+      onContinue?.({
+        email: data.email,
+        name: data.companyName,
+      });
+    } catch (error: any) {
+      console.error("Employer registration failed:", error);
+      Toast.show({
+        type: "error",
+        text1: "Registration failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Unable to complete registration right now.",
       });
     }
   };
@@ -87,7 +210,7 @@ export default function RegisterEmployerScreenWeb({
     <AuthWebShell
       eyebrow="Employer onboarding"
       title="Create your company account"
-      subtitle="Set up your employer profile and connect your company to the platform."
+      subtitle="Register your company and confirm your business location."
       onBackPress={handleBack}
     >
       <View className="grid gap-5 lg:grid-cols-2">
@@ -102,41 +225,14 @@ export default function RegisterEmployerScreenWeb({
         </View>
 
         <View className="lg:col-span-2">
-          <Text className="mb-2 text-sm font-medium text-neutral-800">
-            Upload Logo
-          </Text>
-          <View
-            className="items-center rounded-2xl border-2 border-dashed border-neutral-200 bg-[#FAFAFA] p-6"
-            style={{ borderStyle: "dashed" }}
-          >
-            <Text className="mb-1 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              Upload photo
-            </Text>
-            <Text className="mb-4 text-[10px] font-medium tracking-wide text-neutral-400">
-              JPG / PNG - MAX 10MB
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleUploadLogo}
-              activeOpacity={0.8}
-              className="flex-row items-center gap-1.5 rounded-full bg-[#1B2530] px-4 py-2.5"
-            >
-              <Upload size={14} color="#FFFFFF" />
-              <Text className="text-xs font-semibold text-white">
-                Upload logo
-              </Text>
-            </TouchableOpacity>
-
-            {logo ? (
-              <View className="mt-4 w-full overflow-hidden rounded-xl">
-                <Image
-                  source={{ uri: logo.uri }}
-                  className="h-36 w-full"
-                  contentFit="cover"
-                />
-              </View>
-            ) : null}
-          </View>
+          <StandardInputField
+            label="Email Address"
+            id="email"
+            type="email"
+            control={control}
+            required
+            placeholder="Enter your email"
+          />
         </View>
 
         <StandardInputField
@@ -145,7 +241,13 @@ export default function RegisterEmployerScreenWeb({
           type="password"
           control={control}
           required
-          placeholder="Enter password"
+          rules={{
+            validate: (value: string) => {
+              const result = passwordSchema.safeParse(value);
+              return result.success || result.error.errors[0]?.message;
+            },
+          }}
+          placeholder="Enter your password"
         />
 
         <StandardInputField
@@ -154,58 +256,64 @@ export default function RegisterEmployerScreenWeb({
           type="password"
           control={control}
           required
-          placeholder="Confirm password"
+          placeholder="Confirm your password"
         />
 
-        <View className="lg:col-span-2">
+        <View className="relative z-50 lg:col-span-2">
           <StandardInputField
             label="Address"
             id="address"
             control={control}
             required
-            placeholder="Enter address"
+            placeholder="Start typing your address"
           />
-        </View>
 
-        <View className="lg:col-span-2 flex-row items-start gap-2">
-          <StandardCheckbox
-            value={termsAccepted}
-            onValueChange={setTermsAccepted}
-          />
-          <Text className="flex-1 text-xs font-medium leading-relaxed text-neutral-500">
-            By continuing you agree to our{" "}
-            <Text className="text-xs font-semibold text-[#FF5500] underline">
-              Terms of Service
+          {isAddressLoading || isSelectingAddress ? (
+            <Text className="-mt-3 mb-3 text-xs font-medium text-neutral-500">
+              Searching addresses...
             </Text>
-            {" "}and{" "}
-            <Text className="text-xs font-semibold text-[#FF5500] underline">
-              Privacy policy
-            </Text>
-            .
-          </Text>
-        </View>
+          ) : null}
 
-        <View className="lg:col-span-2 rounded-2xl border border-[#FFDCD0] bg-[#FFF5F2] p-4">
-          <View className="flex-row items-start gap-3">
-            <View className="mt-0.5 rounded-full bg-[#FF5500] p-1">
-              <Info size={12} color="#FFFFFF" />
+          {addressError ? (
+            <Text className="-mt-3 mb-3 text-xs font-medium text-[#d92d20]">
+              {addressError}
+            </Text>
+          ) : null}
+
+          {addressSuggestions.length > 0 ? (
+            <View className="absolute left-0 right-0 top-[76px] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+              {addressSuggestions.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion.placeId}
+                  onPress={() => handleSelectAddress(suggestion)}
+                  activeOpacity={0.8}
+                  className="min-h-[48px] justify-center border-b border-neutral-100 px-4 last:border-b-0"
+                >
+                  <Text className="text-sm font-medium text-neutral-800">
+                    {suggestion.description}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <Text className="flex-1 text-xs leading-5 text-[#3C3C3C]">
-              Admin will review your documents within 2-4 hours. You will
-              receive a push notification when approved.
-            </Text>
-          </View>
+          ) : null}
         </View>
+
+        {addressSuggestions.length > 0 ? (
+          <View className="lg:col-span-2 h-40" />
+        ) : null}
       </View>
 
       <View className="mt-6 gap-4">
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
           activeOpacity={0.9}
+          disabled={isLoading || isSelectingAddress}
           className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
         >
-          <Text className="text-base font-semibold text-white">Continue</Text>
-          <Sparkles size={16} color="#FFFFFF" />
+          <Text className="text-base font-semibold text-white">
+            {isLoading ? "Creating Account..." : "Continue"}
+          </Text>
+          <ArrowRight size={16} color="#FFFFFF" />
         </TouchableOpacity>
 
         <View className="flex-row items-center justify-center">
@@ -218,7 +326,7 @@ export default function RegisterEmployerScreenWeb({
               (() =>
                 router.push({
                   pathname: "/auth",
-                  params: { step: "login", role: "employer" },
+                  params: { step: "login", role: activeRole },
                 }))
             }
             activeOpacity={0.7}

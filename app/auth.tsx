@@ -125,12 +125,12 @@ export default function AuthFlow() {
     } else if (step === "register_general") {
       setStep(role === "worker" ? "register_sso" : "login");
     } else if (step === "register_documents") {
-      setStep("register_general");
+      setStep(role === "employer" ? "register_employer" : "register_general");
     } else if (step === "verify_otp") {
       if (otpFlow === "password_reset") {
         goToForgotPassword();
       } else {
-        setStep("register_sso");
+        setStep(role === "employer" ? "register_employer" : "register_sso");
       }
     } else if (step === "forgot_password") {
       setStep("login");
@@ -147,14 +147,14 @@ export default function AuthFlow() {
   };
 
   const renderActiveScreen = () => {
-    if (
-      role === "employer" &&
-      (step === "register_general" || step === "register_employer")
-    ) {
+    if (role === "employer" && step === "register_employer") {
       return (
         <RegisterEmployerScreen
-          onContinue={() => {
-            setStep("complete_payroll");
+          onContinue={(data) => {
+            setRegistrationEmail(data.email ?? "");
+            setRegistrationName(data.name ?? "");
+            setRegistrationProvider("manual");
+            goToRegistrationOtp();
           }}
           onLoginPress={() => setStep("login")}
         />
@@ -200,13 +200,15 @@ export default function AuthFlow() {
             onBackPress={() =>
               otpFlow === "password_reset"
                 ? goToForgotPassword()
-                : setStep("register_sso")
+                : setStep(role === "employer" ? "register_employer" : "register_sso")
             }
             onComplete={() =>
               setStep(
                 otpFlow === "password_reset"
                   ? "reset_password"
-                  : "register_general",
+                  : role === "employer"
+                    ? "register_documents"
+                    : "register_general",
               )
             }
           />
