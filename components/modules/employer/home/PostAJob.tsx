@@ -11,7 +11,6 @@ import React, { useMemo, useState } from "react";
 import { CounterRow, DateCard, FormSectionLabel } from "./_ui";
 import { Check, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-import { router } from "expo-router";
 import {
   MUST_HAVE_OPTIONS,
   MUST_HAVE_VALUES,
@@ -117,10 +116,12 @@ const getInitialWorkingDaySchedule = (): WorkingDaySchedule =>
 
 export default function PostAJob({
   locationCoordinates,
+  locationValid,
   onCreateJobPost,
   isCreatingJob = false,
 }: {
   locationCoordinates: [number, number];
+  locationValid: boolean;
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
   isCreatingJob?: boolean;
 }) {
@@ -216,6 +217,21 @@ export default function PostAJob({
       Toast.show({ type: "error", text1: "Complete the job details first" });
       return;
     }
+    if (!locationValid) {
+      Toast.show({ type: "error", text1: "Select a valid site location" });
+      return;
+    }
+    if (jobDateRange.from > jobDateRange.to) {
+      Toast.show({ type: "error", text1: "Finish date must be after start date" });
+      return;
+    }
+    const workingHours = WORKING_DAY_OPTIONS.filter(
+      (day) => workingDaySchedule[day.key].enabled,
+    );
+    if (!workingHours.length || hourlyRate <= 0 || workersNeeded <= 0) {
+      Toast.show({ type: "error", text1: "Enter valid job rate, workers, and hours" });
+      return;
+    }
 
     const created = await onCreateJobPost({
       title: title.trim(),
@@ -225,9 +241,7 @@ export default function PostAJob({
       location: { type: "Point", coordinates: locationCoordinates },
       startDate: jobDateRange.from.toISOString(),
       endDate: jobDateRange.to.toISOString(),
-      workingHours: WORKING_DAY_OPTIONS.filter(
-        (day) => workingDaySchedule[day.key].enabled,
-      ).map((day) => ({
+      workingHours: workingHours.map((day) => ({
         day: day.label,
         startTime: formatTime(workingDaySchedule[day.key].startTime),
         endTime: formatTime(workingDaySchedule[day.key].endTime),

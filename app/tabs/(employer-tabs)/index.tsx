@@ -12,6 +12,8 @@ import PostAJob from "@/components/modules/employer/home/PostAJob";
 import Toast from "react-native-toast-message";
 import { useCreateJobMutation } from "@/store/api/jobApi";
 import type { JobPostPayload } from "@/store/api/jobApi";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 export const MUST_HAVE_OPTIONS = ["CSCS card", "Own tools", "Own PPE"] as const;
 
@@ -55,6 +57,8 @@ export default function EmployerHomeScreen() {
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
+  const [siteAddress, setSiteAddress] = useState("42 Hoxton Street, London N1");
+  const [isLocationValid, setIsLocationValid] = useState(true);
   const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
 
   const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
@@ -95,6 +99,15 @@ export default function EmployerHomeScreen() {
         longitudeDelta: nextDelta,
       };
     });
+  };
+
+  const handleLocationChange = (details: AddressDetails) => {
+    setSiteAddress(details.description);
+    setSiteRegion((current) => ({
+      ...current,
+      longitude: details.coordinates[0],
+      latitude: details.coordinates[1],
+    }));
   };
 
   const handleWorkerDetails = (id: string) => {
@@ -195,7 +208,7 @@ export default function EmployerHomeScreen() {
                       Site location
                     </Text>
                     <Text className="text-[13px] font-bold text-[#111111]">
-                      42 Hoxton Street, London N1
+                      {siteAddress}
                     </Text>
                   </View>
                 </View>
@@ -211,9 +224,18 @@ export default function EmployerHomeScreen() {
           </View>
         </View>
 
+        <View className="px-5 pb-2">
+          <JobLocationPicker
+            address={siteAddress}
+            onChange={handleLocationChange}
+            onValidityChange={setIsLocationValid}
+          />
+        </View>
+
         {/* POST A JOB */}
         <PostAJob
           locationCoordinates={[siteRegion.longitude, siteRegion.latitude]}
+          locationValid={isLocationValid}
           onCreateJobPost={handleCreateJobPost}
           isCreatingJob={isCreatingJob}
         />
