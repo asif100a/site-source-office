@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import Toast from "react-native-toast-message";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -35,6 +36,9 @@ import { useGetAllJobsQuery } from "@/store/api/jobApi";
 import { getAllJobsHasNextPage, getAllJobItems, mapApiJobToWorkerHomeJob } from "@/utils/workerJobs";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { getWorkerJobFilter, getWorkerJobTrade } from "@/utils/workerJobFilters";
+import { useCreateJobApplicationMutation } from "@/store/api/jobApplicationApi";
+import { getWorkerLoginRoute } from "@/constants/authState";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 
 const MAP_REGION: Region = {
   latitude: 51.5295,
@@ -49,15 +53,18 @@ export default function WorkerHomeScreen() {
   const [locationQuery, setLocationQuery] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
-  const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<WorkerHomeJob[]>([]);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [createJobApplication, { isLoading: isApplying }] =
+    useCreateJobApplicationMutation();
   const apiFilter = getWorkerJobFilter(activeFilter);
   const apiTrade = getWorkerJobTrade(selectedTrade);
   const locationFilter = locationQuery.trim();
+  const isAuthenticated = useIsAuthenticated();
   const jobsQuery = useGetAllJobsQuery({
     page,
     limit: 10,
@@ -67,7 +74,7 @@ export default function WorkerHomeScreen() {
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
     ...(apiTrade ? { trade: apiTrade } : {}),
-    ...(maxDistanceMiles !== 50 ? { radius: maxDistanceMiles } : {}),
+    ...(maxDistanceMiles !== 5 ? { radius: maxDistanceMiles } : {}),
   });
   console.log("jobsQuery: ", jobsQuery);
   const nativeMapComponents = getNativeMapComponents();
@@ -122,8 +129,31 @@ export default function WorkerHomeScreen() {
   };
 
   const handleApply = (job: WorkerHomeJob) => {
-    const detailsRoute = `/screens/job/${job.id}`;
-    router.push(detailsRoute as any);
+    if (!isAuthenticated) {
+      router.push(getWorkerLoginRoute(`/screens/job/${job.id}`) as any);
+      return;
+    }
+
+    if (isApplying) return;
+
+    void createJobApplication(job.id)
+      .unwrap()
+      .then((response) => {
+        console.log("Job application response: ", response);
+        Toast.show({
+          type: "success",
+          text1: "Application submitted",
+          text2: "Your application was sent successfully.",
+        });
+      })
+      .catch((error) => {
+        console.error("Job application error: ", error);
+        Toast.show({
+          type: "error",
+          text1: "Application failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      });
   };
 
   if(jobsQuery.isLoading) {
