@@ -13,10 +13,12 @@ import {
   getAppliedJobsHasNextPage,
 } from "@/utils/jobApplications";
 
-const tabOptions = ["My Offers", "Active Jobs", "Completed"];
+const tabOptions = ["My Offers", "My Applications", "Active Jobs", "Completed"];
 const tabByQueryParam: Record<string, string> = {
   offers: "My Offers",
   offer: "My Offers",
+  applications: "My Applications",
+  application: "My Applications",
   confirmed: "Active Jobs",
   active: "Active Jobs",
   completed: "Completed",
@@ -58,8 +60,11 @@ export default function MyJobsScreen() {
     }
   }, [tab]);
 
-  const handleOpenJobDetails = (id: string) => {
-    router.push(`/screens/job/${id}` as any);
+  const handleOpenJobDetails = (id: string, status: string) => {
+    router.push({
+      pathname: "/screens/job/[id]",
+      params: { id, applicationStatus: status },
+    } as any);
   };
 
   const refreshAppliedJobs = async () => {

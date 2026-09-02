@@ -22,12 +22,16 @@ function matchesTab(application: AppliedJobApplication, activeTab: string) {
   const applicationStatus = application.status?.toUpperCase();
   const jobStatus = application.job?.status?.toUpperCase();
 
+  if (activeTab === "My Offers") return applicationStatus === "PENDING";
+  if (activeTab === "My Applications") {
+    return applicationStatus === "ACCEPTED" || applicationStatus === "REJECTED";
+  }
   if (activeTab === "Active Jobs") return applicationStatus === "ACCEPTED";
   if (activeTab === "Completed") {
     return applicationStatus === "COMPLETED" || jobStatus === "COMPLETED";
   }
 
-  return applicationStatus !== "ACCEPTED" && applicationStatus !== "COMPLETED";
+  return true;
 }
 
 export default function AppliedJobsList({

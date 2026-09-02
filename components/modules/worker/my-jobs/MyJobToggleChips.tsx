@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { ScrollView, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { Colors } from "@/constants/Colors";
 
@@ -12,7 +12,12 @@ export default function MyJobToggleChips({
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
-    <View className="flex-row gap-2.5 mb-6">
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="mb-6"
+      contentContainerStyle={{ gap: 10 }}
+    >
       {tabOptions.map((tab) => (
         <TouchableOpacity
           key={tab}
@@ -31,6 +36,6 @@ export default function MyJobToggleChips({
           </Text>
         </TouchableOpacity>
       ))}
-    </View>
+    </ScrollView>
   );
 }

@@ -35,15 +35,18 @@ export default function NewJobDetails({
   jobId,
   showApplications = false,
   showApplyButton = false,
+  isApplying = false,
   onApply,
 }: {
   jobId: string;
   showApplications?: boolean;
   showApplyButton?: boolean;
+  isApplying?: boolean;
   onApply?: () => void;
 }) {
   const { data, isLoading, isError, error, refetch, isFetching: isJobFetching } =
     useGetSingleJobQuery(jobId);
+    console.log("data --------> ", data)
   const [applicationPage, setApplicationPage] = useState(1);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -65,7 +68,8 @@ export default function NewJobDetails({
       )
     : false;
   const refreshing = isJobFetching || applicationsQuery.isFetching;
-  console.log("error", isError, error);
+  // console.log("error", isError, error);
+  console.log("applicationsQuery: ", applicationsQuery);
   console.log("Applications: ", applications);
 
   const refreshJob = async () => {
@@ -224,11 +228,12 @@ export default function NewJobDetails({
 
         {showApplyButton ? (
           <TouchableOpacity
+            disabled={isApplying}
             onPress={onApply}
-            className="mt-6 rounded-2xl bg-neutral-950 px-4 py-4"
+            className="mt-6 rounded-2xl bg-neutral-950 px-4 py-4 disabled:bg-neutral-400"
           >
             <Text className="text-center text-sm font-bold text-white">
-              Apply for this job
+              {isApplying ? "Applying..." : "Apply for this job"}
             </Text>
           </TouchableOpacity>
         ) : null}
