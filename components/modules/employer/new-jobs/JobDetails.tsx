@@ -1,7 +1,15 @@
-import React from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import React, { useState } from "react";
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useGetSingleJobQuery } from "@/store/api/jobApi";
 import JobLocationLabel from "@/components/modules/employer/my-jobs/JobLocationLabel";
+import ScreenWrapper from "@/components/layout/ScreenWrapper";
+import ScreenLoader from "@/components/ui/screen-loader";
 
 const formatDate = (value?: string) =>
   value
@@ -12,19 +20,43 @@ const formatDate = (value?: string) =>
       })
     : "Not set";
 
-export default function NewJobDetails({ jobId }: { jobId: string }) {
-  const { data, isLoading, isError } = useGetSingleJobQuery(jobId);
+export default function NewJobDetails({
+  jobId,
+  showApplyButton = false,
+  onApply,
+}: {
+  jobId: string;
+  showApplyButton?: boolean;
+  onApply?: () => void;
+}) {
+  const { data, isLoading, isError, error, refetch } = useGetSingleJobQuery(jobId);
+  const [refreshing, setRefreshing] = useState(false);
   const job = data?.data?.data ?? data?.data;
+  console.log("error", isError, error);
+
+  const refreshJob = async () => {
+    setRefreshing(true);
+
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (isLoading) {
-    return <ActivityIndicator className="mt-12" color="#FF5500" />;
+    return (
+      <ScreenWrapper>
+        <ScreenLoader />
+      </ScreenWrapper>
+    );
   }
 
   if (isError || !job) {
     return (
       <View className="rounded-2xl bg-white p-6">
         <Text className="text-base font-bold text-neutral-900">
-          Unable to load this job
+          {(error as any)?.message || (error as any)?.data?.message || 'Unable to load this job'}
         </Text>
         <Text className="mt-2 text-sm text-neutral-500">
           Please go back and try again.
@@ -38,7 +70,13 @@ export default function NewJobDetails({ jobId }: { jobId: string }) {
     : undefined;
 
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refreshJob} />
+      }
+    >
       <View className="rounded-3xl bg-white p-5">
         <Text className="text-xs font-bold uppercase tracking-widest text-orange-600">
           New Job
@@ -79,6 +117,17 @@ export default function NewJobDetails({ jobId }: { jobId: string }) {
           <Text className="mt-5 text-xs font-bold uppercase tracking-widest text-neutral-500">Notes</Text>
           <Text className="mt-2 text-sm leading-6 text-neutral-700">{job.note || "No notes"}</Text>
         </View>
+
+        {showApplyButton ? (
+          <TouchableOpacity
+            onPress={onApply}
+            className="mt-6 rounded-2xl bg-neutral-950 px-4 py-4"
+          >
+            <Text className="text-center text-sm font-bold text-white">
+              Apply for this job
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </ScrollView>
   );

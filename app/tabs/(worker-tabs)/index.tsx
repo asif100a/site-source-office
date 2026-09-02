@@ -17,8 +17,6 @@ import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import { Colors } from "@/constants/Colors";
-import { getWorkerLoginRoute } from "@/constants/authState";
-import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
   formatDistance,
@@ -72,8 +70,6 @@ export default function WorkerHomeScreen() {
     ...(maxDistanceMiles !== 50 ? { radius: maxDistanceMiles } : {}),
   });
   console.log("jobsQuery: ", jobsQuery);
-  const isAuthenticated = useIsAuthenticated();
-
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
@@ -120,32 +116,13 @@ export default function WorkerHomeScreen() {
     filteredJobs.find((job) => job.id === selectedJobId) ??
     filteredJobs[0];
 
-  const promptLoginIfNeeded = (returnTo: string) => {
-    if (isAuthenticated) {
-      return false;
-    }
-
-    router.push(getWorkerLoginRoute(returnTo) as any);
-    return true;
-  };
-
   const handleViewDetails = (job: WorkerHomeJob) => {
-    const detailsRoute = `/screens/employer-details/${job.id}`;
-
-    if (promptLoginIfNeeded(detailsRoute)) {
-      return;
-    }
-
+    const detailsRoute = `/screens/job/${job.id}`;
     router.push(detailsRoute as any);
   };
 
   const handleApply = (job: WorkerHomeJob) => {
-    const detailsRoute = `/screens/employer-details/${job.id}`;
-
-    if (promptLoginIfNeeded(detailsRoute)) {
-      return;
-    }
-
+    const detailsRoute = `/screens/job/${job.id}`;
     router.push(detailsRoute as any);
   };
 

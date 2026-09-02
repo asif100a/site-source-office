@@ -13,8 +13,6 @@ import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
-import { getWorkerLoginRoute } from "@/constants/authState";
-import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
   formatDistance,
@@ -78,8 +76,6 @@ export default function WorkerHomeScreen() {
     ...(maxDistanceMiles !== 5 ? { radius: maxDistanceMiles } : {}),
   });
   const mapEmbedUrl = useMemo(() => getGoogleMapEmbedUrl(MAP_REGION), []);
-  const isAuthenticated = useIsAuthenticated();
-
   const filteredJobs = jobs;
   const [selectedJobId, setSelectedJobId] = useState("");
 
@@ -121,32 +117,13 @@ export default function WorkerHomeScreen() {
     filteredJobs.find((job) => job.id === selectedJobId) ??
     filteredJobs[0];
 
-  const promptLoginIfNeeded = (returnTo: string) => {
-    if (isAuthenticated) {
-      return false;
-    }
-
-    router.push(getWorkerLoginRoute(returnTo) as any);
-    return true;
-  };
-
   const handleViewDetails = (job: WorkerHomeJob) => {
-    const detailsRoute = `/screens/employer-details/${job.id}`;
-
-    if (promptLoginIfNeeded(detailsRoute)) {
-      return;
-    }
-
+    const detailsRoute = `/screens/job/${job.id}`;
     router.push(detailsRoute as any);
   };
 
   const handleApply = (job: WorkerHomeJob) => {
-    const detailsRoute = `/screens/employer-details/${job.id}`;
-
-    if (promptLoginIfNeeded(detailsRoute)) {
-      return;
-    }
-
+    const detailsRoute = `/screens/job/${job.id}`;
     router.push(detailsRoute as any);
   };
 
