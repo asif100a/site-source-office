@@ -11,7 +11,7 @@ export default function NewJobDetailsScreen() {
   return (
     <ScreenWrapper>
       <CommonHeader headerTitle="New Job" withBackButton onPress={() => router.back()} />
-      {jobId ? <NewJobDetails jobId={jobId} /> : null}
+      {jobId ? <NewJobDetails jobId={jobId} showApplications /> : null}
     </ScreenWrapper>
   );
 }

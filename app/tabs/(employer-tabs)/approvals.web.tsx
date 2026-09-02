@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
-import { ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import JobRequests from "@/components/modules/employer/home/JobRequests";
@@ -9,6 +9,13 @@ import WorkerApproveModal from "@/components/modules/employer/worker-details/Wor
 import WebApprovalTabs from "@/components/modules/employer/approvals/WebApprovalTabs";
 import WebTimesheetApprovalList from "@/components/modules/employer/approvals/WebTimesheetApprovalList";
 import { TimesheetApproval } from "@/types";
+import { useGetAppliedJobsQuery } from "@/store/api/jobApplicationApi";
+import AppliedJobList from "@/components/modules/employer/approvals/AppliedJobList";
+import {
+  AppliedJobApplication,
+  getAppliedJobApplications,
+  getAppliedJobsHasNextPage,
+} from "@/utils/jobApplications";
 
 type ApprovalTab = "timesheets" | "requests";
 
@@ -75,6 +82,40 @@ export default function EmployerApprovalsScreenWeb() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
+  const [applicationPage, setApplicationPage] = useState(1);
+  const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
+  const [hasMoreApplications, setHasMoreApplications] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const appliedJobsQuery = useGetAppliedJobsQuery({
+    page: applicationPage,
+    limit: 10,
+  });
+
+  useEffect(() => {
+    if (!appliedJobsQuery.data || (applicationPage > 1 && appliedJobsQuery.isFetching)) {
+      return;
+    }
+
+    const nextApplications = getAppliedJobApplications(appliedJobsQuery.data);
+    setApplications((current) =>
+      applicationPage === 1 ? nextApplications : [...current, ...nextApplications],
+    );
+    setHasMoreApplications(
+      getAppliedJobsHasNextPage(appliedJobsQuery.data, nextApplications.length, 10),
+    );
+  }, [appliedJobsQuery.data, appliedJobsQuery.isFetching, applicationPage]);
+
+  const refreshApplications = async () => {
+    setRefreshing(true);
+    setApplicationPage(1);
+    setApplications([]);
+
+    try {
+      await appliedJobsQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const weekOptions = TIMESHEET_APPROVALS.map((item) =>
     formatWeekOptionLabel(item.weekLabel),
   );
@@ -103,6 +144,9 @@ export default function EmployerApprovalsScreenWeb() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 112 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshApplications} />
+        }
       >
         <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -151,6 +195,15 @@ export default function EmployerApprovalsScreenWeb() {
                 </View>
               </View>
             </View>
+
+            <AppliedJobList
+              applications={applications}
+              isLoading={appliedJobsQuery.isLoading}
+              isFetching={appliedJobsQuery.isFetching}
+              isError={appliedJobsQuery.isError}
+              hasNextPage={hasMoreApplications}
+              onLoadMore={() => setApplicationPage((current) => current + 1)}
+            />
 
             {/* <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
               <WebApprovalTabs activeTab={activeTab} setActiveTab={setActiveTab} />

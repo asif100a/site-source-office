@@ -10,22 +10,28 @@ export const jobApi = baseApi.injectEndpoints({
         method: "POST",
       }),
     }),
-    getJobApplication: builder.query<any, any>({
-      query: (id) => ({
+    getJobApplication: builder.query<
+      any,
+      { id: string; page: number; limit: number }
+    >({
+      query: ({ id, page, limit }) => ({
         url: BASE_POINT + `/${id}/applications`,
         method: "GET",
+        params: { page, limit },
       }),
     }),
-    getAppliedJobs: builder.query<any, any>({
-      query: (id) => ({
+    getAppliedJobs: builder.query<any, { page: number; limit: number }>({
+      query: (args) => ({
         url: BASE_POINT + `/applied-jobs`,
         method: "GET",
+        params: args,
       }),
     }),
     updatedJobApplicationStatus: builder.mutation<any, {id: string, status: "ACCEPTED" | "REJECTED"}>({
+
       query: ({id, status}) => ({
         url: BASE_POINT + `/applications/${id}/status`,
-        method: "POST",
+        method: "PATCH",
         body: {status}
       }),
     }),

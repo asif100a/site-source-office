@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenHeader from "@/components/layout/ScreenHeader";
@@ -8,6 +8,13 @@ import WorkerApproveModal from "@/components/modules/employer/worker-details/Wor
 import ApprovalTabs from "@/components/modules/employer/approvals/ApprovalTabs";
 import TimesheetApprovalList from "@/components/modules/employer/approvals/TimesheetApprovalList";
 import { ApprovalTab, TimesheetApproval } from "@/types";
+import { useGetAppliedJobsQuery } from "@/store/api/jobApplicationApi";
+import AppliedJobList from "@/components/modules/employer/approvals/AppliedJobList";
+import {
+  AppliedJobApplication,
+  getAppliedJobApplications,
+  getAppliedJobsHasNextPage,
+} from "@/utils/jobApplications";
 
 const getOrdinalSuffix = (day: number) => {
   if (day >= 11 && day <= 13) return "th";
@@ -72,6 +79,41 @@ export default function EmployerApprovalsScreen() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
+  const [applicationPage, setApplicationPage] = useState(1);
+  const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
+  const [hasMoreApplications, setHasMoreApplications] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const appliedJobsQuery = useGetAppliedJobsQuery({
+    page: applicationPage,
+    limit: 10,
+  });
+  console.log("Applied jobs query: ", appliedJobsQuery);
+
+  useEffect(() => {
+    if (!appliedJobsQuery.data || (applicationPage > 1 && appliedJobsQuery.isFetching)) {
+      return;
+    }
+
+    const nextApplications = getAppliedJobApplications(appliedJobsQuery.data);
+    setApplications((current) =>
+      applicationPage === 1 ? nextApplications : [...current, ...nextApplications],
+    );
+    setHasMoreApplications(
+      getAppliedJobsHasNextPage(appliedJobsQuery.data, nextApplications.length, 10),
+    );
+  }, [appliedJobsQuery.data, appliedJobsQuery.isFetching, applicationPage]);
+
+  const refreshApplications = async () => {
+    setRefreshing(true);
+    setApplicationPage(1);
+    setApplications([]);
+
+    try {
+      await appliedJobsQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const timesheetItems = useMemo(() => TIMESHEET_APPROVALS, []);
   const weekOptions = useMemo(
@@ -106,6 +148,9 @@ export default function EmployerApprovalsScreen() {
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 18, paddingBottom: 110 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshApplications} />
+        }
       >
         <View className="rounded-xl bg-white px-5 py-5">
           <View className="flex-row items-start justify-between gap-4">
@@ -126,6 +171,17 @@ export default function EmployerApprovalsScreen() {
           </View>
 
           {/* <ApprovalTabs activeTab={activeTab} setActiveTab={setActiveTab} /> */}
+        </View>
+
+        <View className="mt-6">
+          <AppliedJobList
+            applications={applications}
+            isLoading={appliedJobsQuery.isLoading}
+            isFetching={appliedJobsQuery.isFetching}
+            isError={appliedJobsQuery.isError}
+            hasNextPage={hasMoreApplications}
+            onLoadMore={() => setApplicationPage((current) => current + 1)}
+          />
         </View>
 
         {/* {activeTab === "timesheets" ? ( */}
