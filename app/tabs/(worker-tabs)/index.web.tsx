@@ -17,16 +17,13 @@ import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
-  filterWorkerHomeJobs,
   formatDistance,
   formatPayRate,
   WORKER_HOME_FILTERS,
-  WORKER_HOME_JOBS,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
 import {
   MapRegion,
-  WorkerHomeDateRange,
   WorkerHomeFilter,
   WorkerHomeJob,
 } from "@/types";
@@ -35,6 +32,10 @@ import {
   MarkerBubble,
 } from "@/components/modules/worker/home/_ui";
 import WebJobCard from "@/components/modules/worker/home/WebJobCard";
+import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import { getAllJobsHasNextPage, getAllJobItems, mapApiJobToWorkerHomeJob } from "@/utils/workerJobs";
+import { ActivityIndicator, RefreshControl } from "react-native";
+import { getWorkerJobFilter, getWorkerJobTrade } from "@/utils/workerJobFilters";
 
 const MAP_REGION: MapRegion = {
   latitude: 51.5295,
@@ -52,29 +53,57 @@ const getGoogleMapEmbedUrl = (region: MapRegion) => {
 export default function WorkerHomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<WorkerHomeFilter>("All");
-  const [locationQuery, setLocationQuery] = useState(DEFAULT_HOME_LOCATION);
+  const [locationQuery, setLocationQuery] = useState("");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
-  const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
+  const [page, setPage] = useState(1);
+  const [jobs, setJobs] = useState<WorkerHomeJob[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const apiFilter = getWorkerJobFilter(activeFilter);
+  const apiTrade = getWorkerJobTrade(selectedTrade);
+  const locationFilter = locationQuery.trim();
+  const jobsQuery = useGetAllJobsQuery({
+    page,
+    limit: 20,
+    status: "POSTED",
+    ...(locationFilter ? { searchTerm: locationFilter } : {}),
+    ...(minRatePerDay !== 120
+      ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
+      : {}),
+    ...(apiFilter ? { filter: apiFilter } : {}),
+    ...(apiTrade ? { trade: apiTrade } : {}),
+    ...(maxDistanceMiles !== 5 ? { radius: maxDistanceMiles } : {}),
+  });
   const mapEmbedUrl = useMemo(() => getGoogleMapEmbedUrl(MAP_REGION), []);
   const isAuthenticated = useIsAuthenticated();
 
-  const filteredJobs = useMemo(
-    () =>
-      filterWorkerHomeJobs(WORKER_HOME_JOBS, {
-        trades: selectedTrade ? [selectedTrade] : [],
-        maxDistanceMiles,
-        minRatePerDay,
-        dateRange,
-        sortBy: activeFilter,
-      }),
-    [activeFilter, dateRange, maxDistanceMiles, minRatePerDay, selectedTrade],
-  );
-  const [selectedJobId, setSelectedJobId] = useState(
-    WORKER_HOME_JOBS[0]?.id ?? "",
-  );
+  const filteredJobs = jobs;
+  const [selectedJobId, setSelectedJobId] = useState("");
+
+  useEffect(() => {
+    setPage(1);
+    setJobs([]);
+  }, [activeFilter, locationQuery, maxDistanceMiles, minRatePerDay, selectedTrade]);
+
+  useEffect(() => {
+    if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
+    const nextJobs = getAllJobItems(jobsQuery.data).map((job, index) =>
+      mapApiJobToWorkerHomeJob(job, index),
+    );
+    setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
+    setHasNextPage(getAllJobsHasNextPage(jobsQuery.data, nextJobs.length, 20));
+  }, [jobsQuery.data, jobsQuery.isFetching, page]);
+
+  const refreshJobs = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setJobs([]);
+    await jobsQuery.refetch();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     if (!filteredJobs.length) {
@@ -90,8 +119,7 @@ export default function WorkerHomeScreen() {
 
   const featuredJob =
     filteredJobs.find((job) => job.id === selectedJobId) ??
-    filteredJobs[0] ??
-    WORKER_HOME_JOBS[0];
+    filteredJobs[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
     if (isAuthenticated) {
@@ -128,6 +156,7 @@ export default function WorkerHomeScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 72 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshJobs} />}
       >
         <View className="px-5 py-6 md:px-8 md:py-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -180,7 +209,7 @@ export default function WorkerHomeScreen() {
                   <View className="mt-4 flex-row items-center justify-between">
                     <View className="rounded-full bg-[#111111] px-4 py-2.5">
                       <Text className="text-sm font-bold text-white">
-                        {WORKER_HOME_JOBS.length} live sites nearby
+                        {jobs.length} live sites nearby
                       </Text>
                     </View>
                   </View>
@@ -192,7 +221,7 @@ export default function WorkerHomeScreen() {
 
                 <TouchableOpacity
                   activeOpacity={0.92}
-                  onPress={() => handleViewDetails(featuredJob)}
+                  onPress={() => featuredJob && handleViewDetails(featuredJob)}
                   className="absolute bottom-5 left-5 right-5 z-10 rounded-[28px] bg-white px-5 py-5 shadow-lg"
                 >
                   <View className="flex-row items-center justify-between gap-4">
@@ -202,19 +231,19 @@ export default function WorkerHomeScreen() {
                       </View>
                       <View className="flex-1">
                         <Text className="text-2xl font-bold text-neutral-950">
-                          {featuredJob.title}
+                          {featuredJob?.title ?? "No jobs available"}
                         </Text>
                         <Text className="text-base font-medium text-neutral-500">
-                          {featuredJob.company} -{" "}
-                          {formatDistance(featuredJob.distanceMiles)} -{" "}
-                          {featuredJob.startLabel}
+                          {featuredJob
+                            ? `${featuredJob.company} - ${formatDistance(featuredJob.distanceMiles)} - ${featuredJob.startLabel}`
+                            : "Check back soon for new jobs"}
                         </Text>
                       </View>
                     </View>
 
                     <View className="items-end">
                       <Text className="text-xl font-bold text-neutral-950">
-                        {formatPayRate(featuredJob.payRatePerDay)}
+                        {featuredJob ? formatPayRate(featuredJob.payRatePerDay) : "--"}
                       </Text>
                       <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
                         Tap to view details
@@ -264,6 +293,13 @@ export default function WorkerHomeScreen() {
             </ScrollView>
 
             <View className="mt-6 gap-4">
+              {jobsQuery.isError ? (
+                <View className="rounded-xl bg-red-50 px-4 py-3">
+                  <Text className="text-sm font-semibold text-red-700">
+                    Unable to load jobs. {String((jobsQuery.error as any)?.data?.message ?? "Please try again.")}
+                  </Text>
+                </View>
+              ) : null}
               {filteredJobs.map((job) => (
                 <WebJobCard
                   key={job.id}
@@ -272,6 +308,19 @@ export default function WorkerHomeScreen() {
                   onApply={handleApply}
                 />
               ))}
+              {jobsQuery.isLoading ? (
+                <ActivityIndicator color={Colors.common.BRAND} />
+              ) : null}
+              {hasNextPage && !jobsQuery.isFetching ? (
+                <TouchableOpacity
+                  onPress={() => setPage((current) => current + 1)}
+                  className="items-center rounded-xl bg-white px-4 py-3"
+                >
+                  <Text className="text-xs font-bold text-neutral-900">
+                    Load more jobs
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         </View>
@@ -286,14 +335,11 @@ export default function WorkerHomeScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
         resultCount={filteredJobs.length}
         onReset={() => {
           setSelectedTrade("");
           setMaxDistanceMiles(5);
           setMinRatePerDay(120);
-          setDateRange({});
         }}
       />
     </ScreenWrapper>

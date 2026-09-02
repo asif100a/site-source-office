@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -19,25 +21,22 @@ import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import {
   DEFAULT_HOME_LOCATION,
-  filterWorkerHomeJobs,
   formatDistance,
   formatNeeded,
   formatPayRate,
   WORKER_HOME_FILTERS,
-  WORKER_HOME_JOBS,
 } from "@/constants/workerHome";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
 import {
-  WorkerHomeDateRange,
   WorkerHomeFilter,
   WorkerHomeJob,
 } from "@/types";
-
-type NativeMapComponents = {
-  MapView: typeof import("react-native-maps").default;
-  Marker: typeof import("react-native-maps").Marker;
-  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
-};
+import JobCard from "@/components/card/JobCard";
+import { FilterChip, getNativeMapComponents, MarkerBubble } from "@/components/modules/worker/home/_ui";
+import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import { getAllJobsHasNextPage, getAllJobItems, mapApiJobToWorkerHomeJob } from "@/utils/workerJobs";
+import ScreenLoader from "@/components/ui/screen-loader";
+import { getWorkerJobFilter, getWorkerJobTrade } from "@/utils/workerJobFilters";
 
 const MAP_REGION: Region = {
   latitude: 51.5295,
@@ -46,168 +45,33 @@ const MAP_REGION: Region = {
   longitudeDelta: 0.05,
 };
 
-function getNativeMapComponents(): NativeMapComponents | null {
-  if (Platform.OS === "web") {
-    return null;
-  }
-
-  try {
-    const maps =
-      require("react-native-maps") as typeof import("react-native-maps");
-    return {
-      MapView: maps.default,
-      Marker: maps.Marker,
-      ProviderGoogle: maps.PROVIDER_GOOGLE,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: WorkerHomeFilter;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      className="mr-3 rounded-xl px-4 py-2.5"
-      style={{
-        backgroundColor: active ? "#111111" : "#FFFFFF",
-        borderWidth: active ? 0 : 1,
-        borderColor: "#E7E7E7",
-      }}
-    >
-      <Text
-        className="text-[10px] font-bold"
-        style={{ color: active ? "#FFFFFF" : "#4B4B4B" }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function MarkerBubble({ dark = false }: { dark?: boolean }) {
-  return (
-    <View
-      className="items-center justify-center rounded-full p-2.5 shadow-sm"
-      style={{
-        backgroundColor: dark ? "#111111" : "#FFFFFF",
-        borderWidth: dark ? 0 : 1,
-        borderColor: "#ECECEC",
-      }}
-    >
-      <MapPin size={16} color={dark ? "#FFFFFF" : Colors.common.BRAND} />
-    </View>
-  );
-}
-
-function JobCard({
-  job,
-  onDetails,
-  onApply,
-}: {
-  job: WorkerHomeJob;
-  onDetails: (job: WorkerHomeJob) => void;
-  onApply: (job: WorkerHomeJob) => void;
-}) {
-  const closingSoon =
-    new Date(job.closingAt).getTime() - Date.now() < 1000 * 60 * 60 * 30;
-
-  return (
-    <View className="mb-4 rounded-xl bg-white px-4 py-4">
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 flex-row items-center gap-3">
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-[#2F5BFF]">
-            <Briefcase size={20} color="#FFFFFF" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-base font-extrabold text-neutral-950">
-              {job.title}
-            </Text>
-            <Text className="text-xs font-medium text-neutral-500">
-              {job.company}
-            </Text>
-          </View>
-        </View>
-
-        <View className="items-end">
-          <Text className="text-sm font-extrabold text-neutral-950">
-            {formatPayRate(job.payRatePerDay)}
-          </Text>
-          <Text className="mt-1 text-[10px] font-medium text-neutral-500">
-            {job.duration}
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-4 flex-row flex-wrap gap-2">
-        <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
-          <Text className="text-[10px] font-semibold text-neutral-600">
-            {job.area} - {formatDistance(job.distanceMiles)}
-          </Text>
-        </View>
-        <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
-          <Text className="text-[10px] font-semibold text-neutral-600">
-            {formatNeeded(job.workersNeeded)}
-          </Text>
-        </View>
-        <View
-          className="rounded-full px-3 py-1.5"
-          style={{
-            backgroundColor: closingSoon ? "#FFF0E8" : "#F4F4F4",
-          }}
-        >
-          <Text
-            className="text-[10px] font-bold"
-            style={{
-              color: closingSoon ? Colors.common.BRAND : "#5A5A5A",
-            }}
-          >
-            {closingSoon ? "Closing soon" : job.startLabel}
-          </Text>
-        </View>
-      </View>
-
-      <View className="mt-4 flex-row items-center justify-between">
-        <Text className="text-[10px] font-medium text-neutral-400">
-          {job.posted}
-        </Text>
-        <View className="flex-row gap-2">
-          <TouchableOpacity
-            onPress={() => onDetails(job)}
-            className="rounded-xl bg-[#F5F3F3] px-4 py-2.5"
-          >
-            <Text className="text-xs font-bold text-neutral-700">Details</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onApply(job)}
-            className="rounded-xl px-5 py-2.5"
-            style={{ backgroundColor: "#111111" }}
-          >
-            <Text className="text-xs font-bold text-white">Apply</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 export default function WorkerHomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<WorkerHomeFilter>("All");
-  const [locationQuery, setLocationQuery] = useState(DEFAULT_HOME_LOCATION);
+  const [locationQuery, setLocationQuery] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
-  const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
-  const [dateRange, setDateRange] = useState<WorkerHomeDateRange>({});
+  const [page, setPage] = useState(1);
+  const [jobs, setJobs] = useState<WorkerHomeJob[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const apiFilter = getWorkerJobFilter(activeFilter);
+  const apiTrade = getWorkerJobTrade(selectedTrade);
+  const locationFilter = locationQuery.trim();
+  const jobsQuery = useGetAllJobsQuery({
+    page,
+    limit: 10,
+    ...(locationFilter ? { searchTerm: locationFilter } : {}),
+    ...(minRatePerDay !== 120
+      ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
+      : {}),
+    ...(apiFilter ? { filter: apiFilter } : {}),
+    ...(apiTrade ? { trade: apiTrade } : {}),
+    ...(maxDistanceMiles !== 50 ? { radius: maxDistanceMiles } : {}),
+  });
+  console.log("jobsQuery: ", jobsQuery);
   const isAuthenticated = useIsAuthenticated();
 
   const nativeMapComponents = getNativeMapComponents();
@@ -215,20 +79,30 @@ export default function WorkerHomeScreen() {
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
 
-  const filteredJobs = useMemo(
-    () =>
-      filterWorkerHomeJobs(WORKER_HOME_JOBS, {
-        trades: selectedTrade ? [selectedTrade] : [],
-        maxDistanceMiles,
-        minRatePerDay,
-        dateRange,
-        sortBy: activeFilter,
-      }),
-    [activeFilter, dateRange, maxDistanceMiles, minRatePerDay, selectedTrade],
-  );
-  const [selectedJobId, setSelectedJobId] = useState(
-    WORKER_HOME_JOBS[0]?.id ?? "",
-  );
+  const filteredJobs = jobs;
+  const [selectedJobId, setSelectedJobId] = useState("");
+
+  useEffect(() => {
+    setPage(1);
+    setJobs([]);
+  }, [activeFilter, locationQuery, maxDistanceMiles, minRatePerDay, selectedTrade]);
+
+  useEffect(() => {
+    if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
+    const nextJobs = getAllJobItems(jobsQuery.data).map((job, index) =>
+      mapApiJobToWorkerHomeJob(job, index),
+    );
+    setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
+    setHasNextPage(getAllJobsHasNextPage(jobsQuery.data, nextJobs.length, 20));
+  }, [jobsQuery.data, jobsQuery.isFetching, page]);
+
+  const refreshJobs = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setJobs([]);
+    await jobsQuery.refetch();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     if (!filteredJobs.length) {
@@ -244,8 +118,7 @@ export default function WorkerHomeScreen() {
 
   const featuredJob =
     filteredJobs.find((job) => job.id === selectedJobId) ??
-    filteredJobs[0] ??
-    WORKER_HOME_JOBS[0];
+    filteredJobs[0];
 
   const promptLoginIfNeeded = (returnTo: string) => {
     if (isAuthenticated) {
@@ -276,6 +149,15 @@ export default function WorkerHomeScreen() {
     router.push(detailsRoute as any);
   };
 
+  if(jobsQuery.isLoading) {
+    return (
+      <ScreenWrapper style={{ backgroundColor: "#F3F3F3" }}>
+        <ScreenHeader />
+        <ScreenLoader />
+      </ScreenWrapper>
+    )
+  }
+
   return (
     <ScreenWrapper style={{ backgroundColor: "#F3F3F3" }}>
       <ScreenHeader />
@@ -283,6 +165,7 @@ export default function WorkerHomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshJobs} />}
       >
         <View className="px-4 pb-8 pt-4">
           <View className="overflow-hidden rounded-lg bg-white">
@@ -344,7 +227,7 @@ export default function WorkerHomeScreen() {
                 <View className="mt-3 flex-row items-center justify-between">
                   <View className="rounded-full bg-[#111111] px-4 py-2">
                     <Text className="text-[10px] font-extrabold text-white">
-                      {WORKER_HOME_JOBS.length} live sites nearby
+                      {jobs.length} live sites nearby
                     </Text>
                   </View>
                 </View>
@@ -358,7 +241,7 @@ export default function WorkerHomeScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.92}
-                onPress={() => handleViewDetails(featuredJob)}
+                onPress={() => featuredJob && handleViewDetails(featuredJob)}
                 className="absolute bottom-4 left-4 right-4 z-10 rounded-[24px] bg-white px-4 py-4 shadow-lg"
               >
                 <View className="flex-row items-center justify-between gap-3">
@@ -368,19 +251,19 @@ export default function WorkerHomeScreen() {
                     </View>
                     <View className="flex-1">
                       <Text className="text-[18px] font-extrabold text-neutral-950">
-                        {featuredJob.title}
+                        {featuredJob?.title ?? "No jobs available"}
                       </Text>
                       <Text className="text-xs font-medium text-neutral-500">
-                        {featuredJob.company} -{" "}
-                        {formatDistance(featuredJob.distanceMiles)} -{" "}
-                        {featuredJob.startLabel}
+                        {featuredJob
+                          ? `${featuredJob.company} - ${formatDistance(featuredJob.distanceMiles)} - ${featuredJob.startLabel}`
+                          : "Check back soon for new jobs"}
                       </Text>
                     </View>
                   </View>
 
                   <View className="items-end">
                     <Text className="text-base font-extrabold text-neutral-950">
-                      {formatPayRate(featuredJob.payRatePerDay)}
+                      {featuredJob ? formatPayRate(featuredJob.payRatePerDay) : "--"}
                     </Text>
                     <Text className="mt-1 text-[10px] font-bold uppercase tracking-[0.8px] text-neutral-400">
                       Tap to view details
@@ -430,6 +313,13 @@ export default function WorkerHomeScreen() {
           </ScrollView>
 
           <View className="mt-5">
+            {jobsQuery.isError ? (
+              <View className="mb-4 rounded-xl bg-red-50 px-4 py-3">
+                <Text className="text-xs font-semibold text-red-700">
+                  Unable to load jobs. {String((jobsQuery.error as any)?.data?.message ?? "Please try again.")}
+                </Text>
+              </View>
+            ) : null}
             {filteredJobs.map((job) => (
               <JobCard
                 key={job.id}
@@ -438,6 +328,19 @@ export default function WorkerHomeScreen() {
                 onApply={handleApply}
               />
             ))}
+            {jobsQuery.isLoading ? (
+              <ActivityIndicator color={Colors.common.BRAND} />
+            ) : null}
+            {hasNextPage && !jobsQuery.isFetching ? (
+              <TouchableOpacity
+                onPress={() => setPage((current) => current + 1)}
+                className="mt-2 items-center rounded-xl bg-white px-4 py-3"
+              >
+                <Text className="text-xs font-bold text-neutral-900">
+                  Load more jobs
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </View>
       </ScrollView>
@@ -451,14 +354,11 @@ export default function WorkerHomeScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
         resultCount={filteredJobs.length}
         onReset={() => {
           setSelectedTrade("");
           setMaxDistanceMiles(5);
           setMinRatePerDay(120);
-          setDateRange({});
         }}
       />
     </ScreenWrapper>

@@ -6,13 +6,24 @@ import {
 } from "@/types";
 
 export const WORKER_HOME_TRADE_OPTIONS = [
-  "Labourer",
-  "Groundworker",
+  "Ground worker",
   "Carpenter",
-  "Scaffolder",
+  "Electrician",
+  "Plumber",
   "Bricklayer",
-  "Plant op",
+  "Painter",
+  "Scaffolder",
 ] as const;
+
+export const WORKER_HOME_TRADE_VALUES = {
+  "Ground worker": "GROUND_WORKER",
+  Carpenter: "CARPENTER",
+  Electrician: "ELECTRICIAN",
+  Plumber: "PLUMBER",
+  Bricklayer: "BRICKLAYER",
+  Painter: "PAINTER",
+  Scaffolder: "SCAFFOLDER",
+} as const;
 
 export const DEFAULT_HOME_LOCATION = "Shoreditch, E2";
 

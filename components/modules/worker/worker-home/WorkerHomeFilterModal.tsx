@@ -18,10 +18,6 @@ import { Colors } from "@/constants/Colors";
 import {
   WORKER_HOME_TRADE_OPTIONS,
 } from "@/constants/workerHome";
-import { WorkerHomeDateRange } from "@/types";
-import DateRangeCalendar, {
-  formatDateRange,
-} from "@/components/modules/common/DateRangeCalendar";
 
 type WorkerHomeFilterModalProps = {
   visible: boolean;
@@ -32,13 +28,11 @@ type WorkerHomeFilterModalProps = {
   onMaxDistanceMilesChange: (value: number) => void;
   minRatePerDay: number;
   onMinRatePerDayChange: (value: number) => void;
-  dateRange: WorkerHomeDateRange;
-  onDateRangeChange: (value: WorkerHomeDateRange) => void;
   resultCount: number;
   onReset: () => void;
 };
 
-type OpenPanel = "trade" | "dateRange" | null;
+type OpenPanel = "trade" | null;
 
 
 function FilterBody({
@@ -51,8 +45,6 @@ function FilterBody({
   onMaxDistanceMilesChange,
   minRatePerDay,
   onMinRatePerDayChange,
-  dateRange,
-  onDateRangeChange,
   resultCount,
 }: Omit<WorkerHomeFilterModalProps, "visible"> & { isWeb: boolean }) {
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
@@ -269,40 +261,6 @@ function FilterBody({
             </View>
           </View> */}
 
-          <View className="mt-6">
-            <Text className="mb-3 text-xs font-bold uppercase tracking-[1px] text-neutral-400">
-              Date range
-            </Text>
-            <TouchableOpacity
-              onPress={() =>
-                setOpenPanel((current) =>
-                  current === "dateRange" ? null : "dateRange",
-                )
-              }
-              className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
-            >
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-neutral-800">
-                  {formatDateRange(dateRange)}
-                </Text>
-                <Text className="mt-0.5 text-[10px] font-medium text-neutral-400">
-                  Use the calendar to pick a start and end date
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {openPanel === "dateRange" ? (
-              <View className="mt-2">
-                <DateRangeCalendar
-                  value={dateRange}
-                  onChange={onDateRangeChange}
-                  onClear={() => onDateRangeChange({})}
-                  summaryEmptyLabel="Select dates"
-                  helperText="Select one date or drag across multiple dates."
-                />
-              </View>
-            ) : null}
-          </View>
         </View>
       </ScrollView>
 
@@ -331,8 +289,6 @@ export default function WorkerHomeFilterModal({
   onMaxDistanceMilesChange,
   minRatePerDay,
   onMinRatePerDayChange,
-  dateRange,
-  onDateRangeChange,
   resultCount,
   onReset,
 }: WorkerHomeFilterModalProps) {
@@ -367,8 +323,6 @@ export default function WorkerHomeFilterModal({
           onMaxDistanceMilesChange={onMaxDistanceMilesChange}
           minRatePerDay={minRatePerDay}
           onMinRatePerDayChange={onMinRatePerDayChange}
-          dateRange={dateRange}
-          onDateRangeChange={onDateRangeChange}
           resultCount={resultCount}
         />
       </View>

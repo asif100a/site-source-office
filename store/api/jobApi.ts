@@ -22,22 +22,22 @@ export type JobPostPayload = {
   note: string;
 };
 
-type JobArgs = {
+export type JobArgs = {
   page: number;
   limit: number;
-  status: "POSTED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
-  searchTerm: string;
-  hourlyRate: number;
-  filter: "best-match" | "nearby" | "closing-soon";
-  trade:
+  status?: "POSTED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  searchTerm?: string;
+  hourlyRate?: number;
+  filter?: "best-match" | "nearby" | "closing-soon";
+  trade?:
     | "GROUND_WORKER"
     | "CARPENTER"
     | "ELECTRICIAN"
     | "PLUMBER"
-    | "RICKLAYER"
+    | "BRICKLAYER"
     | "PAINTER"
     | "SCAFFOLDER";
-  radius: number;
+  radius?: number;
 };
 
 const BASE_POINT = "/jobs";
@@ -82,5 +82,9 @@ export const jobApi = baseApi.injectEndpoints({
   overrideExisting: true,
 });
 
-export const { useCreateJobMutation, useGetMyJobsQuery, useGetSingleJobQuery } =
-  jobApi;
+export const {
+  useCreateJobMutation,
+  useGetAllJobsQuery,
+  useGetMyJobsQuery,
+  useGetSingleJobQuery,
+} = jobApi;

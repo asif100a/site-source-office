@@ -1,7 +1,13 @@
 import { WorkerHomeFilter } from "@/types";
 import { Colors } from "@/constants/Colors";
 import { MapPin } from "lucide-react-native";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Platform, Text, TouchableOpacity, View } from "react-native";
+
+type NativeMapComponents = {
+  MapView: typeof import("react-native-maps").default;
+  Marker: typeof import("react-native-maps").Marker;
+  ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
+};
 
 export function FilterChip({
   label,
@@ -49,4 +55,22 @@ export function MarkerBubble({
       <MapPin size={16} color={dark ? "#FFFFFF" : Colors.common.BRAND} />
     </View>
   );
+}
+
+export function getNativeMapComponents(): NativeMapComponents | null {
+  if (Platform.OS === "web") {
+    return null;
+  }
+
+  try {
+    const maps =
+      require("react-native-maps") as typeof import("react-native-maps");
+    return {
+      MapView: maps.default,
+      Marker: maps.Marker,
+      ProviderGoogle: maps.PROVIDER_GOOGLE,
+    };
+  } catch {
+    return null;
+  }
 }
