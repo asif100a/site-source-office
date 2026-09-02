@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
-import { ScrollView } from "react-native";
+import { RefreshControl, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import SearchAndFilterInput from "@/components/modules/common/job/SearchAndFilterInput";
 import MyJobToggleChips from "@/components/modules/worker/my-jobs/MyJobToggleChips";
-import JobsList from "@/components/modules/worker/my-jobs/JobsList";
+import AppliedJobsList from "@/components/modules/worker/my-jobs/AppliedJobsList";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenHeader from "@/components/layout/ScreenHeader";
+import { useGetAppliedJobsQuery } from "@/store/api/jobApplicationApi";
+import {
+  AppliedJobApplication,
+  getAppliedJobApplications,
+  getAppliedJobsHasNextPage,
+} from "@/utils/jobApplications";
 
 const tabOptions = ["My Offers", "Active Jobs", "Completed"];
 const tabByQueryParam: Record<string, string> = {
@@ -22,6 +28,28 @@ export default function MyJobsScreen() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<string>(tabOptions[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const appliedJobsQuery = useGetAppliedJobsQuery({ page, limit: 10 });
+
+  useEffect(() => {
+    if (!appliedJobsQuery.data || (page > 1 && appliedJobsQuery.isFetching)) {
+      return;
+    }
+
+    const nextApplications = getAppliedJobApplications(appliedJobsQuery.data);
+    setApplications((current) => {
+      if (page === 1) return nextApplications;
+
+      const existingIds = new Set(current.map((application) => application.id));
+      return [
+        ...current,
+        ...nextApplications.filter((application) => !existingIds.has(application.id)),
+      ];
+    });
+    setHasNextPage(getAppliedJobsHasNextPage(appliedJobsQuery.data, nextApplications.length, 10));
+  }, [appliedJobsQuery.data, appliedJobsQuery.isFetching, page]);
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
@@ -30,28 +58,17 @@ export default function MyJobsScreen() {
     }
   }, [tab]);
 
-  const handleOpenJobDetails = (id: string, status: string) => {
-    if (status === "offer") {
-      router.push(`/screens/employer-details/${id}` as any);
+  const handleOpenJobDetails = (id: string) => {
+    router.push(`/screens/job/${id}` as any);
+  };
+
+  const refreshAppliedJobs = async () => {
+    if (page !== 1) {
+      setPage(1);
       return;
     }
 
-    if (status === "completed") {
-      router.push({
-        pathname: "/screens/completed-jobs/[id]",
-        params: { id, origin: "worker", status },
-      });
-    } else if (status === "cancelled") {
-      router.push({
-        pathname: "/screens/cancelled-jobs/[id]",
-        params: { id, origin: "worker", status },
-      });
-    } else {
-      router.push({
-        pathname: "/screens/active-jobs/[id]",
-        params: { id, origin: "worker", status },
-      });
-    }
+    await appliedJobsQuery.refetch();
   };
 
   return (
@@ -63,6 +80,12 @@ export default function MyJobsScreen() {
         className="flex-1 px-5 pt-4"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={appliedJobsQuery.isFetching}
+            onRefresh={() => void refreshAppliedJobs()}
+          />
+        }
       >
         {/* Search / Filter Input */}
         <SearchAndFilterInput
@@ -79,9 +102,16 @@ export default function MyJobsScreen() {
         />
 
         {/* Jobs List */}
-        <JobsList
-          handleOpenJobDetails={handleOpenJobDetails}
+        <AppliedJobsList
+          applications={applications}
           activeTab={activeTab}
+          searchQuery={searchQuery}
+          onOpenJobDetails={handleOpenJobDetails}
+          isLoading={appliedJobsQuery.isLoading || (appliedJobsQuery.isFetching && applications.length === 0)}
+          isError={appliedJobsQuery.isError}
+          isFetching={appliedJobsQuery.isFetching}
+          hasNextPage={hasNextPage}
+          onLoadMore={() => setPage((current) => current + 1)}
         />
       </ScrollView>
     </ScreenWrapper>

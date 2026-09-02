@@ -73,7 +73,7 @@ export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
 export default function EmployerMyJobsScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<JobTab>("active");
+  const [activeTab, setActiveTab] = useState<JobTab>("upcoming");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<JobCard[]>([]);
@@ -136,10 +136,17 @@ export default function EmployerMyJobsScreen() {
 
   const refreshJobs = async () => {
     setRefreshing(true);
-    setPage(1);
-    setJobs([]);
-    await jobsQuery.refetch();
-    setRefreshing(false);
+
+    try {
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+
+      await jobsQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredJobs = jobs.filter((job) => {
@@ -370,7 +377,7 @@ export default function EmployerMyJobsScreen() {
             />
           )}
 
-          {filteredJobs.length === 0 && (
+          {filteredJobs.length === 0 && !jobsQuery.isFetching && (
             <View className="bg-white rounded-2xl border border-neutral-100 shadow-sm px-5 py-8 items-center">
               <Text className="text-neutral-900 text-base font-bold">
                 No jobs found

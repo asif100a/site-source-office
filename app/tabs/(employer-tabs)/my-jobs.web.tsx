@@ -229,10 +229,17 @@ export default function EmployerMyJobsScreenWeb() {
 
   const refreshJobs = async () => {
     setRefreshing(true);
-    setPage(1);
-    setJobs([]);
-    await jobsQuery.refetch();
-    setRefreshing(false);
+
+    try {
+      if (page !== 1) {
+        setPage(1);
+        return;
+      }
+
+      await jobsQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredJobs = useMemo(() => {
@@ -401,7 +408,7 @@ export default function EmployerMyJobsScreenWeb() {
                   />
                 )}
 
-                {filteredJobs.length === 0 && (
+                {filteredJobs.length === 0 && !jobsQuery.isFetching && (
                   <View className="items-center rounded-2xl border border-neutral-100 bg-white px-5 py-8 shadow-sm">
                     <Text className="text-base font-bold text-neutral-900">
                       No jobs found

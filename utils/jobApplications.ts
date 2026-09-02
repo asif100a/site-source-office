@@ -9,6 +9,7 @@ export type AppliedJobApplication = {
     trades?: string[];
     hourlyRate?: number;
     workersNeeded?: number;
+    status?: string;
     startDate?: string;
     endDate?: string;
     location?: {

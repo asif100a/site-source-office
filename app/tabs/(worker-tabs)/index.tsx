@@ -159,7 +159,7 @@ export default function WorkerHomeScreen() {
 
   if(jobsQuery.isLoading) {
     return (
-      <ScreenWrapper style={{ backgroundColor: "#F3F3F3" }}>
+      <ScreenWrapper>
         <ScreenHeader />
         <ScreenLoader />
       </ScreenWrapper>
@@ -167,7 +167,7 @@ export default function WorkerHomeScreen() {
   }
 
   return (
-    <ScreenWrapper style={{ backgroundColor: "#F3F3F3" }}>
+    <ScreenWrapper>
       <ScreenHeader />
 
       <ScrollView
