@@ -1,24 +1,9 @@
 import { tagTypes } from "../type/tagType";
 import { baseApi } from "./_base/baseApi";
 
-export type CreateSupportRequest = {
-  subject: string;
-  messages: string;
-};
-
-export type CreateSupportResponse = {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: null;
-};
-
 export const supportApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createSupportTicket: builder.mutation<
-      CreateSupportResponse,
-      CreateSupportRequest
-    >({
+    createSupportTicket: builder.mutation<any, any>({
       query: (data) => ({
         url: "/support",
         method: "POST",
@@ -26,8 +11,16 @@ export const supportApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.support],
     }),
+    getSupportTickets: builder.query<any, any>({
+      query: () => ({
+        url: "/support",
+        method: "GET",
+      }),
+      providesTags: [tagTypes.support],
+    }),
   }),
   overrideExisting: true,
 });
 
-export const { useCreateSupportTicketMutation } = supportApi;
+export const { useCreateSupportTicketMutation, useGetSupportTicketsQuery } =
+  supportApi;

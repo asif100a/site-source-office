@@ -2,7 +2,7 @@ import { baseApi } from "./_base/baseApi";
 
 const BASE_POINT = "/jobs";
 
-export const jobApi = baseApi.injectEndpoints({
+export const jobApplicationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createJobApplication: builder.mutation<any, any>({
       query: (id) => ({
@@ -44,4 +44,4 @@ export const {
  useGetJobApplicationQuery,
  useGetAppliedJobsQuery,
  useUpdatedJobApplicationStatusMutation
-} = jobApi;
+} = jobApplicationApi;
