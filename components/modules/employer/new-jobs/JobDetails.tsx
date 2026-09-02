@@ -45,6 +45,8 @@ export default function NewJobDetails({
   const { data, isLoading, isError, error, refetch, isFetching: isJobFetching } =
     useGetSingleJobQuery(jobId);
   const [applicationPage, setApplicationPage] = useState(1);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [updateJobApplicationStatus, { isLoading: isUpdating }] =
     useUpdatedJobApplicationStatusMutation();
   const applicationsQuery = useGetJobApplicationQuery(
@@ -64,6 +66,7 @@ export default function NewJobDetails({
     : false;
   const refreshing = isJobFetching || applicationsQuery.isFetching;
   console.log("error", isError, error);
+  console.log("Applications: ", applications);
 
   const refreshJob = async () => {
     await Promise.all([
@@ -76,6 +79,8 @@ export default function NewJobDetails({
     applicationId: string,
     status: "ACCEPTED" | "REJECTED",
   ) => {
+    setIsAccepting(status === "ACCEPTED");
+    setIsRejecting(status === "REJECTED");
     try {
       const response = await updateJobApplicationStatus({
         id: applicationId,
@@ -95,6 +100,9 @@ export default function NewJobDetails({
         text1: "Could not update application",
         text2: (statusError as any)?.data?.message ?? "Please try again.",
       });
+    }finally {
+      setIsAccepting(false);
+      setIsRejecting(false);
     }
   };
 
@@ -296,28 +304,28 @@ export default function NewJobDetails({
                   <View className="mt-4 flex-row gap-2">
                     <TouchableOpacity
                       disabled={
-                        isUpdating
+                        isUpdating || application.status === "ACCEPTED" || application.status === "REJECTED"
                       }
                       onPress={() =>
                         handleApplicationStatus(application.id, "ACCEPTED")
                       }
-                      className="flex-1 items-center rounded-xl bg-emerald-600 px-3 py-3"
+                      className="flex-1 items-center rounded-xl bg-emerald-600 disabled:bg-emerald-200 px-3 py-3"
                     >
                       <Text className="text-xs font-bold text-white">
-                        {isUpdating && application.status === 'ACCEPTED' ? 'Accepting...' :'Accept'}
+                        {isUpdating && isAccepting ? 'Accepting...' : application.status === "ACCEPTED" ? 'Accepted' : 'Accept'}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       disabled={
-                        isUpdating
+                         isUpdating || application.status === "ACCEPTED" || application.status === "REJECTED"
                       }
                       onPress={() =>
                         handleApplicationStatus(application.id, "REJECTED")
                       }
-                      className="flex-1 items-center rounded-xl bg-red-600 px-3 py-3"
+                      className="flex-1 items-center rounded-xl bg-red-600 disabled:bg-red-200 px-3 py-3"
                     >
                       <Text className="text-xs font-bold text-white">
-                        {isUpdating && application.status === 'REJECTED' ? 'Rejecting...' : 'Reject'}
+                        {isUpdating && isRejecting ? 'Rejecting...' : application.status === "REJECTED" ? 'Rejected' : 'Reject'}
                       </Text>
                     </TouchableOpacity>
                   </View>

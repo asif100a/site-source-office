@@ -76,7 +76,7 @@ export default function WorkerHomeScreen() {
     ...(apiTrade ? { trade: apiTrade } : {}),
     ...(maxDistanceMiles !== 5 ? { radius: maxDistanceMiles } : {}),
   });
-  console.log("jobsQuery: ", jobsQuery);
+  // console.log("jobsQuery: ", jobsQuery);
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
@@ -145,6 +145,7 @@ export default function WorkerHomeScreen() {
           text1: "Application submitted",
           text2: "Your application was sent successfully.",
         });
+        jobsQuery.refetch();
       })
       .catch((error) => {
         console.error("Job application error: ", error);
