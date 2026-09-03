@@ -39,6 +39,7 @@ export default function ActiveJobDetailScreen() {
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
     skip: !jobId,
   });
+  console.log("singleJobQuery from the active job screen: ", singleJobQuery);
 
   const [activeSubTab, setActiveSubTab] = useState<
     "schedule" | "timesheet" | "policy"
@@ -49,8 +50,9 @@ export default function ActiveJobDetailScreen() {
     "form" | "submitted"
   >("form");
 
-  const jobDetails = singleJobQuery.data
-    ? mapSingleJobToActiveJobDetails(getSingleJobData(singleJobQuery.data))
+  const singleJob = getSingleJobData(singleJobQuery.data);
+  const jobDetails = singleJob
+    ? mapSingleJobToActiveJobDetails(singleJob)
     : DEFAULT_ACTIVE_JOB_DETAILS;
 
   const openWorkerDetails = (workerId: string) => {
@@ -219,7 +221,9 @@ export default function ActiveJobDetailScreen() {
       <RequestApprovalModal
         showApprovalModal={showApprovalModal}
         setShowApprovalModal={setShowApprovalModal}
-        scheduleStartDate={jobDetails.startDate}
+        jobId={jobId ?? ""}
+        scheduleStartDate={singleJob?.startDate ?? jobDetails.startDate}
+        scheduleEndDate={singleJob?.endDate ?? jobDetails.endDate}
       />
     </ScreenWrapper>
   );

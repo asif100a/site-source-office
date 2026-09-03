@@ -21,53 +21,8 @@ import VerticalJobListings, {
 import VerticalOfferListings from "@/components/modules/worker/offers/VerticalOfferListings";
 import { Colors } from "@/constants/Colors";
 import { DesktopJobDetailsModal, FilterGroup } from "@/components/modules/worker/offers/_ui";
-
-const BROWSE_JOBS: WorkerJobItem[] = [
-  {
-    id: "3",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    payRate: "120",
-    tag: "Market Rate",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    time: "2 hours ago",
-  },
-  {
-    id: "4",
-    title: "Groundworker",
-    company: "Cityline Projects",
-    payRate: "95",
-    tag: "Urgent",
-    location: "Hackney - 3.4 mi away",
-    team: "1 foreman, 4 workers",
-    duration: "18 Jun - 2 weeks",
-    time: "1 hour ago",
-  },
-  {
-    id: "5",
-    title: "Graphic Designer",
-    company: "Creative Studios",
-    payRate: "90",
-    tag: "Competitive Rate",
-    location: "Soho - 2.5 mi away",
-    team: "1 designer",
-    duration: "15 Jun - 2 weeks",
-    time: "4 hours ago",
-  },
-  {
-    id: "6",
-    title: "Electrician",
-    company: "Northside Logistics",
-    payRate: "140",
-    tag: "High Pay",
-    location: "Camden - 6.1 mi away",
-    team: "1 supervisor, 2 electricians",
-    duration: "20 Jun - 1 month",
-    time: "Today",
-  },
-];
+import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import { getAllJobItems, mapApiJobToWorkerJobItem } from "@/utils/workerJobs";
 
 const OFFER_JOBS: WorkerJobItem[] = [
   {
@@ -132,6 +87,17 @@ export default function WorkerJobsWebScreen() {
   const [rateRange, setRateRange] = useState("Any rate");
   const [tradeSkill, setTradeSkill] = useState("All trades");
   const [radius, setRadius] = useState("Any distance");
+  const trimmedSearchQuery = searchQuery.trim();
+  const allJobsQuery = useGetAllJobsQuery({
+    page: 1,
+    limit: 10,
+    status: "POSTED",
+    ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
+  });
+  const browseJobs = useMemo(
+    () => getAllJobItems(allJobsQuery.data).map(mapApiJobToWorkerJobItem),
+    [allJobsQuery.data],
+  );
 
   const handleFocusSearch = () => {
     searchInputRef.current?.focus();
@@ -169,7 +135,7 @@ export default function WorkerJobsWebScreen() {
   };
 
   const visibleJobs = useMemo(() => {
-    const source = activeCategory === "browse" ? BROWSE_JOBS : OFFER_JOBS;
+    const source = activeCategory === "browse" ? browseJobs : OFFER_JOBS;
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return source.filter((job) => {
@@ -202,7 +168,7 @@ export default function WorkerJobsWebScreen() {
 
       return matchesQuery && matchesRate && matchesTrade && matchesRadius;
     });
-  }, [activeCategory, radius, rateRange, searchQuery, tradeSkill]);
+  }, [activeCategory, browseJobs, radius, rateRange, searchQuery, tradeSkill]);
 
   const resultLabel =
     activeCategory === "browse" ? "Local Jobs" : "Favourites";
@@ -358,7 +324,19 @@ export default function WorkerJobsWebScreen() {
                 </TouchableOpacity>
               </View>
 
-              {visibleJobs.length > 0 ? (
+              {activeCategory === "browse" && allJobsQuery.isLoading ? (
+                <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-10">
+                  <Text className="text-center text-sm font-bold text-neutral-500">
+                    Loading jobs...
+                  </Text>
+                </View>
+              ) : activeCategory === "browse" && allJobsQuery.isError ? (
+                <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-10">
+                  <Text className="text-center text-sm font-bold text-red-700">
+                    Unable to load jobs. Please try again.
+                  </Text>
+                </View>
+              ) : visibleJobs.length > 0 ? (
                 activeCategory === "browse" ? (
                   <VerticalJobListings
                     jobs={visibleJobs}

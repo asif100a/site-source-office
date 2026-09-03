@@ -9,6 +9,8 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import Toast from "react-native-toast-message";
+import { useCreateTimesheetMutation } from "@/store/api/timesheetApi";
 
 type WeekdayKey =
   | "Sunday"
@@ -22,12 +24,15 @@ type WeekdayKey =
 type WeekdayField = {
   key: WeekdayKey;
   date: Date;
+  dateKey: string;
 };
 
 type TimesheetWeekOption = {
   id: string;
+  week: number;
   label: string;
   startDate: Date;
+  endDate: Date;
 };
 
 const WEEKDAY_ORDER: WeekdayKey[] = [
@@ -39,8 +44,6 @@ const WEEKDAY_ORDER: WeekdayKey[] = [
   "Friday",
   "Saturday",
 ];
-
-const WEEKS_TO_SHOW = 3;
 
 const addDays = (date: Date, days: number) => {
   const nextDate = new Date(date);
@@ -55,7 +58,15 @@ const parseScheduleDate = (dateLabel: string) => {
     return parsedDate;
   }
 
-  return new Date();
+  return null;
+};
+
+const normalizeDate = (date: Date | null) => {
+  if (!date) return null;
+
+  const nextDate = new Date(date);
+  nextDate.setHours(0, 0, 0, 0);
+  return nextDate;
 };
 
 const getWeekStart = (date: Date) => {
@@ -93,85 +104,184 @@ const formatWeekSummary = (date: Date) => {
   return `${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
-const getTimesheetWeeks = (scheduleStartDate: string): TimesheetWeekOption[] => {
-  const scheduleDate = parseScheduleDate(scheduleStartDate);
-  const firstWeekStart = getWeekStart(scheduleDate);
+const getDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  return Array.from({ length: WEEKS_TO_SHOW }, (_, index) => {
-    const weekStartDate = addDays(firstWeekStart, index * 7);
-
-    return {
-      id: `week-${index + 1}`,
-      label: `Week ${index + 1} - ${formatWeekSummary(weekStartDate)}`,
-      startDate: weekStartDate,
-    };
-  });
+  return `${year}-${month}-${day}`;
 };
 
-const createWeekFields = (weekStartDate: Date): WeekdayField[] => {
-  const weekStart = getWeekStart(weekStartDate);
+const getTimesheetWeeks = (
+  scheduleStartDate: string,
+  scheduleEndDate: string,
+): TimesheetWeekOption[] => {
+  const scheduleStart = normalizeDate(parseScheduleDate(scheduleStartDate));
+  const scheduleEnd = normalizeDate(parseScheduleDate(scheduleEndDate));
 
-  return WEEKDAY_ORDER.map((key, index) => ({
-    key,
-    date: addDays(weekStart, index),
-  }));
+  if (!scheduleStart || !scheduleEnd || scheduleStart > scheduleEnd) {
+    return [];
+  }
+
+  const weeks: TimesheetWeekOption[] = [];
+  let cursor = getWeekStart(scheduleStart);
+  let weekNumber = 1;
+
+  while (cursor <= scheduleEnd) {
+    const calendarWeekStartDate = new Date(cursor);
+    const calendarWeekEndDate = addDays(calendarWeekStartDate, 6);
+    const weekStartDate =
+      calendarWeekStartDate < scheduleStart
+        ? new Date(scheduleStart)
+        : calendarWeekStartDate;
+    const weekEndDate =
+      calendarWeekEndDate > scheduleEnd
+        ? new Date(scheduleEnd)
+        : calendarWeekEndDate;
+
+    weeks.push({
+      id: `week-${weekNumber}`,
+      week: weekNumber,
+      label: `Week ${weekNumber} - ${formatWeekSummary(weekStartDate)}`,
+      startDate: weekStartDate,
+      endDate: weekEndDate,
+    });
+
+    cursor = addDays(cursor, 7);
+    weekNumber += 1;
+  }
+
+  return weeks;
+};
+
+const createWeekFields = (
+  weekStartDate: Date,
+  scheduleStartDate: string,
+  scheduleEndDate: string,
+): WeekdayField[] => {
+  const weekStart = getWeekStart(weekStartDate);
+  const scheduleStart = normalizeDate(parseScheduleDate(scheduleStartDate));
+  const scheduleEnd = normalizeDate(parseScheduleDate(scheduleEndDate));
+
+  if (!scheduleStart || !scheduleEnd) {
+    return [];
+  }
+
+  return WEEKDAY_ORDER.map((key, index) => {
+    const date = addDays(weekStart, index);
+
+    return {
+      key,
+      date,
+      dateKey: getDateKey(date),
+    };
+  }).filter((field) => field.date >= scheduleStart && field.date <= scheduleEnd);
 };
 
 export default function RequestApprovalModal({
   showApprovalModal,
   setShowApprovalModal,
+  jobId,
   scheduleStartDate,
+  scheduleEndDate,
 }: {
   showApprovalModal: boolean;
   setShowApprovalModal: React.Dispatch<React.SetStateAction<boolean>>;
+  jobId: string;
   scheduleStartDate: string;
+  scheduleEndDate: string;
 }) {
+  const [createTimesheet, { isLoading: isSubmitting }] =
+    useCreateTimesheetMutation();
   const weekOptions = useMemo(
-    () => getTimesheetWeeks(scheduleStartDate),
-    [scheduleStartDate],
+    () => getTimesheetWeeks(scheduleStartDate, scheduleEndDate),
+    [scheduleEndDate, scheduleStartDate],
   );
   const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const selectedWeek =
     weekOptions.find((week) => week.id === selectedWeekId) ?? weekOptions[0];
   const weekFields = useMemo(
-    () => createWeekFields(selectedWeek?.startDate ?? new Date()),
-    [selectedWeek],
+    () =>
+      selectedWeek
+        ? createWeekFields(
+            selectedWeek.startDate,
+            scheduleStartDate,
+            scheduleEndDate,
+          )
+        : [],
+    [scheduleEndDate, scheduleStartDate, selectedWeek],
   );
-  const [dailyHours, setDailyHours] = useState<Record<WeekdayKey, string>>({
-    Sunday: "",
-    Monday: "",
-    Tuesday: "",
-    Wednesday: "",
-    Thursday: "",
-    Friday: "",
-    Saturday: "",
-  });
+  const [dailyHours, setDailyHours] = useState<Record<string, string>>({});
 
   const totalHours = useMemo(
     () =>
-      Object.values(dailyHours).reduce((sum, value) => {
-        const hours = Number.parseFloat(value);
+      weekFields.reduce((sum, field) => {
+        const hours = Number.parseFloat(dailyHours[field.dateKey] ?? "");
         return sum + (Number.isFinite(hours) ? hours : 0);
       }, 0),
-    [dailyHours],
+    [dailyHours, weekFields],
   );
 
   useEffect(() => {
     if (showApprovalModal) {
       setSelectedWeekId(weekOptions[0]?.id);
       setIsWeekDropdownOpen(false);
-      setDailyHours({
-        Sunday: "",
-        Monday: "",
-        Tuesday: "",
-        Wednesday: "",
-        Thursday: "",
-        Friday: "",
-        Saturday: "",
-      });
+      setDailyHours({});
     }
   }, [showApprovalModal, weekOptions]);
+
+  const handleSubmit = async () => {
+    if (!jobId) {
+      Toast.show({ type: "error", text1: "Job is missing" });
+      return;
+    }
+
+    if (!selectedWeek || !weekFields.length) {
+      Toast.show({ type: "error", text1: "No timesheet week available" });
+      return;
+    }
+
+    const timeSheetDays = weekFields
+      .map((field) => {
+        const hours = Number.parseFloat(dailyHours[field.dateKey] ?? "");
+
+        return {
+          day: field.key.toUpperCase(),
+          hours: Number.isFinite(hours) ? hours : 0,
+        };
+      })
+      .filter((day) => day.hours > 0);
+
+    if (!timeSheetDays.length) {
+      Toast.show({ type: "error", text1: "Enter hours for at least one day" });
+      return;
+    }
+
+    try {
+      await createTimesheet({
+        id: jobId,
+        data: {
+          week: selectedWeek.week,
+          timeSheetDays,
+        },
+      }).unwrap();
+
+      Toast.show({
+        type: "success",
+        text1: "Timesheet submitted",
+        text2: "Your hours were sent for approval.",
+      });
+      setShowApprovalModal(false);
+    } catch (error: any) {
+      console.error("Error submitting timesheet:", error);
+      Toast.show({
+        type: "error",
+        text1: "Could not submit timesheet",
+        text2: error?.data?.message ?? error?.message ?? "Please try again.",
+      });
+    }
+  };
 
   return (
     <Modal
@@ -212,7 +322,7 @@ export default function RequestApprovalModal({
                     <View className="flex-row items-center justify-between gap-3">
                       <View className="flex-1">
                         <Text className="text-sm font-semibold text-neutral-950">
-                          {selectedWeek?.label}
+                          {selectedWeek?.label ?? "No week available"}
                         </Text>
                       <Text className="mt-1 text-[11px] font-medium text-neutral-400">
                         Fill in the hours worked for each day of the week.
@@ -239,6 +349,7 @@ export default function RequestApprovalModal({
                           key={week.id}
                           onPress={() => {
                             setSelectedWeekId(week.id);
+                            setDailyHours({});
                             setIsWeekDropdownOpen(false);
                           }}
                           className={`px-4 py-3 active:opacity-80 ${
@@ -281,11 +392,12 @@ export default function RequestApprovalModal({
                             placeholder="Enter hours"
                             placeholderTextColor="#A3A3A3"
                             keyboardType="numeric"
-                            value={dailyHours[field.key]}
+                            editable={!isSubmitting}
+                            value={dailyHours[field.dateKey] ?? ""}
                             onChangeText={(value) =>
                               setDailyHours((current) => ({
                                 ...current,
-                                [field.key]: value,
+                                [field.dateKey]: value,
                               }))
                             }
                           />
@@ -297,16 +409,27 @@ export default function RequestApprovalModal({
                     );
                   })}
                 </View>
+                <View className="mt-3 flex-row items-center justify-between rounded-2xl border border-neutral-200/70 bg-neutral-50 px-4 py-3">
+                  <Text className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                    Total hours
+                  </Text>
+                  <Text className="text-sm font-extrabold text-neutral-900">
+                    {totalHours.toFixed(1)} hrs
+                  </Text>
+                </View>
               </View>
             </View>
           </ScrollView>
 
           <TouchableOpacity
-            onPress={() => setShowApprovalModal(false)}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
             style={{ backgroundColor: Colors.common.GRAY_DARK }}
             className="mb-3 w-full items-center justify-center rounded-2xl py-4 active:opacity-90"
           >
-            <Text className="text-sm font-extrabold text-white">Submit</Text>
+            <Text className="text-sm font-extrabold text-white">
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

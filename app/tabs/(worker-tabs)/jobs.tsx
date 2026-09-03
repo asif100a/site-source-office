@@ -12,6 +12,8 @@ import VerticalJobListings, {
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import VerticalOfferListings from "@/components/modules/worker/offers/VerticalOfferListings";
 import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
+import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import { getAllJobItems, mapApiJobToWorkerJobItem } from "@/utils/workerJobs";
 
 export default function WorkerJobsTabLanding() {
   const router = useRouter();
@@ -20,6 +22,14 @@ export default function WorkerJobsTabLanding() {
   );
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
+  const allJobsQuery = useGetAllJobsQuery({
+    page: 1,
+    limit: 10,
+    status: "POSTED",
+  });
+  const browseJobs = getAllJobItems(allJobsQuery.data).map(
+    mapApiJobToWorkerJobItem,
+  );
 
   const handleOpenSearch = () => {
     router.push({
@@ -99,13 +109,34 @@ export default function WorkerJobsTabLanding() {
 
         {/* Vertical Job Listings */}
         {activeCategory === "browse" ? (
-          <VerticalJobListings
-            handleViewDetails={handleViewDetails}
-            handleApply={handleApply}
-            favoriteJobIds={favoriteJobIds}
-            onToggleFavorite={toggleFavoriteJob}
-            onOpenDetails={handleOpenDetailsModal}
-          />
+          allJobsQuery.isLoading ? (
+            <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
+              <Text className="text-center text-sm font-semibold text-neutral-500">
+                Loading jobs...
+              </Text>
+            </View>
+          ) : allJobsQuery.isError ? (
+            <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-8">
+              <Text className="text-center text-sm font-semibold text-red-700">
+                Unable to load jobs. Please try again.
+              </Text>
+            </View>
+          ) : browseJobs.length ? (
+            <VerticalJobListings
+              jobs={browseJobs}
+              handleViewDetails={handleViewDetails}
+              handleApply={handleApply}
+              favoriteJobIds={favoriteJobIds}
+              onToggleFavorite={toggleFavoriteJob}
+              onOpenDetails={handleOpenDetailsModal}
+            />
+          ) : (
+            <View className="rounded-2xl border border-dashed border-neutral-200 bg-white px-5 py-8">
+              <Text className="text-center text-sm font-semibold text-neutral-500">
+                No jobs found.
+              </Text>
+            </View>
+          )
         ) : (
           <VerticalOfferListings
             handleViewDetails={handleViewDetails}

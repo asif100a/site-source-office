@@ -1,4 +1,5 @@
 import type { WorkerHomeJob } from "@/types";
+import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
 
 export const getAllJobItems = (response: any): any[] => {
   const data = response?.data ?? response;
@@ -26,6 +27,19 @@ const formatDate = (value: unknown) => {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return "Date not set";
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+};
+
+const formatPostedDate = (value: unknown) => {
+  if (!value) return "Recently posted";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "Recently posted";
+  return `Posted ${formatDate(value)}`;
+};
+
+const formatDistance = (value: unknown) => {
+  const distance = Number(value);
+  if (!Number.isFinite(distance) || distance <= 0) return "";
+  return ` - ${distance.toFixed(distance < 10 ? 1 : 0)} mi away`;
 };
 
 const getHoursBetween = (startTime?: string, endTime?: string) => {
@@ -94,5 +108,29 @@ export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob
       top: 80 + (index % 4) * 48,
       left: `${25 + (index % 4) * 20}%`,
     },
+  };
+};
+
+export const mapApiJobToWorkerJobItem = (job: any): WorkerJobItem => {
+  const startDate = job.startDate ?? job.startAt;
+  const endDate = job.endDate ?? job.endAt;
+  const distance = job.distanceMiles ?? job.distance;
+
+  return {
+    id: String(job.id ?? job._id),
+    title: job.title ?? "Untitled job",
+    company:
+      job.employer?.name ??
+      job.employerAuth?.profile?.name ??
+      job.company ??
+      "Employer",
+    payRate: String(Number(job.hourlyRate ?? 0)),
+    tag: "Open",
+    location: `${job.location?.address ?? "Job site"}${formatDistance(distance)}`,
+    team: `${Number(job.workersNeeded ?? 0)} worker${
+      Number(job.workersNeeded ?? 0) === 1 ? "" : "s"
+    } needed`,
+    duration: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+    time: formatPostedDate(job.createdAt),
   };
 };
