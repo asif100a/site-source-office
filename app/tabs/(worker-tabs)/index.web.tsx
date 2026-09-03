@@ -31,8 +31,8 @@ import {
   MarkerBubble,
 } from "@/components/modules/worker/home/_ui";
 import WebJobCard from "@/components/modules/worker/home/WebJobCard";
-import { useGetAllJobsQuery, useGetWorkersMapsJobsQuery } from "@/store/api/jobApi";
-import { getAllJobsHasNextPage, getAllJobItems, mapApiJobToWorkerHomeJob } from "@/utils/workerJobs";
+import { useGetAllJobsQuery, useGetSingleJobQuery, useGetWorkersMapsJobsQuery } from "@/store/api/jobApi";
+import { getAllJobsHasNextPage, getAllJobItems, getSingleJobData, mapApiJobToWorkerHomeJob } from "@/utils/workerJobs";
 import { ActivityIndicator, RefreshControl } from "react-native";
 import { getWorkerJobFilter, getWorkerJobTrade } from "@/utils/workerJobFilters";
 import { useCreateJobApplicationMutation } from "@/store/api/jobApplicationApi";
@@ -82,6 +82,7 @@ export default function WorkerHomeScreen() {
   const [allJobs, setAllJobs] = useState<WorkerHomeJob[]>([]);
   const [mapJobs, setMapJobs] = useState<WorkerHomeJob[]>([]);
   const [allJobsHasNextPage, setAllJobsHasNextPage] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [workerLocation, setWorkerLocation] = useState<WorkerLocation | null>(
     null,
@@ -122,9 +123,12 @@ export default function WorkerHomeScreen() {
     status: "POSTED",
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
+  const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
+    skip: !selectedJobId,
+  });
   const filteredMapJobs = mapJobs;
   const visibleAllJobs = allJobs;
-  const [selectedJobId, setSelectedJobId] = useState("");
+  const selectedMapJob = filteredMapJobs.find((job) => job.id === selectedJobId);
   const mapRegion = useMemo(
     () => getWorkerMapRegion(workerLocation, filteredMapJobs),
     [filteredMapJobs, workerLocation],
@@ -211,7 +215,21 @@ export default function WorkerHomeScreen() {
     }
   }, [filteredMapJobs, selectedJobId]);
 
-  const featuredJob = filteredMapJobs.find((job) => job.id === selectedJobId);
+  const featuredJob = useMemo(() => {
+    const singleJob = getSingleJobData(selectedJobQuery.currentData);
+
+    if (!singleJob) {
+      return selectedMapJob;
+    }
+
+    const mappedJob = mapApiJobToWorkerHomeJob(singleJob, 0);
+
+    return {
+      ...mappedJob,
+      distanceMiles: selectedMapJob?.distanceMiles ?? mappedJob.distanceMiles,
+      mapPosition: selectedMapJob?.mapPosition ?? mappedJob.mapPosition,
+    };
+  }, [selectedJobQuery.currentData, selectedMapJob]);
 
   const handleViewDetails = (job: WorkerHomeJob) => {
     const detailsRoute = `/screens/job/${job.id}`;
@@ -338,7 +356,7 @@ export default function WorkerHomeScreen() {
                         </View>
                         <View className="flex-1">
                           <Text className="text-2xl font-bold text-neutral-950">
-                            {featuredJob.title}
+                            {selectedJobQuery.isFetching ? "Loading job..." : featuredJob.title}
                           </Text>
                           <Text className="text-base font-medium text-neutral-500">
                             {`${featuredJob.company} - ${formatDistance(featuredJob.distanceMiles)} - ${featuredJob.startLabel}`}
@@ -348,7 +366,7 @@ export default function WorkerHomeScreen() {
 
                       <View className="items-end">
                         <Text className="text-xl font-bold text-neutral-950">
-                          {formatPayRate(featuredJob.payRatePerDay)}
+                          {selectedJobQuery.isFetching ? "--" : formatPayRate(featuredJob.payRatePerDay)}
                         </Text>
                         <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
                           Tap to view details

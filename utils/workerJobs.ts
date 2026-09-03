@@ -6,6 +6,8 @@ export const getAllJobItems = (response: any): any[] => {
   return data?.jobs ?? data?.items ?? data?.results ?? data?.data ?? [];
 };
 
+export const getSingleJobData = (response: any) => response?.data ?? response;
+
 export const getAllJobsHasNextPage = (
   response: any,
   itemCount: number,
@@ -26,23 +28,65 @@ const formatDate = (value: unknown) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 };
 
+const getHoursBetween = (startTime?: string, endTime?: string) => {
+  if (!startTime || !endTime) return 0;
+
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+
+  if (
+    !Number.isFinite(startHour) ||
+    !Number.isFinite(startMinute) ||
+    !Number.isFinite(endHour) ||
+    !Number.isFinite(endMinute)
+  ) {
+    return 0;
+  }
+
+  const start = startHour * 60 + startMinute;
+  const end = endHour * 60 + endMinute;
+
+  return Math.max(0, (end - start) / 60);
+};
+
+const getDailyHours = (workingHours: any) => {
+  if (!Array.isArray(workingHours) || !workingHours.length) {
+    return 9;
+  }
+
+  const hours = workingHours
+    .map((schedule) => getHoursBetween(schedule?.startTime, schedule?.endTime))
+    .filter((value) => value > 0);
+
+  if (!hours.length) {
+    return 9;
+  }
+
+  return hours.reduce((total, value) => total + value, 0) / hours.length;
+};
+
 export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob => {
   const [longitude, latitude] = job.location?.coordinates ?? [0, 0];
   const startDate = job.startDate ?? job.startAt;
   const endDate = job.endDate ?? job.endAt;
   const hourlyRate = Number(job.hourlyRate ?? 0);
+  const distance = job.distanceMiles ?? job.distance;
 
   return {
     id: String(job.id ?? job._id),
     title: job.title ?? "Untitled job",
-    company: job.employerAuth?.profile?.name ?? job.company ?? "Employer",
+    company:
+      job.employer?.name ??
+      job.employerAuth?.profile?.name ??
+      job.company ??
+      "Employer",
     area: job.location?.address ?? "Nearby site",
-    distanceMiles: Number(job.distanceMiles ?? 0),
+    distanceMiles: Number(distance ?? 0),
     workersNeeded: Number(job.workersNeeded ?? 0),
     startLabel: startDate ? `Starts ${formatDate(startDate)}` : "Start date not set",
     startDate: String(startDate ?? ""),
     posted: job.createdAt ? `Posted ${formatDate(job.createdAt)}` : "Recently posted",
-    payRatePerDay: hourlyRate * 9,
+    payRatePerDay: Math.round(hourlyRate * getDailyHours(job.workingHours)),
     duration: `${formatDate(startDate)} - ${formatDate(endDate)}`,
     closingAt: String(endDate ?? ""),
     coordinate: { latitude: Number(latitude), longitude: Number(longitude) },
