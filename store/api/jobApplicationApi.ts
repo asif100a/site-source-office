@@ -1,4 +1,5 @@
 import { baseApi } from "./_base/baseApi";
+import { tagTypes } from "../type/tagType";
 
 const BASE_POINT = "/jobs";
 
@@ -9,6 +10,11 @@ export const jobApplicationApi = baseApi.injectEndpoints({
         url: BASE_POINT + `/${id}/apply`,
         method: "POST",
       }),
+      invalidatesTags: [
+        tagTypes.jobApplication,
+        tagTypes.job,
+        tagTypes.meta,
+      ],
     }),
     getJobApplication: builder.query<
       any,
@@ -19,6 +25,7 @@ export const jobApplicationApi = baseApi.injectEndpoints({
         method: "GET",
         params: { page, limit },
       }),
+      providesTags: [tagTypes.jobApplication],
     }),
     getAppliedJobs: builder.query<any, { page: number; limit: number }>({
       query: (args) => ({
@@ -26,6 +33,7 @@ export const jobApplicationApi = baseApi.injectEndpoints({
         method: "GET",
         params: args,
       }),
+      providesTags: [tagTypes.jobApplication],
     }),
     updatedJobApplicationStatus: builder.mutation<any, {id: string, status: "ACCEPTED" | "REJECTED"}>({
 
@@ -34,6 +42,11 @@ export const jobApplicationApi = baseApi.injectEndpoints({
         method: "PATCH",
         body: {status}
       }),
+      invalidatesTags: [
+        tagTypes.jobApplication,
+        tagTypes.job,
+        tagTypes.meta,
+      ],
     }),
   }),
   overrideExisting: true,

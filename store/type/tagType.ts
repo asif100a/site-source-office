@@ -10,6 +10,9 @@ export const tagTypes = {
   payment: "Payment",
   upload: "Upload",
   meta: "Meta",
+  job: "Job",
+  jobApplication: "JobApplication",
+  jobOffer: "JobOffer",
 };
 
 export const tagTypeList = Object.values(tagTypes);

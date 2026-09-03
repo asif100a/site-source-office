@@ -1,4 +1,4 @@
-import { PUSH_TOKEN_REGISTRATION_PATH } from "@/constants/env";
+import { PUSH_TOKEN_REGISTRATION_PATH } from "@/constants/env.config";
 import { tagTypes } from "../type/tagType";
 import { baseApi } from "./_base/baseApi";
 
@@ -156,7 +156,7 @@ export const notificationApi = baseApi.injectEndpoints({
       RegisterPushTokenRequest
     >({
       query: (body) => ({
-        url: PUSH_TOKEN_REGISTRATION_PATH,
+        url: PUSH_TOKEN_REGISTRATION_PATH || '/push-token',
         method: "POST",
         body,
       }),

@@ -1,4 +1,5 @@
 import { baseApi } from "./_base/baseApi";
+import { tagTypes } from "../type/tagType";
 
 export type JobPostPayload = {
   title: string;
@@ -50,6 +51,7 @@ export const jobApi = baseApi.injectEndpoints({
         method: "POST",
         body: payload,
       }),
+      invalidatesTags: [tagTypes.job, tagTypes.meta],
     }),
     getAllJobs: builder.query<any, JobArgs>({
       query: (args) => ({
@@ -57,6 +59,7 @@ export const jobApi = baseApi.injectEndpoints({
         method: "GET",
         params: args,
       }),
+      providesTags: [tagTypes.job],
     }),
     getMyJobs: builder.query<
       any,
@@ -71,12 +74,22 @@ export const jobApi = baseApi.injectEndpoints({
         method: "GET",
         params: args,
       }),
+      providesTags: [tagTypes.job],
     }),
     getSingleJob: builder.query<any, string>({
       query: (id) => ({
         url: BASE_POINT + `/${id}`,
         method: "GET",
       }),
+      providesTags: [tagTypes.job],
+    }),
+    getWorkersMapsJobs: builder.query<any, any>({
+      query: (args) => ({
+        url: BASE_POINT + `/available-map-jobs`,
+        method: "GET",
+        params: args,
+      }),
+      providesTags: [tagTypes.job],
     }),
   }),
   overrideExisting: true,
