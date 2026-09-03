@@ -5,9 +5,9 @@ import { WorkerHomeFilter } from "@/types";
 export function getWorkerJobFilter(
   filter: WorkerHomeFilter,
 ): JobArgs["filter"] {
-  if (filter === "Best match") return "best-match";
+  if (filter === "Best Match") return "best-match";
   if (filter === "Nearby") return "nearby";
-  if (filter === "Closing soon") return "closing-soon";
+  if (filter === "Closing Soon") return "closing-soon";
   return undefined;
 }
 

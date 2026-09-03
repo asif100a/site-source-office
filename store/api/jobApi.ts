@@ -39,6 +39,10 @@ export type JobArgs = {
     | "PAINTER"
     | "SCAFFOLDER";
   radius?: number;
+  latitude?: number;
+  longitude?: number;
+  startDateFrom?: string;
+  startDateTo?: string;
 };
 
 const BASE_POINT = "/jobs";
@@ -54,11 +58,14 @@ export const jobApi = baseApi.injectEndpoints({
       invalidatesTags: [tagTypes.job, tagTypes.meta],
     }),
     getAllJobs: builder.query<any, JobArgs>({
-      query: (args) => ({
+      query: (args) => {
+        console.log("args from the get all jobs api: ", args);
+        return ({
         url: BASE_POINT,
         method: "GET",
         params: args,
-      }),
+      })
+      },
       providesTags: [tagTypes.job],
     }),
     getMyJobs: builder.query<
@@ -83,7 +90,7 @@ export const jobApi = baseApi.injectEndpoints({
       }),
       providesTags: [tagTypes.job],
     }),
-    getWorkersMapsJobs: builder.query<any, any>({
+    getWorkersMapsJobs: builder.query<any, JobArgs>({
       query: (args) => ({
         url: BASE_POINT + `/available-map-jobs`,
         method: "GET",
@@ -100,4 +107,5 @@ export const {
   useGetAllJobsQuery,
   useGetMyJobsQuery,
   useGetSingleJobQuery,
+  useGetWorkersMapsJobsQuery,
 } = jobApi;

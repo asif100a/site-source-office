@@ -26,6 +26,12 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Site Source to use your location to show nearby jobs."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",

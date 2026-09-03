@@ -47,9 +47,9 @@ export type MapRegion = {
 
 export type WorkerHomeFilter =
   | "All"
-  | "Best match"
+  | "Best Match"
   | "Nearby"
-  | "Closing soon"
+  | "Closing Soon"
 
 export type WorkerHomeDateRange = {
   from?: Date;

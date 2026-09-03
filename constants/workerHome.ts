@@ -29,9 +29,9 @@ export const DEFAULT_HOME_LOCATION = "Shoreditch, E2";
 
 export const WORKER_HOME_FILTERS: WorkerHomeFilter[] = [
   "All",
-  "Best match",
+  "Best Match",
   "Nearby",
-  "Closing soon",
+  "Closing Soon",
 ];
 
 export const WORKER_HOME_JOBS: WorkerHomeJob[] = [
@@ -188,7 +188,7 @@ export function sortWorkerHomeJobs(
 ) {
   const nextJobs = [...jobs];
 
-  if (filter === "Best match") {
+  if (filter === "Best Match") {
     return nextJobs.sort((a, b) => {
       const scoreA = a.payRatePerDay - a.distanceMiles * 20;
       const scoreB = b.payRatePerDay - b.distanceMiles * 20;
@@ -197,7 +197,7 @@ export function sortWorkerHomeJobs(
     });
   }
 
-  if (filter === "Closing soon") {
+  if (filter === "Closing Soon") {
     return nextJobs.sort(
       (a, b) =>
         new Date(a.closingAt).getTime() - new Date(b.closingAt).getTime(),
