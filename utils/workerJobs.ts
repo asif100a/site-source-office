@@ -7,6 +7,17 @@ export const getAllJobItems = (response: any): any[] => {
   return data?.jobs ?? data?.items ?? data?.results ?? data?.data ?? [];
 };
 
+export const getBookmarkedJobItems = (response: any): any[] => {
+  const data = response?.data ?? response;
+  const bookmarks = data?.bookmarks ?? data?.items ?? data?.results ?? [];
+
+  if (!Array.isArray(bookmarks)) {
+    return [];
+  }
+
+  return bookmarks.map((bookmark) => bookmark?.job).filter(Boolean);
+};
+
 export const getSingleJobData = (response: any) => response?.data ?? response;
 
 export const getAllJobsHasNextPage = (

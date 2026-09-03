@@ -14,6 +14,8 @@ export const tagTypes = {
   jobApplication: "JobApplication",
   jobOffer: "JobOffer",
   timesheet: "Timesheet",
+  bookmark: "Bookmark",
+  worker: "Worker",
 };
 
 export const tagTypeList = Object.values(tagTypes);

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ChevronDown,
@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import CategoryToggles from "@/components/modules/worker/offers/CategoryToggles";
 import VerticalJobListings, {
@@ -23,6 +24,9 @@ import { Colors } from "@/constants/Colors";
 import { DesktopJobDetailsModal, FilterGroup } from "@/components/modules/worker/offers/_ui";
 import { useGetAllJobsQuery } from "@/store/api/jobApi";
 import { getAllJobItems, mapApiJobToWorkerJobItem } from "@/utils/workerJobs";
+import { useCreateJobBookmarkMutation } from "@/store/api/bookmarkApi";
+import { getWorkerLoginRoute } from "@/constants/authState";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 
 const OFFER_JOBS: WorkerJobItem[] = [
   {
@@ -82,6 +86,9 @@ export default function WorkerJobsWebScreen() {
   );
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
+  const [bookmarkingJobIds, setBookmarkingJobIds] = useState<string[]>([]);
+  const [createJobBookmark] = useCreateJobBookmarkMutation();
+  const isAuthenticated = useIsAuthenticated();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [rateRange, setRateRange] = useState("Any rate");
@@ -98,6 +105,14 @@ export default function WorkerJobsWebScreen() {
     () => getAllJobItems(allJobsQuery.data).map(mapApiJobToWorkerJobItem),
     [allJobsQuery.data],
   );
+
+  useEffect(() => {
+    const bookmarkedJobIds = getAllJobItems(allJobsQuery.data)
+      .filter((job) => Boolean(job?.hasBookmarked))
+      .map((job) => String(job.id ?? job._id));
+
+    setFavoriteJobIds(bookmarkedJobIds);
+  }, [allJobsQuery.data]);
 
   const handleFocusSearch = () => {
     searchInputRef.current?.focus();
@@ -127,11 +142,50 @@ export default function WorkerJobsWebScreen() {
   };
 
   const toggleFavoriteJob = (id: string) => {
+    if (!isAuthenticated) {
+      router.push(getWorkerLoginRoute(`/tabs/(worker-tabs)/jobs`) as any);
+      return;
+    }
+
+    if (bookmarkingJobIds.includes(id)) {
+      return;
+    }
+
+    const wasFavorite = favoriteJobIds.includes(id);
+
     setFavoriteJobIds((current) =>
       current.includes(id)
         ? current.filter((jobId) => jobId !== id)
         : [...current, id],
     );
+    setBookmarkingJobIds((current) => [...current, id]);
+
+    void createJobBookmark({ jobId: id })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: wasFavorite ? "Bookmark updated" : "Job bookmarked",
+        });
+        allJobsQuery.refetch();
+      })
+      .catch((error) => {
+        setFavoriteJobIds((current) =>
+          wasFavorite
+            ? Array.from(new Set([...current, id]))
+            : current.filter((jobId) => jobId !== id),
+        );
+        Toast.show({
+          type: "error",
+          text1: "Bookmark failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setBookmarkingJobIds((current) =>
+          current.filter((jobId) => jobId !== id),
+        );
+      });
   };
 
   const visibleJobs = useMemo(() => {

@@ -15,6 +15,7 @@ type LabourerCardProps = {
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
   onOpenDetails?: (job: any) => void;
+  isBookmarking?: boolean;
 };
 
 export default function LabourerCard({
@@ -24,6 +25,7 @@ export default function LabourerCard({
   isFavorite = false,
   onToggleFavorite,
   onOpenDetails,
+  isBookmarking = false,
 }: LabourerCardProps) {
   return (
     <TouchableOpacity
@@ -52,6 +54,7 @@ export default function LabourerCard({
               event.stopPropagation();
               onToggleFavorite?.(job.id);
             }}
+            disabled={isBookmarking}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={

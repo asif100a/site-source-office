@@ -11,8 +11,6 @@ export const metaApi = baseApi.injectEndpoints({
       }),
       providesTags: [
         tagTypes.meta,
-        tagTypes.order,
-        tagTypes.payment,
       ],
     }),
   }),
