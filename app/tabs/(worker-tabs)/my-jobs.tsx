@@ -61,6 +61,14 @@ export default function MyJobsScreen() {
   }, [tab]);
 
   const handleOpenJobDetails = (id: string, status: string) => {
+    if (activeTab === "Active Jobs") {
+      router.push({
+        pathname: "/screens/active-jobs/[id]",
+        params: { id, status: "active" },
+      } as any);
+      return;
+    }
+
     router.push({
       pathname: "/screens/job/[id]",
       params: { id, applicationStatus: status },

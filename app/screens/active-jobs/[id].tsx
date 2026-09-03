@@ -18,6 +18,12 @@ import WorkerWorkSummary from "@/components/modules/worker/active-jobs/WorkerWor
 import WorkerWorkPolicy from "@/components/modules/worker/active-jobs/WorkerWorkPolicy";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import RequestApprovalModal from "@/components/modules/worker/active-jobs/RequestApprovalModal";
+import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import { getSingleJobData } from "@/utils/workerJobs";
+import {
+  DEFAULT_ACTIVE_JOB_DETAILS,
+  mapSingleJobToActiveJobDetails,
+} from "@/utils/activeJobDetails";
 
 export default function ActiveJobDetailScreen() {
   const router = useRouter();
@@ -29,6 +35,10 @@ export default function ActiveJobDetailScreen() {
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
   const statusRoute = Array.isArray(status) ? status[0] : status;
   const employerJobStatus = statusRoute === "upcoming" ? "upcoming" : "active";
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
+    skip: !jobId,
+  });
 
   const [activeSubTab, setActiveSubTab] = useState<
     "schedule" | "timesheet" | "policy"
@@ -39,23 +49,9 @@ export default function ActiveJobDetailScreen() {
     "form" | "submitted"
   >("form");
 
-  const jobDetails = {
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    statusBadge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    contactName: "James Hartley",
-    contactTitle: "Director - Hartley Construction",
-    contactEmail: "olivia@untitledui.com",
-    contactPhone: "+44 723 456 7891",
-    startDate: "3 Jun 2026",
-    endDate: "28 Jun 2026",
-    hours: "07:30 - 17:00",
-    daysPerWeek: "5 Days",
-    nextInvoice: "Friday 7 Jun",
-  };
+  const jobDetails = singleJobQuery.data
+    ? mapSingleJobToActiveJobDetails(getSingleJobData(singleJobQuery.data))
+    : DEFAULT_ACTIVE_JOB_DETAILS;
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -126,6 +122,40 @@ export default function ActiveJobDetailScreen() {
             </TouchableOpacity>
           </View>
         )} */}
+      </ScreenWrapper>
+    );
+  }
+
+  if (singleJobQuery.isLoading) {
+    return (
+      <ScreenWrapper>
+        <CommonHeader
+          headerTitle={"Active Job"}
+          withBackButton
+          onPress={handleNavigateBack}
+        />
+        <View className="flex-1 items-center justify-center px-5">
+          <Text className="text-sm font-semibold text-neutral-500">
+            Loading active job...
+          </Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
+  if (singleJobQuery.isError) {
+    return (
+      <ScreenWrapper>
+        <CommonHeader
+          headerTitle={"Active Job"}
+          withBackButton
+          onPress={handleNavigateBack}
+        />
+        <View className="flex-1 items-center justify-center px-5">
+          <Text className="text-center text-sm font-semibold text-red-700">
+            Unable to load this active job. Please try again.
+          </Text>
+        </View>
       </ScreenWrapper>
     );
   }

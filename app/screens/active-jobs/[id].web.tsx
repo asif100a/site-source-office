@@ -24,6 +24,12 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
+import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import { getSingleJobData } from "@/utils/workerJobs";
+import {
+  DEFAULT_ACTIVE_JOB_DETAILS,
+  mapSingleJobToActiveJobDetails,
+} from "@/utils/activeJobDetails";
 
 type WorkerTab = "schedule" | "timesheet" | "policy";
 
@@ -45,23 +51,7 @@ type JobDetails = {
   nextInvoice: string;
 };
 
-const JOB_DETAILS: JobDetails = {
-  title: "Labourer",
-  company: "Tech Innovators Inc.",
-  statusBadge: "Day 3 of 20",
-  location: "Shoreditch - 1.2 mi away",
-  team: "2 developers, 1 designer",
-  duration: "12 Jun - 1 month",
-  contactName: "James Hartley",
-  contactTitle: "Director - Hartley Construction",
-  contactEmail: "olivia@untitledui.com",
-  contactPhone: "+44 723 456 7891",
-  startDate: "3 Jun 2026",
-  endDate: "28 Jun 2026",
-  hours: "07:30 - 17:00",
-  daysPerWeek: "5 Days",
-  nextInvoice: "Friday 7 Jun",
-};
+const JOB_DETAILS: JobDetails = DEFAULT_ACTIVE_JOB_DETAILS;
 
 const EMPLOYER_WORKERS = [
   { id: "1", name: "James Hartley", progress: "Day 3 of 20" },
@@ -174,9 +164,11 @@ function Hero({
 }
 
 function JobSummaryCard({
+  jobDetails = JOB_DETAILS,
   showRate,
   statusRoute,
 }: {
+  jobDetails?: JobDetails;
   showRate: boolean;
   statusRoute?: string;
 }) {
@@ -189,10 +181,10 @@ function JobSummaryCard({
           </View>
           <View>
             <Text className="text-base font-extrabold text-neutral-950">
-              {JOB_DETAILS.title}
+              {jobDetails.title}
             </Text>
             <Text className="text-xs font-semibold text-neutral-500">
-              {JOB_DETAILS.company}
+              {jobDetails.company}
             </Text>
           </View>
         </View>
@@ -215,7 +207,7 @@ function JobSummaryCard({
               style={{ color: Colors.common.BRAND }}
               className="text-[10px] font-bold"
             >
-              {statusRoute === "upcoming" ? "Upcoming" : JOB_DETAILS.statusBadge}
+              {statusRoute === "upcoming" ? "Upcoming" : jobDetails.statusBadge}
             </Text>
           </View>
         )}
@@ -224,15 +216,15 @@ function JobSummaryCard({
       <View className="gap-2.5 border-t border-neutral-100 pt-3">
         <View className="flex-row items-center gap-2">
           <MapPin size={14} color="#C81E1E" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.location}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.location}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Users size={14} color="#737373" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.team}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.team}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#737373" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.duration}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.duration}</Text>
         </View>
       </View>
     </View>
@@ -390,7 +382,11 @@ function ProjectScheduleCard() {
   );
 }
 
-function WorkerEmployerContactCard() {
+function WorkerEmployerContactCard({
+  jobDetails,
+}: {
+  jobDetails: JobDetails;
+}) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Employer" />
@@ -400,10 +396,10 @@ function WorkerEmployerContactCard() {
         </View>
         <View>
           <Text className="text-sm font-extrabold text-neutral-900">
-            {JOB_DETAILS.contactName}
+            {jobDetails.contactName}
           </Text>
           <Text className="text-xs font-semibold text-neutral-400">
-            {JOB_DETAILS.contactTitle}
+            {jobDetails.contactTitle}
           </Text>
         </View>
       </View>
@@ -412,13 +408,13 @@ function WorkerEmployerContactCard() {
         <View className="flex-row items-center gap-2.5">
           <Mail size={15} color="#858585" />
           <Text className="text-xs font-semibold text-neutral-500">
-            {JOB_DETAILS.contactEmail}
+            {jobDetails.contactEmail}
           </Text>
         </View>
         <View className="flex-row items-center gap-2.5">
           <Phone size={15} color="#858585" />
           <Text className="text-xs font-semibold text-neutral-500">
-            {JOB_DETAILS.contactPhone}
+            {jobDetails.contactPhone}
           </Text>
         </View>
       </View>
@@ -466,13 +462,17 @@ function WorkerTabs({
   );
 }
 
-function WorkerScheduleCard() {
+function WorkerScheduleCard({
+  jobDetails,
+}: {
+  jobDetails: JobDetails;
+}) {
   const rows = [
-    { label: "Start Date", value: JOB_DETAILS.startDate },
-    { label: "End date", value: JOB_DETAILS.endDate },
-    { label: "Hours", value: JOB_DETAILS.hours },
-    { label: "Per Week", value: JOB_DETAILS.daysPerWeek },
-    { label: "Next invoice", value: JOB_DETAILS.nextInvoice },
+    { label: "Start Date", value: jobDetails.startDate },
+    { label: "End date", value: jobDetails.endDate },
+    { label: "Hours", value: jobDetails.hours },
+    { label: "Per Week", value: jobDetails.daysPerWeek },
+    { label: "Next invoice", value: jobDetails.nextInvoice },
   ];
 
   return (
@@ -898,7 +898,7 @@ function ApprovalPanel({
 
 export default function ActiveJobDetailWebScreen() {
   const router = useRouter();
-  const { origin, status } = useLocalSearchParams<{
+  const { id, origin, status } = useLocalSearchParams<{
     id?: string;
     origin?: string;
     status?: string;
@@ -906,6 +906,13 @@ export default function ActiveJobDetailWebScreen() {
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
   const statusRoute = Array.isArray(status) ? status[0] : status;
   const employerJobStatus = statusRoute === "upcoming" ? "upcoming" : "active";
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
+    skip: !jobId,
+  });
+  const jobDetails = singleJobQuery.data
+    ? mapSingleJobToActiveJobDetails(getSingleJobData(singleJobQuery.data))
+    : JOB_DETAILS;
 
   const [activeSubTab, setActiveSubTab] = useState<WorkerTab>("schedule");
   const [showApprovalPanel, setShowApprovalPanel] = useState(false);
@@ -1019,6 +1026,26 @@ export default function ActiveJobDetailWebScreen() {
     );
   }
 
+  if (singleJobQuery.isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-neutral-50 px-6">
+        <Text className="text-sm font-semibold text-neutral-500">
+          Loading active job...
+        </Text>
+      </View>
+    );
+  }
+
+  if (singleJobQuery.isError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-neutral-50 px-6">
+        <Text className="text-center text-sm font-semibold text-red-700">
+          Unable to load this active job. Please try again.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-neutral-50">
       <ScrollView
@@ -1031,14 +1058,14 @@ export default function ActiveJobDetailWebScreen() {
             <Hero
               title="Active Job"
               subtitle="Track the current role, employer contact, schedule, timesheets, and policy from a web layout that keeps the mobile route untouched."
-              statusLabel={JOB_DETAILS.statusBadge}
+              statusLabel={jobDetails.statusBadge}
               onBack={handleNavigateBack}
             />
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-[1.45] gap-4">
-                <JobSummaryCard showRate={false} />
-                <WorkerEmployerContactCard />
+                <JobSummaryCard jobDetails={jobDetails} showRate={false} />
+                <WorkerEmployerContactCard jobDetails={jobDetails} />
                 <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
                   <SectionTitle title="Job workspace" />
                   <WorkerTabs
@@ -1047,7 +1074,9 @@ export default function ActiveJobDetailWebScreen() {
                   />
                 </View>
 
-                {activeSubTab === "schedule" ? <WorkerScheduleCard /> : null}
+                {activeSubTab === "schedule" ? (
+                  <WorkerScheduleCard jobDetails={jobDetails} />
+                ) : null}
                 {activeSubTab === "timesheet" ? (
                   <WorkerTimesheetCard
                     onShowApproval={() => setShowApprovalPanel(true)}
@@ -1059,7 +1088,7 @@ export default function ActiveJobDetailWebScreen() {
               <View className="flex-1 gap-4">
                 {showApprovalPanel ? (
                   <ApprovalPanel
-                    scheduleStartDate={JOB_DETAILS.startDate}
+                    scheduleStartDate={jobDetails.startDate}
                     onClose={() => setShowApprovalPanel(false)}
                   />
                 ) : (
