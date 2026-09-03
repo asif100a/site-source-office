@@ -5,10 +5,12 @@ import { MapPin, Minus, Plus } from 'lucide-react-native';
 
 export default function WebMapHeroCard({
   mapEmbedUrl,
+  siteAddress,
   onZoomIn,
   onZoomOut,
 }: {
   mapEmbedUrl: string;
+  siteAddress: string;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }) {
@@ -25,7 +27,7 @@ export default function WebMapHeroCard({
               <View className="flex-row items-center gap-2">
                 <View className="h-2.5 w-2.5 rounded-full bg-[#FF5A1F]" />
                 <Text className="text-sm font-semibold text-[#262626]">
-                  Shoreditch, E2
+                  {siteAddress || "Select site location"}
                 </Text>
               </View>
             </View>
@@ -78,7 +80,7 @@ export default function WebMapHeroCard({
                   Site location
                 </Text>
                 <Text className="mt-1 text-sm font-bold text-[#111111]">
-                  42 Hoxton Street, London N1
+                  {siteAddress || "Choose a location from search"}
                 </Text>
               </View>
             </View>
@@ -98,7 +100,7 @@ export default function WebMapHeroCard({
 
 function WebGoogleMap({ sourceUrl }: { sourceUrl: string }) {
   return React.createElement("iframe", {
-    title: "42 Hoxton Street map",
+    title: "Site location map",
     src: sourceUrl,
     loading: "lazy",
     referrerPolicy: "no-referrer-when-downgrade",

@@ -86,7 +86,7 @@ export default function WebPostJobSection({
   workersNeeded: number;
   setHourlyRate: Dispatch<SetStateAction<number>>;
   setWorkersNeeded: Dispatch<SetStateAction<number>>;
-  locationCoordinates: [number, number];
+  locationCoordinates: [number, number] | null;
   locationValid: boolean;
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
   isCreatingJob?: boolean;
@@ -161,7 +161,7 @@ export default function WebPostJobSection({
       Toast.show({ type: "error", text1: "Complete the job details first" });
       return;
     }
-    if (!locationValid) {
+    if (!locationValid || !locationCoordinates) {
       Toast.show({ type: "error", text1: "Select a valid site location" });
       return;
     }

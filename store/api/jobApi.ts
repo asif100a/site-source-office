@@ -59,12 +59,12 @@ export const jobApi = baseApi.injectEndpoints({
     }),
     getAllJobs: builder.query<any, JobArgs>({
       query: (args) => {
-        console.log("args from the get all jobs api: ", args);
-        return ({
-        url: BASE_POINT,
-        method: "GET",
-        params: args,
-      })
+        // console.log("args from the get all jobs api: ", args);
+        return {
+          url: BASE_POINT,
+          method: "GET",
+          params: args,
+        };
       },
       providesTags: [tagTypes.job],
     }),
@@ -91,11 +91,14 @@ export const jobApi = baseApi.injectEndpoints({
       providesTags: [tagTypes.job],
     }),
     getWorkersMapsJobs: builder.query<any, JobArgs>({
-      query: (args) => ({
-        url: BASE_POINT + `/available-map-jobs`,
-        method: "GET",
-        params: args,
-      }),
+      query: (args) => {
+         console.log("args from the get map jobs api: ", args);
+        return {
+          url: BASE_POINT + `/available-map-jobs`,
+          method: "GET",
+          params: args,
+        };
+      },
       providesTags: [tagTypes.job],
     }),
   }),

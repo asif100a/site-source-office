@@ -58,8 +58,11 @@ export default function EmployerHomeScreenWeb() {
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [siteRegion, setSiteRegion] = useState<MapRegion>(SITE_REGION);
-  const [siteAddress, setSiteAddress] = useState("42 Hoxton Street, London N1");
-  const [isLocationValid, setIsLocationValid] = useState(true);
+  const [siteAddress, setSiteAddress] = useState("");
+  const [siteCoordinates, setSiteCoordinates] = useState<
+    [number, number] | null
+  >(null);
+  const [isLocationValid, setIsLocationValid] = useState(false);
   const [mapZoom, setMapZoom] = useState(15);
   const scrollViewRef = useRef<ScrollView>(null);
   const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
@@ -124,6 +127,7 @@ export default function EmployerHomeScreenWeb() {
 
   const handleLocationChange = (details: AddressDetails) => {
     setSiteAddress(details.description);
+    setSiteCoordinates(details.coordinates);
     setSiteRegion((current) => ({
       ...current,
       longitude: details.coordinates[0],
@@ -152,6 +156,7 @@ export default function EmployerHomeScreenWeb() {
               <View className="flex-1 gap-6">
                 <WebMapHeroCard
                   mapEmbedUrl={mapEmbedUrl}
+                  siteAddress={siteAddress}
                   onZoomIn={() => adjustMapZoom("in")}
                   onZoomOut={() => adjustMapZoom("out")}
                 />
@@ -159,7 +164,12 @@ export default function EmployerHomeScreenWeb() {
                 <JobLocationPicker
                   address={siteAddress}
                   onChange={handleLocationChange}
-                  onValidityChange={setIsLocationValid}
+                  onValidityChange={(valid) => {
+                    setIsLocationValid(valid);
+                    if (!valid) {
+                      setSiteCoordinates(null);
+                    }
+                  }}
                 />
 
                 {/* Post Job Section */}
@@ -168,7 +178,7 @@ export default function EmployerHomeScreenWeb() {
                   workersNeeded={workersNeeded}
                   setHourlyRate={setHourlyRate}
                   setWorkersNeeded={setWorkersNeeded}
-                  locationCoordinates={[siteRegion.longitude, siteRegion.latitude]}
+                  locationCoordinates={siteCoordinates}
                   locationValid={isLocationValid}
                   onCreateJobPost={handleCreateJobPost}
                   isCreatingJob={isCreatingJob}
@@ -190,7 +200,7 @@ export default function EmployerHomeScreenWeb() {
                   <View className="mt-6 gap-3 rounded-[22px] bg-[#222222]/5 p-4">
                     <SummaryRow
                       label="Site"
-                      value={siteAddress}
+                      value={siteAddress || "No location selected"}
                     />
                     <SummaryRow label="Trade" value="Labour" />
                     <SummaryRow label="Dates" value="10 Aug - 21 Aug 2026" />

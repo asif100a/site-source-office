@@ -14,7 +14,6 @@ import {
   View,
 } from "react-native";
 import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
-
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
@@ -97,7 +96,7 @@ export default function WorkerHomeScreen() {
     },
     { skip: locationPermission === "checking" },
   );
-  // console.log("Map jobs query: ", mapJobsQuery);
+  console.log("Map jobs query: ", mapJobsQuery);
   // console.log("Map jobs Error: ", mapJobsQuery.error);
   const allJobsQuery = useGetAllJobsQuery({
     page: allJobsPage,
@@ -105,7 +104,7 @@ export default function WorkerHomeScreen() {
     status: "POSTED",
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
-  // console.log("All jobs query: ", allJobsQuery);
+  console.log("All jobs query: ", allJobsQuery);
   // console.log("All jobs Error: ", allJobsQuery.error);
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;

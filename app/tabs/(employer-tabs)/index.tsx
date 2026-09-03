@@ -57,13 +57,17 @@ export default function EmployerHomeScreen() {
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
   const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
-  const [siteAddress, setSiteAddress] = useState("42 Hoxton Street, London N1");
-  const [isLocationValid, setIsLocationValid] = useState(true);
+  const [siteAddress, setSiteAddress] = useState("");
+  const [siteCoordinates, setSiteCoordinates] = useState<
+    [number, number] | null
+  >(null);
+  const [isLocationValid, setIsLocationValid] = useState(false);
   const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
 
   const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
     try {
       console.log("Job post Payload: ", payload);
+      // return true;
       const response = await createJob(payload).unwrap();
       console.log("Create job response: ", response);
       if (response.success || (response?.data as any)?.success) {
@@ -103,6 +107,7 @@ export default function EmployerHomeScreen() {
 
   const handleLocationChange = (details: AddressDetails) => {
     setSiteAddress(details.description);
+    setSiteCoordinates(details.coordinates);
     setSiteRegion((current) => ({
       ...current,
       longitude: details.coordinates[0],
@@ -155,7 +160,7 @@ export default function EmployerHomeScreen() {
                   <View className="flex-row items-center gap-2">
                     <View className="h-2 w-2 rounded-full bg-[#FF5A1F]" />
                     <Text className="text-[13px] font-semibold text-[#262626]">
-                      Shoreditch, E2
+                      {siteAddress || "Select site location"}
                     </Text>
                   </View>
                 </View>
@@ -208,17 +213,17 @@ export default function EmployerHomeScreen() {
                       Site location
                     </Text>
                     <Text className="text-[13px] font-bold text-[#111111]">
-                      {siteAddress}
+                      {siteAddress || "Choose a location from search"}
                     </Text>
                   </View>
                 </View>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   activeOpacity={0.85}
                   className="rounded-2xl bg-[#F3F3F3] px-4 py-3"
                 >
                   <Text className="text-sm font-bold text-[#222222]">Edit</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
             </View>
           </View>
@@ -228,13 +233,18 @@ export default function EmployerHomeScreen() {
           <JobLocationPicker
             address={siteAddress}
             onChange={handleLocationChange}
-            onValidityChange={setIsLocationValid}
+            onValidityChange={(valid) => {
+              setIsLocationValid(valid);
+              if (!valid) {
+                setSiteCoordinates(null);
+              }
+            }}
           />
         </View>
 
         {/* POST A JOB */}
         <PostAJob
-          locationCoordinates={[siteRegion.longitude, siteRegion.latitude]}
+          locationCoordinates={siteCoordinates}
           locationValid={isLocationValid}
           onCreateJobPost={handleCreateJobPost}
           isCreatingJob={isCreatingJob}
