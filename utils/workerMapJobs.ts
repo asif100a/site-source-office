@@ -28,8 +28,8 @@ export const getWorkerMapRegion = (
 ): MapRegion => {
   if (isValidCoordinate(userLocation)) {
     return {
-      latitude: userLocation.latitude,
-      longitude: userLocation.longitude,
+      latitude: userLocation?.latitude ?? 0,
+      longitude: userLocation?.longitude ?? 0,
       latitudeDelta: NEARBY_DELTA,
       longitudeDelta: NEARBY_DELTA,
     };

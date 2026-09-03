@@ -13,6 +13,7 @@ export const tagTypes = {
   job: "Job",
   jobApplication: "JobApplication",
   jobOffer: "JobOffer",
+  timesheet: "Timesheet",
 };
 
 export const tagTypeList = Object.values(tagTypes);
