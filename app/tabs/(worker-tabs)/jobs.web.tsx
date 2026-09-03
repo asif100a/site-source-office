@@ -19,39 +19,20 @@ import CategoryToggles from "@/components/modules/worker/offers/CategoryToggles"
 import VerticalJobListings, {
   type WorkerJobItem,
 } from "@/components/modules/worker/offers/VerticalJobListings";
-import VerticalOfferListings from "@/components/modules/worker/offers/VerticalOfferListings";
 import { Colors } from "@/constants/Colors";
 import { DesktopJobDetailsModal, FilterGroup } from "@/components/modules/worker/offers/_ui";
 import { useGetAllJobsQuery } from "@/store/api/jobApi";
-import { getAllJobItems, mapApiJobToWorkerJobItem } from "@/utils/workerJobs";
-import { useCreateJobBookmarkMutation } from "@/store/api/bookmarkApi";
+import {
+  getAllJobItems,
+  getBookmarkedJobItems,
+  mapApiJobToWorkerJobItem,
+} from "@/utils/workerJobs";
+import {
+  useCreateJobBookmarkMutation,
+  useGetBookmarkJobsQuery,
+} from "@/store/api/bookmarkApi";
 import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
-
-const OFFER_JOBS: WorkerJobItem[] = [
-  {
-    id: "8",
-    title: "Painter",
-    company: "Studio Form",
-    payRate: "95",
-    tag: "Offer",
-    location: "Hackney - 0.8 mi away",
-    team: "2 painters, 1 coordinator",
-    duration: "14 Jun - 10 days",
-    time: "Just now",
-  },
-  {
-    id: "9",
-    title: "Event Setup Crew",
-    company: "Live Works",
-    payRate: "85",
-    tag: "Offer",
-    location: "Waterloo - 11 mi away",
-    team: "8 crew members",
-    duration: "15 Jun - weekend",
-    time: "35 minutes ago",
-  },
-];
 
 const RATE_OPTIONS = [
   "Any rate",
@@ -101,18 +82,39 @@ export default function WorkerJobsWebScreen() {
     status: "POSTED",
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
+  const bookmarkedJobsQuery = useGetBookmarkJobsQuery(
+    {
+      page: 1,
+      limit: 10,
+    },
+    { skip: !isAuthenticated },
+  );
   const browseJobs = useMemo(
     () => getAllJobItems(allJobsQuery.data).map(mapApiJobToWorkerJobItem),
     [allJobsQuery.data],
   );
+  const favoriteJobs = useMemo(
+    () =>
+      getBookmarkedJobItems(bookmarkedJobsQuery.data).map(
+        mapApiJobToWorkerJobItem,
+      ),
+    [bookmarkedJobsQuery.data],
+  );
 
   useEffect(() => {
-    const bookmarkedJobIds = getAllJobItems(allJobsQuery.data)
+    const bookmarkedJobIdsFromAllJobs = getAllJobItems(allJobsQuery.data)
       .filter((job) => Boolean(job?.hasBookmarked))
       .map((job) => String(job.id ?? job._id));
+    const bookmarkedJobIdsFromBookmarks = getBookmarkedJobItems(
+      bookmarkedJobsQuery.data,
+    ).map((job) => String(job.id ?? job._id));
 
-    setFavoriteJobIds(bookmarkedJobIds);
-  }, [allJobsQuery.data]);
+    setFavoriteJobIds(
+      Array.from(
+        new Set([...bookmarkedJobIdsFromAllJobs, ...bookmarkedJobIdsFromBookmarks]),
+      ),
+    );
+  }, [allJobsQuery.data, bookmarkedJobsQuery.data]);
 
   const handleFocusSearch = () => {
     searchInputRef.current?.focus();
@@ -135,10 +137,6 @@ export default function WorkerJobsWebScreen() {
       pathname: "/auth",
       params: { role: "worker", step: "register_sso" },
     });
-  };
-
-  const handleAcceptOffer = (id: string) => {
-    console.log("Accepting offer:", id);
   };
 
   const toggleFavoriteJob = (id: string) => {
@@ -168,6 +166,7 @@ export default function WorkerJobsWebScreen() {
           text1: wasFavorite ? "Bookmark updated" : "Job bookmarked",
         });
         allJobsQuery.refetch();
+        bookmarkedJobsQuery.refetch();
       })
       .catch((error) => {
         setFavoriteJobIds((current) =>
@@ -189,7 +188,7 @@ export default function WorkerJobsWebScreen() {
   };
 
   const visibleJobs = useMemo(() => {
-    const source = activeCategory === "browse" ? browseJobs : OFFER_JOBS;
+    const source = activeCategory === "browse" ? browseJobs : favoriteJobs;
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return source.filter((job) => {
@@ -222,7 +221,15 @@ export default function WorkerJobsWebScreen() {
 
       return matchesQuery && matchesRate && matchesTrade && matchesRadius;
     });
-  }, [activeCategory, browseJobs, radius, rateRange, searchQuery, tradeSkill]);
+  }, [
+    activeCategory,
+    browseJobs,
+    favoriteJobs,
+    radius,
+    rateRange,
+    searchQuery,
+    tradeSkill,
+  ]);
 
   const resultLabel =
     activeCategory === "browse" ? "Local Jobs" : "Favourites";
@@ -390,6 +397,38 @@ export default function WorkerJobsWebScreen() {
                     Unable to load jobs. Please try again.
                   </Text>
                 </View>
+              ) : activeCategory === "offers" && !isAuthenticated ? (
+                <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-10">
+                  <Text className="text-center text-sm font-bold text-neutral-500">
+                    Login to view your favourite jobs.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(
+                        getWorkerLoginRoute(`/tabs/(worker-tabs)/jobs`) as any,
+                      )
+                    }
+                    activeOpacity={0.9}
+                    style={{ backgroundColor: Colors.common.GRAY_DARK }}
+                    className="mt-4 self-center rounded-xl px-5 py-3"
+                  >
+                    <Text className="text-sm font-bold text-white">
+                      Go to Login
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : activeCategory === "offers" && bookmarkedJobsQuery.isLoading ? (
+                <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-10">
+                  <Text className="text-center text-sm font-bold text-neutral-500">
+                    Loading favourites...
+                  </Text>
+                </View>
+              ) : activeCategory === "offers" && bookmarkedJobsQuery.isError ? (
+                <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-10">
+                  <Text className="text-center text-sm font-bold text-red-700">
+                    Unable to load favourite jobs. Please try again.
+                  </Text>
+                </View>
               ) : visibleJobs.length > 0 ? (
                 activeCategory === "browse" ? (
                   <VerticalJobListings
@@ -401,10 +440,10 @@ export default function WorkerJobsWebScreen() {
                     onOpenDetails={handleOpenDetailsModal}
                   />
                 ) : (
-                  <VerticalOfferListings
-                    offers={visibleJobs}
+                  <VerticalJobListings
+                    jobs={visibleJobs}
                     handleViewDetails={handleViewDetails}
-                    handleAcceptOffer={handleAcceptOffer}
+                    handleApply={handleApply}
                     favoriteJobIds={favoriteJobIds}
                     onToggleFavorite={toggleFavoriteJob}
                     onOpenDetails={handleOpenDetailsModal}

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import Toast from "react-native-toast-message";
@@ -7,13 +13,12 @@ import { Colors } from "@/constants/Colors";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import TappableSearchTriggerBar from "@/components/modules/worker/offers/TappableSearchTriggerBar";
 import CategoryToggles from "@/components/modules/worker/offers/CategoryToggles";
-import VerticalJobListings, {
-  type WorkerJobItem,
-} from "@/components/modules/worker/offers/VerticalJobListings";
+import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
 import { useGetAllJobsQuery } from "@/store/api/jobApi";
 import {
+  getAllJobsHasNextPage,
   getAllJobItems,
   getBookmarkedJobItems,
   mapApiJobToWorkerJobItem,
@@ -24,6 +29,9 @@ import {
 } from "@/store/api/bookmarkApi";
 import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
+import LabourerCard from "@/components/card/LabourerCard";
+
+const JOBS_LIMIT = 10;
 
 export default function WorkerJobsTabLanding() {
   const router = useRouter();
@@ -33,26 +41,28 @@ export default function WorkerJobsTabLanding() {
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
   const [bookmarkingJobIds, setBookmarkingJobIds] = useState<string[]>([]);
+  const [browsePage, setBrowsePage] = useState(1);
+  const [favoritePage, setFavoritePage] = useState(1);
+  const [browseJobs, setBrowseJobs] = useState<WorkerJobItem[]>([]);
+  const [favoriteJobs, setFavoriteJobs] = useState<WorkerJobItem[]>([]);
+  const [browseHasNextPage, setBrowseHasNextPage] = useState(false);
+  const [favoriteHasNextPage, setFavoriteHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [createJobBookmark] = useCreateJobBookmarkMutation();
   const isAuthenticated = useIsAuthenticated();
   const allJobsQuery = useGetAllJobsQuery({
-    page: 1,
-    limit: 10,
+    page: browsePage,
+    limit: JOBS_LIMIT,
     status: "POSTED",
   });
   const bookmarkedJobsQuery = useGetBookmarkJobsQuery(
     {
-      page: 1,
-      limit: 10,
+      page: favoritePage,
+      limit: JOBS_LIMIT,
     },
     { skip: !isAuthenticated },
   );
-  const browseJobs = getAllJobItems(allJobsQuery.data).map(
-    mapApiJobToWorkerJobItem,
-  );
-  const favoriteJobs = getBookmarkedJobItems(bookmarkedJobsQuery.data).map(
-    mapApiJobToWorkerJobItem,
-  );
+
   const bookmarkedJobIdsFromAllJobs = getAllJobItems(allJobsQuery.data)
     .filter((job) => Boolean(job?.hasBookmarked))
     .map((job) => String(job.id ?? job._id));
@@ -63,10 +73,54 @@ export default function WorkerJobsTabLanding() {
   useEffect(() => {
     setFavoriteJobIds(
       Array.from(
-        new Set([...bookmarkedJobIdsFromAllJobs, ...bookmarkedJobIdsFromBookmarks]),
+        new Set([
+          ...bookmarkedJobIdsFromAllJobs,
+          ...bookmarkedJobIdsFromBookmarks,
+        ]),
       ),
     );
   }, [allJobsQuery.data, bookmarkedJobsQuery.data]);
+
+  useEffect(() => {
+    if (!allJobsQuery.data || (browsePage > 1 && allJobsQuery.isFetching)) {
+      return;
+    }
+
+    const nextJobs = getAllJobItems(allJobsQuery.data).map(
+      mapApiJobToWorkerJobItem,
+    );
+
+    setBrowseJobs((current) =>
+      browsePage === 1 ? nextJobs : [...current, ...nextJobs],
+    );
+    setBrowseHasNextPage(
+      getAllJobsHasNextPage(allJobsQuery.data, nextJobs.length, JOBS_LIMIT),
+    );
+  }, [allJobsQuery.data, allJobsQuery.isFetching, browsePage]);
+
+  useEffect(() => {
+    if (
+      !bookmarkedJobsQuery.data ||
+      (favoritePage > 1 && bookmarkedJobsQuery.isFetching)
+    ) {
+      return;
+    }
+
+    const nextJobs = getBookmarkedJobItems(bookmarkedJobsQuery.data).map(
+      mapApiJobToWorkerJobItem,
+    );
+
+    setFavoriteJobs((current) =>
+      favoritePage === 1 ? nextJobs : [...current, ...nextJobs],
+    );
+    setFavoriteHasNextPage(
+      getAllJobsHasNextPage(
+        bookmarkedJobsQuery.data,
+        nextJobs.length,
+        JOBS_LIMIT,
+      ),
+    );
+  }, [bookmarkedJobsQuery.data, bookmarkedJobsQuery.isFetching, favoritePage]);
 
   const handleOpenSearch = () => {
     router.push({
@@ -111,6 +165,9 @@ export default function WorkerJobsTabLanding() {
         ? current.filter((jobId) => jobId !== id)
         : [...current, id],
     );
+    if (activeCategory === "offers" && wasFavorite) {
+      setFavoriteJobs((current) => current.filter((job) => job.id !== id));
+    }
     setBookmarkingJobIds((current) => [...current, id]);
 
     void createJobBookmark({ jobId: id })
@@ -129,6 +186,17 @@ export default function WorkerJobsTabLanding() {
             ? Array.from(new Set([...current, id]))
             : current.filter((jobId) => jobId !== id),
         );
+        if (activeCategory === "offers" && wasFavorite) {
+          const restoredJob = browseJobs.find((job) => job.id === id);
+
+          if (restoredJob) {
+            setFavoriteJobs((current) =>
+              current.some((job) => job.id === id)
+                ? current
+                : [restoredJob, ...current],
+            );
+          }
+        }
         Toast.show({
           type: "error",
           text1: "Bookmark failed",
@@ -142,122 +210,180 @@ export default function WorkerJobsTabLanding() {
       });
   };
 
-  return (
-    <ScreenWrapper>
-      {/* Screen Header */}
-      <ScreenHeader />
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setBrowsePage(1);
+    setFavoritePage(1);
+    setBrowseJobs([]);
+    setFavoriteJobs([]);
 
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {/* Tappable Search Trigger Bar */}
-        <TappableSearchTriggerBar handleOpenSearch={handleOpenSearch} />
+    try {
+      const refetches = [allJobsQuery.refetch()];
 
-        {/* Category Toggles (navigates/triggers search view) */}
-        <CategoryToggles
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-        />
+      if (isAuthenticated) {
+        refetches.push(bookmarkedJobsQuery.refetch());
+      }
 
-        {/* Featured Listings Header */}
-        <View className="flex-row justify-between items-center mt-8 mb-4">
-          <Text className="flex-1 text-neutral-900 font-extrabold text-lg tracking-tight">
-            Local Jobs
+      await Promise.all(refetches);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (activeCategory === "browse") {
+      if (!browseHasNextPage || allJobsQuery.isFetching) return;
+      setBrowsePage((current) => current + 1);
+      return;
+    }
+
+    if (
+      !isAuthenticated ||
+      !favoriteHasNextPage ||
+      bookmarkedJobsQuery.isFetching
+    ) {
+      return;
+    }
+
+    setFavoritePage((current) => current + 1);
+  };
+
+  const listJobs = activeCategory === "browse" ? browseJobs : favoriteJobs;
+  const isInitialLoading =
+    activeCategory === "browse"
+      ? allJobsQuery.isLoading && browseJobs.length === 0
+      : bookmarkedJobsQuery.isLoading && favoriteJobs.length === 0;
+  const isLoadingMore =
+    activeCategory === "browse"
+      ? allJobsQuery.isFetching && browseJobs.length > 0
+      : bookmarkedJobsQuery.isFetching && favoriteJobs.length > 0;
+  const hasListError =
+    activeCategory === "browse"
+      ? allJobsQuery.isError
+      : bookmarkedJobsQuery.isError;
+
+  const renderListHeader = () => (
+    <View>
+      <TappableSearchTriggerBar handleOpenSearch={handleOpenSearch} />
+
+      <CategoryToggles
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+      />
+
+      <View className="mt-8 mb-4 flex-row items-center justify-between">
+        <Text className="flex-1 text-lg font-extrabold tracking-tight text-neutral-900">
+          {activeCategory === "browse" ? "Local Jobs" : "Favourite Jobs"}
+        </Text>
+        <TouchableOpacity
+          onPress={handleOpenSearch}
+          className="flex-row items-center"
+        >
+          <Text
+            style={{ color: Colors.common.BRAND }}
+            className="mr-1 text-xs font-extrabold"
+          >
+            See All
+          </Text>
+          <ChevronRight size={16} color={Colors.common.BRAND} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderEmptyState = () => {
+    if (isInitialLoading) {
+      return (
+        <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
+          <Text className="text-center text-sm font-semibold text-neutral-500">
+            {activeCategory === "browse"
+              ? "Loading jobs..."
+              : "Loading favourites..."}
+          </Text>
+        </View>
+      );
+    }
+
+    if (activeCategory === "offers" && !isAuthenticated) {
+      return (
+        <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
+          <Text className="text-center text-sm font-semibold text-neutral-500">
+            Login to view your favourite jobs.
           </Text>
           <TouchableOpacity
-            onPress={handleOpenSearch}
-            className="flex-row items-center"
+            onPress={() =>
+              router.push(getWorkerLoginRoute(`/tabs/(worker-tabs)/jobs`) as any)
+            }
+            style={{ backgroundColor: Colors.common.GRAY_DARK }}
+            className="mt-4 items-center justify-center rounded-xl px-4 py-3 active:opacity-90"
           >
-            <Text
-              style={{ color: Colors.common.BRAND }}
-              className="text-xs font-extrabold mr-1"
-            >
-              See All
+            <Text className="text-sm font-extrabold text-white">
+              Go to Login
             </Text>
-            <ChevronRight size={16} color={Colors.common.BRAND} />
           </TouchableOpacity>
         </View>
+      );
+    }
 
-        {/* Vertical Job Listings */}
-        {activeCategory === "browse" ? (
-          allJobsQuery.isLoading ? (
-            <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-neutral-500">
-                Loading jobs...
-              </Text>
-            </View>
-          ) : allJobsQuery.isError ? (
-            <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-red-700">
-                Unable to load jobs. Please try again.
-              </Text>
-            </View>
-          ) : browseJobs.length ? (
-            <VerticalJobListings
-              jobs={browseJobs}
-              handleViewDetails={handleViewDetails}
-              handleApply={handleApply}
-              favoriteJobIds={favoriteJobIds}
-              onToggleFavorite={toggleFavoriteJob}
-              onOpenDetails={handleOpenDetailsModal}
-            />
-          ) : (
-            <View className="rounded-2xl border border-dashed border-neutral-200 bg-white px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-neutral-500">
-                No jobs found.
-              </Text>
-            </View>
-          )
-        ) : (
-          !isAuthenticated ? (
-            <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-neutral-500">
-                Login to view your favourite jobs.
-              </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push(getWorkerLoginRoute(`/tabs/(worker-tabs)/jobs`) as any)
-                }
-                style={{ backgroundColor: Colors.common.GRAY_DARK }}
-                className="mt-4 items-center justify-center rounded-xl px-4 py-3 active:opacity-90"
-              >
-                <Text className="text-sm font-extrabold text-white">
-                  Go to Login
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : bookmarkedJobsQuery.isLoading ? (
-            <View className="rounded-2xl border border-neutral-100 bg-white px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-neutral-500">
-                Loading favourites...
-              </Text>
-            </View>
-          ) : bookmarkedJobsQuery.isError ? (
-            <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-red-700">
-                Unable to load favourite jobs. Please try again.
-              </Text>
-            </View>
-          ) : favoriteJobs.length ? (
-            <VerticalJobListings
-              jobs={favoriteJobs}
-              handleViewDetails={handleViewDetails}
-              handleApply={handleApply}
-              favoriteJobIds={favoriteJobIds}
-              onToggleFavorite={toggleFavoriteJob}
-              onOpenDetails={handleOpenDetailsModal}
-            />
-          ) : (
-            <View className="rounded-2xl border border-dashed border-neutral-200 bg-white px-5 py-8">
-              <Text className="text-center text-sm font-semibold text-neutral-500">
-                No favourite jobs found.
-              </Text>
-            </View>
-          )
+    if (hasListError) {
+      return (
+        <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-8">
+          <Text className="text-center text-sm font-semibold text-red-700">
+            {activeCategory === "browse"
+              ? "Unable to load jobs. Please try again."
+              : "Unable to load favourite jobs. Please try again."}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View className="rounded-2xl border border-dashed border-neutral-200 bg-white px-5 py-8">
+        <Text className="text-center text-sm font-semibold text-neutral-500">
+          {activeCategory === "browse"
+            ? "No jobs found."
+            : "No favourite jobs found."}
+        </Text>
+      </View>
+    );
+  };
+
+  return (
+    <ScreenWrapper>
+      <ScreenHeader />
+
+      <FlatList
+        className="flex-1 px-5"
+        data={listJobs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <LabourerCard
+            job={item}
+            handleViewDetails={handleViewDetails}
+            handleApply={handleApply}
+            isFavorite={favoriteJobIds.includes(item.id)}
+            onToggleFavorite={toggleFavoriteJob}
+            onOpenDetails={handleOpenDetailsModal}
+            isBookmarking={bookmarkingJobIds.includes(item.id)}
+          />
         )}
-      </ScrollView>
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View className="py-5">
+              <ActivityIndicator color={Colors.common.BRAND} />
+            </View>
+          ) : null
+        }
+        ItemSeparatorComponent={() => <View className="h-4" />}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.35}
+      />
       <JobDetailsBottomSheet
         job={selectedJob}
         visible={!!selectedJob}
