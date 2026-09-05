@@ -497,6 +497,17 @@ export default function WorkerHomeScreen() {
                 onApply={handleApply}
               />
             ))}
+            {!allJobsQuery.isFetching && !visibleAllJobs.length ? (
+              <View className="items-center rounded-xl bg-white px-5 py-8">
+                <Briefcase size={24} color={Colors.common.BRAND} />
+                <Text className="mt-3 text-base font-extrabold text-neutral-950">
+                  No jobs available
+                </Text>
+                <Text className="mt-1 text-center text-xs font-medium text-neutral-500">
+                  Try changing your filters or search location.
+                </Text>
+              </View>
+            ) : null}
             {allJobsQuery.isLoading ? (
               <ActivityIndicator color={Colors.common.BRAND} />
             ) : null}
