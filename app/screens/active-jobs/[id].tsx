@@ -20,10 +20,6 @@ import MessageSupportModal from "@/components/modules/common/MessageSupportModal
 import RequestApprovalModal from "@/components/modules/worker/active-jobs/RequestApprovalModal";
 import { useGetSingleJobQuery } from "@/store/api/jobApi";
 import { getSingleJobData } from "@/utils/workerJobs";
-import {
-  DEFAULT_ACTIVE_JOB_DETAILS,
-  mapSingleJobToActiveJobDetails,
-} from "@/utils/activeJobDetails";
 
 export default function ActiveJobDetailScreen() {
   const router = useRouter();
@@ -39,7 +35,6 @@ export default function ActiveJobDetailScreen() {
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
     skip: !jobId,
   });
-  console.log("singleJobQuery from the active job screen: ", singleJobQuery);
 
   const [activeSubTab, setActiveSubTab] = useState<
     "schedule" | "timesheet" | "policy"
@@ -50,10 +45,8 @@ export default function ActiveJobDetailScreen() {
     "form" | "submitted"
   >("form");
 
-  const singleJob = getSingleJobData(singleJobQuery.data);
-  const jobDetails = singleJob
-    ? mapSingleJobToActiveJobDetails(singleJob)
-    : DEFAULT_ACTIVE_JOB_DETAILS;
+  const jobDetails = getSingleJobData(singleJobQuery.data);
+  console.log("jobDetails from the active job details screen: ", jobDetails);
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -162,6 +155,23 @@ export default function ActiveJobDetailScreen() {
     );
   }
 
+  if (!jobDetails) {
+    return (
+      <ScreenWrapper>
+        <CommonHeader
+          headerTitle={"Active Job"}
+          withBackButton
+          onPress={handleNavigateBack}
+        />
+        <View className="flex-1 items-center justify-center px-5">
+          <Text className="text-center text-sm font-semibold text-neutral-500">
+            Active job details are not available.
+          </Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper>
       <CommonHeader
@@ -222,8 +232,7 @@ export default function ActiveJobDetailScreen() {
         showApprovalModal={showApprovalModal}
         setShowApprovalModal={setShowApprovalModal}
         jobId={jobId ?? ""}
-        scheduleStartDate={singleJob?.startDate ?? jobDetails.startDate}
-        scheduleEndDate={singleJob?.endDate ?? jobDetails.endDate}
+        timeSheetWeeks={jobDetails.timeSheetWeeks ?? []}
       />
     </ScreenWrapper>
   );

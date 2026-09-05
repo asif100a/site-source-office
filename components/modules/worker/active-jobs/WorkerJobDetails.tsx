@@ -3,7 +3,45 @@ import React from "react";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 
+const formatDate = (value: unknown) => {
+  if (!value) return "Date not set";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "Date not set";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+const formatStatus = (value: unknown) => {
+  const status = String(value ?? "Active").replace(/_/g, " ").toLowerCase();
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+const getCompanyName = (jobDetails: any) =>
+  jobDetails?.employerAuth?.profile?.name ??
+  jobDetails?.employer?.name ??
+  "Employer";
+
+const getLocationLabel = (jobDetails: any) => {
+  const coordinates = jobDetails?.location?.coordinates;
+
+  if (Array.isArray(coordinates) && coordinates.length === 2) {
+    return `${Number(coordinates[1]).toFixed(4)}, ${Number(
+      coordinates[0],
+    ).toFixed(4)}`;
+  }
+
+  return jobDetails?.location?.address ?? "Location not available";
+};
+
 export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
+  const workersNeeded = Number(jobDetails?.workersNeeded ?? 0);
+  const teamLabel = `${workersNeeded} worker${workersNeeded === 1 ? "" : "s"} needed`;
+  const durationLabel = `${formatDate(jobDetails?.startDate)} - ${formatDate(
+    jobDetails?.endDate,
+  )}`;
+
   return (
     <View className="bg-white rounded-xl p-5 border border-neutral-200/80 mb-6">
       <View className="flex-row justify-between items-start mb-4">
@@ -13,10 +51,10 @@ export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
           </View>
           <View>
             <Text className="text-neutral-950 font-extrabold text-base">
-              {jobDetails.title}
+              {jobDetails?.title ?? "Active job"}
             </Text>
             <Text className="text-neutral-500 text-xs font-semibold">
-              {jobDetails.company}
+              {getCompanyName(jobDetails)}
             </Text>
           </View>
         </View>
@@ -30,7 +68,7 @@ export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
               style={{ color: Colors.common.BRAND }}
               className="text-[10px] font-extrabold"
             >
-              {jobDetails.statusBadge}
+              {formatStatus(jobDetails?.status)}
             </Text>
           </View>
         </View>
@@ -40,19 +78,19 @@ export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
         <View className="flex-row items-center gap-2">
           <MapPin size={15} color="#858585" />
           <Text className="text-neutral-500 text-xs font-semibold">
-            {jobDetails.location}
+            {getLocationLabel(jobDetails)}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Users size={15} color="#858585" />
           <Text className="text-neutral-500 text-xs font-semibold">
-            {jobDetails.team}
+            {teamLabel}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Calendar size={15} color="#858585" />
           <Text className="text-neutral-500 text-xs font-semibold">
-            {jobDetails.duration}
+            {durationLabel}
           </Text>
         </View>
       </View>

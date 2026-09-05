@@ -3,9 +3,20 @@ import { baseApi } from "./_base/baseApi";
 
 const BASE_POINT = "/jobs";
 
+type CreateTimesheetPayload = {
+  week: number;
+  timeSheetDays: {
+    day: string;
+    hours: number;
+  }[];
+};
+
 export const timesheetApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createTimesheet: builder.mutation<any, { id: string; data: object }>({
+    createTimesheet: builder.mutation<
+      any,
+      { id: string; data: CreateTimesheetPayload }
+    >({
       query: ({ id, data }) => ({
         url: BASE_POINT + `/${id}/timesheets`,
         method: "POST",

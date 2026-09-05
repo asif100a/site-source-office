@@ -35,6 +35,21 @@ type TimesheetWeekOption = {
   endDate: Date;
 };
 
+type TimesheetPayload = {
+  week: number;
+  timeSheetDays: {
+    day: string;
+    hours: number;
+  }[];
+};
+
+type ServerTimesheetWeek = {
+  week: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+};
+
 const WEEKDAY_ORDER: WeekdayKey[] = [
   "Sunday",
   "Monday",
@@ -69,26 +84,6 @@ const normalizeDate = (date: Date | null) => {
   return nextDate;
 };
 
-const getWeekStart = (date: Date) => {
-  const startDate = new Date(date);
-  return addDays(startDate, -startDate.getDay());
-};
-
-const getOrdinalSuffix = (day: number) => {
-  if (day >= 11 && day <= 13) return "th";
-
-  switch (day % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
-};
-
 const formatWeekdayLabel = (date: Date) => {
   const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
   const dayNumber = date.getDate();
@@ -97,12 +92,14 @@ const formatWeekdayLabel = (date: Date) => {
   return `${dayName} - ${dayNumber} ${month}`;
 };
 
-const formatWeekSummary = (date: Date) => {
-  const day = date.getDate();
-  const month = date.toLocaleDateString("en-US", { month: "long" });
+const formatWeekOptionLabel = (week?: TimesheetWeekOption) => {
+  if (!week) return "No week available";
 
-  return `${day}${getOrdinalSuffix(day)} ${month}`;
+  return `${week.label} (${week.startDate.toLocaleDateString()} - ${week.endDate.toLocaleDateString()})`;
 };
+
+const getPayloadDay = (date: Date) =>
+  date.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
 
 const getDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -113,59 +110,34 @@ const getDateKey = (date: Date) => {
 };
 
 const getTimesheetWeeks = (
-  scheduleStartDate: string,
-  scheduleEndDate: string,
-): TimesheetWeekOption[] => {
-  const scheduleStart = normalizeDate(parseScheduleDate(scheduleStartDate));
-  const scheduleEnd = normalizeDate(parseScheduleDate(scheduleEndDate));
+  timeSheetWeeks: ServerTimesheetWeek[],
+): TimesheetWeekOption[] =>
+  timeSheetWeeks
+    .map((week) => {
+      const startDate = normalizeDate(parseScheduleDate(week.startDate));
+      const endDate = normalizeDate(parseScheduleDate(week.endDate));
 
-  if (!scheduleStart || !scheduleEnd || scheduleStart > scheduleEnd) {
-    return [];
-  }
+      if (!startDate || !endDate || startDate > endDate) {
+        return null;
+      }
 
-  const weeks: TimesheetWeekOption[] = [];
-  let cursor = getWeekStart(scheduleStart);
-  let weekNumber = 1;
-
-  while (cursor <= scheduleEnd) {
-    const calendarWeekStartDate = new Date(cursor);
-    const calendarWeekEndDate = addDays(calendarWeekStartDate, 6);
-    const weekStartDate =
-      calendarWeekStartDate < scheduleStart
-        ? new Date(scheduleStart)
-        : calendarWeekStartDate;
-    const weekEndDate =
-      calendarWeekEndDate > scheduleEnd
-        ? new Date(scheduleEnd)
-        : calendarWeekEndDate;
-
-    weeks.push({
-      id: `week-${weekNumber}`,
-      week: weekNumber,
-      label: `Week ${weekNumber} - ${formatWeekSummary(weekStartDate)}`,
-      startDate: weekStartDate,
-      endDate: weekEndDate,
-    });
-
-    cursor = addDays(cursor, 7);
-    weekNumber += 1;
-  }
-
-  return weeks;
-};
+      return {
+        id: week.label || `week-${week.week}`,
+        week: week.week,
+        label: week.label || `week-${week.week}`,
+        startDate,
+        endDate,
+      };
+    })
+    .filter(Boolean) as TimesheetWeekOption[];
 
 const createWeekFields = (
   weekStartDate: Date,
-  scheduleStartDate: string,
-  scheduleEndDate: string,
+  weekEndDate: Date,
 ): WeekdayField[] => {
-  const weekStart = getWeekStart(weekStartDate);
-  const scheduleStart = normalizeDate(parseScheduleDate(scheduleStartDate));
-  const scheduleEnd = normalizeDate(parseScheduleDate(scheduleEndDate));
-
-  if (!scheduleStart || !scheduleEnd) {
-    return [];
-  }
+  const weekStart = normalizeDate(weekStartDate);
+  const weekEnd = normalizeDate(weekEndDate);
+  if (!weekStart || !weekEnd) return [];
 
   return WEEKDAY_ORDER.map((key, index) => {
     const date = addDays(weekStart, index);
@@ -175,27 +147,25 @@ const createWeekFields = (
       date,
       dateKey: getDateKey(date),
     };
-  }).filter((field) => field.date >= scheduleStart && field.date <= scheduleEnd);
+  }).filter((field) => field.date >= weekStart && field.date <= weekEnd);
 };
 
 export default function RequestApprovalModal({
   showApprovalModal,
   setShowApprovalModal,
   jobId,
-  scheduleStartDate,
-  scheduleEndDate,
+  timeSheetWeeks,
 }: {
   showApprovalModal: boolean;
   setShowApprovalModal: React.Dispatch<React.SetStateAction<boolean>>;
   jobId: string;
-  scheduleStartDate: string;
-  scheduleEndDate: string;
+  timeSheetWeeks: ServerTimesheetWeek[];
 }) {
   const [createTimesheet, { isLoading: isSubmitting }] =
     useCreateTimesheetMutation();
   const weekOptions = useMemo(
-    () => getTimesheetWeeks(scheduleStartDate, scheduleEndDate),
-    [scheduleEndDate, scheduleStartDate],
+    () => getTimesheetWeeks(timeSheetWeeks),
+    [timeSheetWeeks],
   );
   const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id);
   const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
@@ -204,13 +174,9 @@ export default function RequestApprovalModal({
   const weekFields = useMemo(
     () =>
       selectedWeek
-        ? createWeekFields(
-            selectedWeek.startDate,
-            scheduleStartDate,
-            scheduleEndDate,
-          )
+        ? createWeekFields(selectedWeek.startDate, selectedWeek.endDate)
         : [],
-    [scheduleEndDate, scheduleStartDate, selectedWeek],
+    [selectedWeek],
   );
   const [dailyHours, setDailyHours] = useState<Record<string, string>>({});
 
@@ -242,29 +208,38 @@ export default function RequestApprovalModal({
       return;
     }
 
-    const timeSheetDays = weekFields
-      .map((field) => {
-        const hours = Number.parseFloat(dailyHours[field.dateKey] ?? "");
+    const missingField = weekFields.find((field) => {
+      const value = dailyHours[field.dateKey]?.trim();
+      const hours = Number.parseFloat(value ?? "");
 
-        return {
-          day: field.key.toUpperCase(),
-          hours: Number.isFinite(hours) ? hours : 0,
-        };
-      })
-      .filter((day) => day.hours > 0);
+      return !value || !Number.isFinite(hours) || hours <= 0;
+    });
 
-    if (!timeSheetDays.length) {
-      Toast.show({ type: "error", text1: "Enter hours for at least one day" });
+    if (missingField) {
+      Toast.show({
+        type: "error",
+        text1: "All weekdays are required",
+        text2: `Enter valid hours for ${getPayloadDay(missingField.date).toLowerCase()}.`,
+      });
       return;
     }
+
+    const timeSheetDays: TimesheetPayload["timeSheetDays"] = weekFields.map(
+      (field) => ({
+        day: getPayloadDay(field.date),
+        hours: Number.parseFloat(dailyHours[field.dateKey] ?? "0"),
+      }),
+    );
+
+    const payload: TimesheetPayload = {
+      week: selectedWeek.week,
+      timeSheetDays,
+    };
 
     try {
       await createTimesheet({
         id: jobId,
-        data: {
-          week: selectedWeek.week,
-          timeSheetDays,
-        },
+        data: payload,
       }).unwrap();
 
       Toast.show({
@@ -322,7 +297,7 @@ export default function RequestApprovalModal({
                     <View className="flex-row items-center justify-between gap-3">
                       <View className="flex-1">
                         <Text className="text-sm font-semibold text-neutral-950">
-                          {selectedWeek?.label ?? "No week available"}
+                          {formatWeekOptionLabel(selectedWeek)}
                         </Text>
                       <Text className="mt-1 text-[11px] font-medium text-neutral-400">
                         Fill in the hours worked for each day of the week.
@@ -363,7 +338,7 @@ export default function RequestApprovalModal({
                                 : "text-neutral-600"
                             }`}
                           >
-                            {week.label}
+                            {formatWeekOptionLabel(week)}
                           </Text>
                         </TouchableOpacity>
                       );

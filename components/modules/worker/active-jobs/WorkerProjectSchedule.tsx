@@ -1,6 +1,38 @@
 import { View, Text } from "react-native";
 import React from "react";
 
+const formatDate = (value: unknown) => {
+  if (!value) return "Not set";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "Not set";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getWorkingHoursLabel = (workingHours: any[]) => {
+  if (!Array.isArray(workingHours) || !workingHours.length) {
+    return "Not set";
+  }
+
+  const firstSchedule = workingHours[0];
+  if (!firstSchedule?.startTime || !firstSchedule?.endTime) {
+    return "Not set";
+  }
+
+  return `${firstSchedule.startTime} - ${firstSchedule.endTime}`;
+};
+
+const getDaysPerWeekLabel = (workingHours: any[]) => {
+  if (!Array.isArray(workingHours) || !workingHours.length) {
+    return "Not set";
+  }
+
+  return `${workingHours.length} ${workingHours.length === 1 ? "Day" : "Days"}`;
+};
+
 export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
   return (
     <View>
@@ -13,7 +45,7 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
             Start Date
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
-            {jobDetails.startDate}
+            {formatDate(jobDetails?.startDate)}
           </Text>
         </View>
         <View className="flex-row justify-between items-center p-4 border-b border-neutral-50">
@@ -21,13 +53,13 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
             End date
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
-            {jobDetails.endDate}
+            {formatDate(jobDetails?.endDate)}
           </Text>
         </View>
         <View className="flex-row justify-between items-center p-4 border-b border-neutral-50">
           <Text className="text-neutral-400 text-sm font-semibold">Hours</Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
-            {jobDetails.hours}
+            {getWorkingHoursLabel(jobDetails?.workingHours)}
           </Text>
         </View>
         <View className="flex-row justify-between items-center p-4 border-b border-neutral-50">
@@ -35,7 +67,7 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
             Per Week
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
-            {jobDetails.daysPerWeek}
+            {getDaysPerWeekLabel(jobDetails?.workingHours)}
           </Text>
         </View>
         <View className="flex-row justify-between items-center p-4">
@@ -43,7 +75,7 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
             Next invoice
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
-            {jobDetails.nextInvoice}
+            Not set
           </Text>
         </View>
       </View>
