@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  RefreshControl,
-  ScrollView,
+  FlatList,
   Text,
   TouchableOpacity,
   View,
@@ -30,7 +29,6 @@ import {
 } from "@/types";
 import { useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
-import ScreenLoader from "@/components/ui/screen-loader";
 
 const EMPTY_PROJECT_FORM: ProjectForm = {
   name: "",
@@ -79,12 +77,19 @@ export default function EmployerMyJobsScreen() {
   const [jobs, setJobs] = useState<JobCard[]>([]);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const requestedStatus = activeTab === "upcoming" ? "POSTED" : activeTab.toUpperCase() as "ACTIVE" | "COMPLETED";
+  const trimmedSearchQuery = searchQuery.trim();
+  const requestedStatus =
+    activeTab === "upcoming"
+      ? "POSTED"
+      : (activeTab.toUpperCase() as "ACTIVE" | "COMPLETED");
   const jobsQuery = useGetMyJobsQuery({
     page,
     limit: 10,
     status: requestedStatus,
+    ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
+  // console.log("requestedStatus from the my jobs screen: ", requestedStatus);
+  console.log("jobsQuery from the my jobs screen: ", jobsQuery);
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
@@ -115,24 +120,16 @@ export default function EmployerMyJobsScreen() {
   useEffect(() => {
     setPage(1);
     setJobs([]);
-  }, [activeTab]);
+  }, [activeTab, trimmedSearchQuery]);
 
-  console.log("jobsQuery: ", jobsQuery);
+  // console.log("jobsQuery: ", jobsQuery);
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
-    const nextJobs = getJobItems(jobsQuery.data)
-      .map(mapJobToCard)
-      .filter((job) =>
-        activeTab === "upcoming"
-          ? job.status === "upcoming"
-          : activeTab === "completed"
-            ? job.status === "completed" || job.status === "cancelled"
-            : job.status === "active",
-      );
+    const nextJobs = getJobItems(jobsQuery.data).map(mapJobToCard);
     setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
     setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
-  }, [activeTab, jobsQuery.data, page]);
+  }, [jobsQuery.data, page]);
 
   const refreshJobs = async () => {
     setRefreshing(true);
@@ -148,26 +145,6 @@ export default function EmployerMyJobsScreen() {
       setRefreshing(false);
     }
   };
-
-  const filteredJobs = jobs.filter((job) => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return true;
-    }
-
-    const haystack = [
-      job.title,
-      job.company,
-      job.location,
-      job.team,
-      job.duration,
-      job.badge,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(query);
-  });
 
   const openJobDetails = (jobId: string, status: JobStatus = activeTab) => {
     if (status === "upcoming") {
@@ -281,126 +258,98 @@ export default function EmployerMyJobsScreen() {
     resetProjectJobForm();
   };
 
-  if (jobsQuery.isLoading) {
+  const renderListHeader = () => (
+    <View>
+      <SearchAndFilterInput
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        shouldHideFilters
+      />
+
+      <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
+    </View>
+  );
+
+  const renderJobCard = ({ item }: { item: JobCard }) => {
+    if (activeTab === "upcoming") {
+      return (
+        <MyJobUpcomingCards job={item} openJobDetails={openJobDetails} />
+      );
+    }
+
+    if (activeTab === "active") {
+      return <MyJobActiveCards job={item} openJobDetails={openJobDetails} />;
+    }
+
     return (
-      <ScreenWrapper>
-        <ScreenHeader />
-        <ScreenLoader />
-      </ScreenWrapper>
+      <MyJobCompletedOrCanceledCards
+        job={item}
+        openJobDetails={openJobDetails}
+      />
     );
-  }
+  };
+
+  const renderEmptyState = () => {
+    if (jobsQuery.isFetching) {
+      return (
+        <View className="mt-6 items-center rounded-2xl border border-neutral-100 bg-white px-5 py-8 shadow-sm">
+          <ActivityIndicator color="#FF5500" />
+        </View>
+      );
+    }
+
+    return (
+      <View className="mt-6 bg-white rounded-2xl border border-neutral-100 shadow-sm px-5 py-8 items-center">
+        <Text className="text-neutral-900 text-base font-bold">
+          No jobs found
+        </Text>
+        <Text className="text-neutral-500 text-sm mt-2 text-center">
+          Try a different search or switch tabs.
+        </Text>
+      </View>
+    );
+  };
+
+  const renderListFooter = () => (
+    <View className="mt-4">
+      {hasNextPage && !jobsQuery.isFetching && (
+        <TouchableOpacity
+          onPress={() => setPage((current) => current + 1)}
+          className="items-center rounded-xl bg-white px-5 py-4"
+        >
+          <Text className="font-bold text-neutral-900">Load more jobs</Text>
+        </TouchableOpacity>
+      )}
+      {jobsQuery.isFetching && jobs.length > 0 ? (
+        <ActivityIndicator color="#FF5500" />
+      ) : null}
+    </View>
+  );
 
   return (
     <ScreenWrapper>
       <ScreenHeader />
 
-      <ScrollView
+      <FlatList
         className="flex-1 px-5 pt-5"
-        showsVerticalScrollIndicator={false}
+        data={jobs}
+        keyExtractor={(item) => item.id}
+        renderItem={renderJobCard}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderEmptyState}
+        ListFooterComponent={renderListFooter}
+        ItemSeparatorComponent={() => <View className="h-4" />}
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={refreshJobs} />
-        }
-      >
-        {/* Search & Filter Input */}
-        <SearchAndFilterInput
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          shouldHideFilters
-        />
-
-        {/* <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => setShowProjectModal(true)}
-          className="mb-6 flex-row items-center justify-center gap-2 rounded-2xl py-4"
-          style={{ backgroundColor: '#202020' }}
-        >
-          <Plus size={18} color="#FFFFFF" />
-          <Text className="text-sm font-extrabold text-white">
-            Start a project
-          </Text>
-        </TouchableOpacity>
-
-        <View className="mb-6">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-neutral-950 text-base font-extrabold">
-              My Projects
-            </Text>
-            <Text className="text-neutral-400 text-xs font-bold">
-              Company &gt; Project &gt; Job
-            </Text>
-          </View>
-
-          {projects.length > 0 ? (
-            <View className="gap-3">
-              {projects.map((project) => (
-                <ProjectSummaryCard
-                  key={project.id}
-                  project={project}
-                  onPress={() => openProjectDetail(project.id)}
-                />
-              ))}
-            </View>
-          ) : (
-            <View className="rounded-2xl border border-dashed border-neutral-200 bg-white px-5 py-5">
-              <Text className="text-sm font-bold text-neutral-900">
-                No projects yet
-              </Text>
-              <Text className="mt-1 text-xs leading-5 text-neutral-500">
-                Start a project first, then create job postings inside it.
-              </Text>
-            </View>
-          )}
-        </View> */}
-
-        <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        <View className="mt-6 gap-4">
-          {activeTab === "active" && (
-            <MyJobActiveCards
-              filteredJobs={filteredJobs}
-              openJobDetails={openJobDetails}
-            />
-          )}
-
-          {activeTab === "upcoming" && (
-            <MyJobUpcomingCards
-              filteredJobs={filteredJobs}
-              openJobDetails={openJobDetails}
-            />
-          )}
-
-          {activeTab === "completed" && (
-            <MyJobCompletedOrCanceledCards
-              filteredJobs={filteredJobs}
-              openJobDetails={openJobDetails}
-            />
-          )}
-
-          {filteredJobs.length === 0 && !jobsQuery.isFetching && (
-            <View className="bg-white rounded-2xl border border-neutral-100 shadow-sm px-5 py-8 items-center">
-              <Text className="text-neutral-900 text-base font-bold">
-                No jobs found
-              </Text>
-              <Text className="text-neutral-500 text-sm mt-2 text-center">
-                Try a different search or switch tabs.
-              </Text>
-            </View>
-          )}
-
-          {hasNextPage && !jobsQuery.isFetching && (
-            <TouchableOpacity
-              onPress={() => setPage((current) => current + 1)}
-              className="items-center rounded-xl bg-white px-5 py-4"
-            >
-              <Text className="font-bold text-neutral-900">Load more jobs</Text>
-            </TouchableOpacity>
-          )}
-          {jobsQuery.isFetching && jobs.length > 0 ? (
-            <ActivityIndicator color="#FF5500" />
-          ) : null}
-        </View>
-      </ScrollView>
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={refreshJobs}
+        onEndReached={() => {
+          if (hasNextPage && !jobsQuery.isFetching) {
+            setPage((current) => current + 1);
+          }
+        }}
+        onEndReachedThreshold={0.35}
+      />
 
       <StartProjectModal
         visible={showProjectModal}

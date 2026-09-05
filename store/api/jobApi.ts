@@ -73,7 +73,8 @@ export const jobApi = baseApi.injectEndpoints({
       {
         page: number;
         limit: number;
-        status: "POSTED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+        status: 'POSTED' | 'ACTIVE' | 'COMPLETED';
+        searchTerm?: string;
       }
     >({
       query: (args) => ({
