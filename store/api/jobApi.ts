@@ -59,7 +59,7 @@ export const jobApi = baseApi.injectEndpoints({
     }),
     getAllJobs: builder.query<any, JobArgs>({
       query: (args) => {
-        // console.log("args from the get all jobs api: ", args);
+        console.log("args from the get all jobs api: ", args);
         return {
           url: BASE_POINT,
           method: "GET",
@@ -92,7 +92,7 @@ export const jobApi = baseApi.injectEndpoints({
     }),
     getWorkersMapsJobs: builder.query<any, JobArgs>({
       query: (args) => {
-         console.log("args from the get map jobs api: ", args);
+        //  console.log("args from the get map jobs api: ", args);
         return {
           url: BASE_POINT + `/available-map-jobs`,
           method: "GET",

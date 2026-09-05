@@ -44,9 +44,15 @@ export default function NewJobDetails({
   isApplying?: boolean;
   onApply?: () => void;
 }) {
-  const { data, isLoading, isError, error, refetch, isFetching: isJobFetching } =
-    useGetSingleJobQuery(jobId);
-    console.log("data --------> ", data)
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching: isJobFetching,
+  } = useGetSingleJobQuery(jobId);
+  // console.log("data --------> ", data);
   const [applicationPage, setApplicationPage] = useState(1);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -90,7 +96,7 @@ export default function NewJobDetails({
         id: applicationId,
         status,
       }).unwrap();
-      console.log("updateJobApplicationStatus response:", response);
+      // console.log("updateJobApplicationStatus response:", response);
       await applicationsQuery.refetch();
       Toast.show({
         type: "success",
@@ -98,13 +104,13 @@ export default function NewJobDetails({
         text2: "The job request status was updated successfully.",
       });
     } catch (statusError) {
-      console.error("updateJobApplicationStatus error:", statusError);
+      // console.error("updateJobApplicationStatus error:", statusError);
       Toast.show({
         type: "error",
         text1: "Could not update application",
         text2: (statusError as any)?.data?.message ?? "Please try again.",
       });
-    }finally {
+    } finally {
       setIsAccepting(false);
       setIsRejecting(false);
     }
@@ -228,12 +234,16 @@ export default function NewJobDetails({
 
         {showApplyButton ? (
           <TouchableOpacity
-            disabled={isApplying || data?.isApplied}
+            disabled={isApplying || data?.data?.isApplied}
             onPress={onApply}
             className="mt-6 rounded-2xl bg-neutral-950 px-4 py-4 disabled:bg-neutral-400"
           >
             <Text className="text-center text-sm font-bold text-white">
-              {isApplying ? "Applying..." : "Apply for this job"}
+              {isApplying
+                ? "Applying..."
+                : data?.data?.isApplied
+                  ? "Applied"
+                  : "Apply for this job"}
             </Text>
           </TouchableOpacity>
         ) : null}
@@ -309,7 +319,9 @@ export default function NewJobDetails({
                   <View className="mt-4 flex-row gap-2">
                     <TouchableOpacity
                       disabled={
-                        isUpdating || application.status === "ACCEPTED" || application.status === "REJECTED"
+                        isUpdating ||
+                        application.status === "ACCEPTED" ||
+                        application.status === "REJECTED"
                       }
                       onPress={() =>
                         handleApplicationStatus(application.id, "ACCEPTED")
@@ -317,12 +329,18 @@ export default function NewJobDetails({
                       className="flex-1 items-center rounded-xl bg-emerald-600 disabled:bg-emerald-200 px-3 py-3"
                     >
                       <Text className="text-xs font-bold text-white">
-                        {isUpdating && isAccepting ? 'Accepting...' : application.status === "ACCEPTED" ? 'Accepted' : 'Accept'}
+                        {isUpdating && isAccepting
+                          ? "Accepting..."
+                          : application.status === "ACCEPTED"
+                            ? "Accepted"
+                            : "Accept"}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       disabled={
-                         isUpdating || application.status === "ACCEPTED" || application.status === "REJECTED"
+                        isUpdating ||
+                        application.status === "ACCEPTED" ||
+                        application.status === "REJECTED"
                       }
                       onPress={() =>
                         handleApplicationStatus(application.id, "REJECTED")
@@ -330,7 +348,11 @@ export default function NewJobDetails({
                       className="flex-1 items-center rounded-xl bg-red-600 disabled:bg-red-200 px-3 py-3"
                     >
                       <Text className="text-xs font-bold text-white">
-                        {isUpdating && isRejecting ? 'Rejecting...' : application.status === "REJECTED" ? 'Rejected' : 'Reject'}
+                        {isUpdating && isRejecting
+                          ? "Rejecting..."
+                          : application.status === "REJECTED"
+                            ? "Rejected"
+                            : "Reject"}
                       </Text>
                     </TouchableOpacity>
                   </View>

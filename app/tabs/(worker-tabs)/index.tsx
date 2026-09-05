@@ -84,6 +84,12 @@ export default function WorkerHomeScreen() {
         longitude: locationCoordinates[0],
       }
     : workerLocation;
+  const selectedSearchLocation = locationCoordinates
+    ? {
+        latitude: locationCoordinates[1],
+        longitude: locationCoordinates[0],
+      }
+    : null;
   const hasWorkerLocation = Boolean(selectedLocation);
 
   // Location search uses selected coordinates from Google Places, not text search.
@@ -110,15 +116,16 @@ export default function WorkerHomeScreen() {
     page: allJobsPage,
     limit: ALL_JOBS_LIMIT,
     status: "POSTED",
-    ...(selectedLocation
+    ...(selectedSearchLocation
       ? {
-          latitude: selectedLocation.latitude,
-          longitude: selectedLocation.longitude,
+          latitude: selectedSearchLocation.latitude,
+          longitude: selectedSearchLocation.longitude,
           radius: maxDistanceMiles,
         }
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
+  console.log("allJobsQuery: ", allJobsQuery);
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
     skip: !selectedJobId,
   });
