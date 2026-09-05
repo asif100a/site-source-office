@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { Platform, View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Location from "expo-location";
 import {
   Search,
   Map,
@@ -12,18 +13,35 @@ import { Colors } from "@/constants/Colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SearchEmployerListView from "@/components/modules/employer/search-employer/SearchEmployerListView";
 import SearchEmployerMapView from "@/components/modules/employer/search-employer/SearchEmployerMapView";
-import SearchEmployerFilterModal from "@/components/modules/employer/search-employer/SearchEmployerFilterModal";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
 import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
-import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import {
+  useGetAllJobsQuery,
+  useGetSingleJobQuery,
+  useGetWorkersMapsJobsQuery,
+} from "@/store/api/jobApi";
 import {
   getAllJobsHasNextPage,
   getAllJobItems,
+  getSingleJobData,
+  mapApiJobToWorkerHomeJob,
   mapApiJobToWorkerJobItem,
 } from "@/utils/workerJobs";
+import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
+import { getWorkerJobTrade } from "@/utils/workerJobFilters";
+import { getWorkerMapRegion } from "@/utils/workerMapJobs";
+import type { WorkerHomeJob } from "@/types";
 
 const JOBS_LIMIT = 10;
+const MAP_JOBS_LIMIT = 100;
+
+type WorkerLocation = {
+  latitude: number;
+  longitude: number;
+};
+
+type LocationPermissionState = "checking" | "granted" | "denied";
 
 type SearchJobItem = WorkerJobItem & {
   coordinate?: {
@@ -65,15 +83,25 @@ export default function WorkerSearchScreen() {
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<SearchJobItem[]>([]);
+  const [mapJobs, setMapJobs] = useState<WorkerHomeJob[]>([]);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedMapJobId, setSelectedMapJobId] = useState("");
+  const [workerLocation, setWorkerLocation] = useState<WorkerLocation | null>(
+    null,
+  );
+  const [locationPermission, setLocationPermission] =
+    useState<LocationPermissionState>("checking");
 
-  // Filter States
-  const [rateRange, setRateRange] = useState("");
+  // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
-  const [radius, setRadius] = useState("");
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
+  const [minRatePerDay, setMinRatePerDay] = useState(120);
   const trimmedSearchQuery = searchQuery.trim();
   const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
+  const apiTrade = getWorkerJobTrade(tradeSkill);
+  const hasWorkerLocation =
+    locationPermission === "granted" && Boolean(workerLocation);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -88,17 +116,159 @@ export default function WorkerSearchScreen() {
       page,
       limit: JOBS_LIMIT,
       status: "POSTED" as const,
+      ...(hasWorkerLocation
+        ? {
+            latitude: workerLocation!.latitude,
+            longitude: workerLocation!.longitude,
+            radius: maxDistanceMiles,
+          }
+        : {}),
       ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
+      ...(minRatePerDay !== 120
+        ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
+        : {}),
+      ...(apiTrade ? { trade: apiTrade } : {}),
     }),
-    [debouncedSearchQuery, page],
+    [
+      apiTrade,
+      debouncedSearchQuery,
+      hasWorkerLocation,
+      maxDistanceMiles,
+      minRatePerDay,
+      page,
+      workerLocation,
+    ],
   );
 
   const allJobsQuery = useGetAllJobsQuery(queryArgs);
 
+  // Map search follows the worker home screen and queries the map-specific jobs endpoint.
+  const mapJobsQuery = useGetWorkersMapsJobsQuery(
+    {
+      page: 1,
+      limit: MAP_JOBS_LIMIT,
+      status: "POSTED",
+      ...(hasWorkerLocation
+        ? {
+            latitude: workerLocation!.latitude,
+            longitude: workerLocation!.longitude,
+            radius: maxDistanceMiles,
+          }
+        : {}),
+      ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
+      ...(minRatePerDay !== 120
+        ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
+        : {}),
+      ...(apiTrade ? { trade: apiTrade } : {}),
+    },
+    { skip: locationPermission === "checking" },
+  );
+  const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
+    skip: !selectedMapJobId,
+  });
+  const selectedMapJob = mapJobs.find((job) => job.id === selectedMapJobId);
+  const mapRegion = useMemo(
+    () => getWorkerMapRegion(workerLocation, mapJobs),
+    [mapJobs, workerLocation],
+  );
+
+  const featuredMapJob = useMemo(() => {
+    const singleJob = getSingleJobData(selectedMapJobQuery.currentData);
+
+    if (!singleJob) {
+      return selectedMapJob ?? mapJobs[0];
+    }
+
+    const mappedJob = mapApiJobToWorkerHomeJob(singleJob, 0);
+
+    return {
+      ...mappedJob,
+      distanceMiles: selectedMapJob?.distanceMiles ?? mappedJob.distanceMiles,
+      mapPosition: selectedMapJob?.mapPosition ?? mappedJob.mapPosition,
+    };
+  }, [mapJobs, selectedMapJob, selectedMapJobQuery.currentData]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadWorkerLocation = async () => {
+      try {
+        // Web and native expose location permissions through different APIs.
+        if (Platform.OS === "web") {
+          if (typeof navigator === "undefined" || !navigator.geolocation) {
+            setLocationPermission("denied");
+            return;
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              if (!mounted) return;
+              setWorkerLocation({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+              setLocationPermission("granted");
+            },
+            (error) => {
+              console.error("Unable to get worker location:", error);
+              if (!mounted) return;
+              setWorkerLocation(null);
+              setLocationPermission("denied");
+            },
+            {
+              enableHighAccuracy: false,
+              maximumAge: 60_000,
+              timeout: 10_000,
+            },
+          );
+          return;
+        }
+
+        const permission = await Location.requestForegroundPermissionsAsync();
+
+        if (!mounted) return;
+
+        if (permission.status !== Location.PermissionStatus.GRANTED) {
+          setLocationPermission("denied");
+          setWorkerLocation(null);
+          return;
+        }
+
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        if (!mounted) return;
+
+        setWorkerLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setLocationPermission("granted");
+      } catch (error) {
+        console.error("Unable to get worker location:", error);
+        if (!mounted) return;
+        setWorkerLocation(null);
+        setLocationPermission("denied");
+      }
+    };
+
+    void loadWorkerLocation();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     setPage(1);
     setJobs([]);
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
+
+  useEffect(() => {
+    setMapJobs([]);
+    setSelectedMapJobId("");
+  }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
 
   useEffect(() => {
     if (
@@ -130,13 +300,38 @@ export default function WorkerSearchScreen() {
     page,
   ]);
 
+  useEffect(() => {
+    if (!mapJobsQuery.currentData && mapJobsQuery.isFetching) {
+      return;
+    }
+
+    const response = mapJobsQuery.currentData ?? mapJobsQuery.data;
+
+    if (!response) {
+      return;
+    }
+
+    const nextJobs = getAllJobItems(response).map((job, index) =>
+      mapApiJobToWorkerHomeJob(job, index),
+    );
+
+    // Keep map card/marker data in the same WorkerHomeJob shape used on the home map.
+    setMapJobs(nextJobs);
+  }, [mapJobsQuery.currentData, mapJobsQuery.data, mapJobsQuery.isFetching]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     setPage(1);
     setJobs([]);
 
     try {
-      await allJobsQuery.refetch();
+      const refetches = [allJobsQuery.refetch()];
+
+      if (locationPermission !== "checking") {
+        refetches.push(mapJobsQuery.refetch());
+      }
+
+      await Promise.all(refetches);
     } finally {
       setRefreshing(false);
     }
@@ -167,9 +362,19 @@ export default function WorkerSearchScreen() {
     jobs.length === 0 &&
     (isWaitingForSearch || allJobsQuery.isLoading || allJobsQuery.isFetching);
   const isLoadingMore = allJobsQuery.isFetching && jobs.length > 0;
+  const isMapLoading =
+    mapJobs.length === 0 &&
+    (isWaitingForSearch ||
+      locationPermission === "checking" ||
+      mapJobsQuery.isLoading ||
+      mapJobsQuery.isFetching);
 
   const handleViewDetails = (id: string) => {
     router.push(`/screens/employer-details/${id}`);
+  };
+
+  const handleViewMapJobDetails = (job: WorkerHomeJob) => {
+    router.push(`/screens/job/${job.id}` as any);
   };
 
   const handleOpenDetailsModal = (job: WorkerJobItem) => {
@@ -282,27 +487,36 @@ export default function WorkerSearchScreen() {
       ) : (
         /* MAP VIEW */
         <SearchEmployerMapView
-          jobs={jobs}
-          isLoading={isInitialLoading}
-          isError={allJobsQuery.isError}
-          handleViewDetails={handleViewDetails}
+          jobs={mapJobs}
+          featuredJob={featuredMapJob}
+          isLoading={isMapLoading}
+          isError={mapJobsQuery.isError}
+          isSelectedJobLoading={selectedMapJobQuery.isFetching}
+          mapRegion={mapRegion}
+          hasWorkerLocation={hasWorkerLocation}
+          handleViewDetails={handleViewMapJobDetails}
           searchQuery={searchQuery}
           onChangeSearchQuery={handleChangeSearchQuery}
           onOpenFilters={() => setShowFilters(true)}
-          onOpenDetails={handleOpenDetailsModal}
+          onSelectJob={setSelectedMapJobId}
         />
       )}
 
-      {/* FILTERS MODAL (Bottom Sheet style) */}
-      <SearchEmployerFilterModal
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-        rateRange={rateRange}
-        setRateRange={setRateRange}
-        radius={radius}
-        setRadius={setRadius}
-        tradeSkill={tradeSkill}
-        setTradeSkill={setTradeSkill}
+      <WorkerHomeFilterModal
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        selectedTrade={tradeSkill}
+        onSelectedTradeChange={setTradeSkill}
+        maxDistanceMiles={maxDistanceMiles}
+        onMaxDistanceMilesChange={setMaxDistanceMiles}
+        minRatePerDay={minRatePerDay}
+        onMinRatePerDayChange={setMinRatePerDay}
+        resultCount={mapJobs.length}
+        onReset={() => {
+          setTradeSkill("");
+          setMaxDistanceMiles(50);
+          setMinRatePerDay(120);
+        }}
       />
 
       <JobDetailsBottomSheet
