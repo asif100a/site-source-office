@@ -141,6 +141,7 @@ export default function WorkerSearchScreen() {
   );
 
   const allJobsQuery = useGetAllJobsQuery(queryArgs);
+  // console.log('allJobsQuery: ', allJobsQuery)
 
   // Map search follows the worker home screen and queries nearby jobs by coordinates.
   const mapJobsQuery = useGetWorkersMapsJobsQuery(
@@ -161,6 +162,7 @@ export default function WorkerSearchScreen() {
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
   );
+  console.log("mapJobsQuery: ", mapJobsQuery);
   const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
     skip: !selectedMapJobId,
   });

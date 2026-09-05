@@ -69,8 +69,8 @@ export default function NewJobDetails({
     : false;
   const refreshing = isJobFetching || applicationsQuery.isFetching;
   // console.log("error", isError, error);
-  console.log("applicationsQuery: ", applicationsQuery);
-  console.log("Applications: ", applications);
+  // console.log("applicationsQuery: ", applicationsQuery);
+  // console.log("Applications: ", applications);
 
   const refreshJob = async () => {
     await Promise.all([
@@ -228,7 +228,7 @@ export default function NewJobDetails({
 
         {showApplyButton ? (
           <TouchableOpacity
-            disabled={isApplying}
+            disabled={isApplying || data?.isApplied}
             onPress={onApply}
             className="mt-6 rounded-2xl bg-neutral-950 px-4 py-4 disabled:bg-neutral-400"
           >
