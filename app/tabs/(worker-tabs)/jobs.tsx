@@ -27,6 +27,7 @@ import {
   useCreateJobBookmarkMutation,
   useGetBookmarkJobsQuery,
 } from "@/store/api/bookmarkApi";
+import { useCreateJobApplicationMutation } from "@/store/api/jobApplicationApi";
 import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import LabourerCard from "@/components/card/LabourerCard";
@@ -47,8 +48,10 @@ export default function WorkerJobsTabLanding() {
   const [favoriteJobs, setFavoriteJobs] = useState<WorkerJobItem[]>([]);
   const [browseHasNextPage, setBrowseHasNextPage] = useState(false);
   const [favoriteHasNextPage, setFavoriteHasNextPage] = useState(false);
+  const [applyingJobIds, setApplyingJobIds] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [createJobBookmark] = useCreateJobBookmarkMutation();
+  const [createJobApplication, { isLoading: isApplying }] = useCreateJobApplicationMutation();
   const isAuthenticated = useIsAuthenticated();
   const allJobsQuery = useGetAllJobsQuery({
     page: browsePage,
@@ -141,11 +144,41 @@ export default function WorkerJobsTabLanding() {
     setSelectedJob(null);
   };
 
-  const handleApply = () => {
-    router.push({
-      pathname: "/auth",
-      params: { role: "worker", step: "register_sso" },
-    });
+  const handleApply = (id: string) => {
+    if (!isAuthenticated) {
+      router.push(getWorkerLoginRoute(`/screens/job/${id}`) as any);
+      return;
+    }
+
+    if (applyingJobIds.includes(id)) {
+      return;
+    }
+
+    setApplyingJobIds((current) => [...current, id]);
+
+    void createJobApplication(id)
+      .unwrap()
+      .then((response) => {
+        console.log("Job application response: ", response);
+        Toast.show({
+          type: "success",
+          text1: "Application submitted",
+          text2: "Your application was sent successfully.",
+        });
+        allJobsQuery.refetch();
+        bookmarkedJobsQuery.refetch();
+      })
+      .catch((error) => {
+        console.error("Job application error: ", error);
+        Toast.show({
+          type: "error",
+          text1: "Application failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setApplyingJobIds((current) => current.filter((jobId) => jobId !== id));
+      });
   };
 
   const toggleFavoriteJob = (id: string) => {
@@ -365,6 +398,7 @@ export default function WorkerJobsTabLanding() {
             onToggleFavorite={toggleFavoriteJob}
             onOpenDetails={handleOpenDetailsModal}
             isBookmarking={bookmarkingJobIds.includes(item.id)}
+            isApplying={applyingJobIds.includes(item.id)}
           />
         )}
         ListHeaderComponent={renderListHeader}
@@ -388,9 +422,19 @@ export default function WorkerJobsTabLanding() {
         job={selectedJob}
         visible={!!selectedJob}
         onClose={handleCloseDetailsModal}
+        isApplying={isApplying}
+        primaryActionLabel={
+          selectedJob && isApplying
+            ? "Applying..."
+            : "Apply Now"
+        }
         onPrimaryAction={() => {
+          if (!selectedJob) {
+            return;
+          }
+
+          handleApply(selectedJob.id);
           handleCloseDetailsModal();
-          handleApply();
         }}
       />
     </ScreenWrapper>

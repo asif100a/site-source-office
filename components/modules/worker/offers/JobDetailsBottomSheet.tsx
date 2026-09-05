@@ -26,6 +26,7 @@ type JobDetailsBottomSheetProps = {
   primaryActionLabel?: string;
   onClose: () => void;
   onPrimaryAction: () => void;
+  isApplying?: boolean;
 };
 
 function formatPayRate(payRate: string) {
@@ -66,6 +67,7 @@ export default function JobDetailsBottomSheet({
   primaryActionLabel = "Apply Now",
   onClose,
   onPrimaryAction,
+  isApplying
 }: JobDetailsBottomSheetProps) {
   const translateY = useRef(new Animated.Value(0)).current;
   const isClosingRef = useRef(false);
@@ -209,6 +211,7 @@ export default function JobDetailsBottomSheet({
 
             <TouchableOpacity
               onPress={onPrimaryAction}
+              disabled={isApplying}
               style={{ backgroundColor: Colors.common.GRAY_DARK }}
               className="mb-2 rounded-xl px-5 py-4 active:opacity-90"
             >

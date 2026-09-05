@@ -31,6 +31,7 @@ import {
   useCreateJobBookmarkMutation,
   useGetBookmarkJobsQuery,
 } from "@/store/api/bookmarkApi";
+import { useCreateJobApplicationMutation } from "@/store/api/jobApplicationApi";
 import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 
@@ -68,7 +69,9 @@ export default function WorkerJobsWebScreen() {
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
   const [bookmarkingJobIds, setBookmarkingJobIds] = useState<string[]>([]);
+  const [applyingJobIds, setApplyingJobIds] = useState<string[]>([]);
   const [createJobBookmark] = useCreateJobBookmarkMutation();
+  const [createJobApplication] = useCreateJobApplicationMutation();
   const isAuthenticated = useIsAuthenticated();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -132,11 +135,41 @@ export default function WorkerJobsWebScreen() {
     setSelectedJob(null);
   };
 
-  const handleApply = () => {
-    router.push({
-      pathname: "/auth",
-      params: { role: "worker", step: "register_sso" },
-    });
+  const handleApply = (id: string) => {
+    if (!isAuthenticated) {
+      router.push(getWorkerLoginRoute(`/screens/job/${id}`) as any);
+      return;
+    }
+
+    if (applyingJobIds.includes(id)) {
+      return;
+    }
+
+    setApplyingJobIds((current) => [...current, id]);
+
+    void createJobApplication(id)
+      .unwrap()
+      .then((response) => {
+        console.log("Job application response: ", response);
+        Toast.show({
+          type: "success",
+          text1: "Application submitted",
+          text2: "Your application was sent successfully.",
+        });
+        allJobsQuery.refetch();
+        bookmarkedJobsQuery.refetch();
+      })
+      .catch((error) => {
+        console.error("Job application error: ", error);
+        Toast.show({
+          type: "error",
+          text1: "Application failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setApplyingJobIds((current) => current.filter((jobId) => jobId !== id));
+      });
   };
 
   const toggleFavoriteJob = (id: string) => {
@@ -438,6 +471,7 @@ export default function WorkerJobsWebScreen() {
                     favoriteJobIds={favoriteJobIds}
                     onToggleFavorite={toggleFavoriteJob}
                     onOpenDetails={handleOpenDetailsModal}
+                    applyingJobIds={applyingJobIds}
                   />
                 ) : (
                   <VerticalJobListings
@@ -447,6 +481,7 @@ export default function WorkerJobsWebScreen() {
                     favoriteJobIds={favoriteJobIds}
                     onToggleFavorite={toggleFavoriteJob}
                     onOpenDetails={handleOpenDetailsModal}
+                    applyingJobIds={applyingJobIds}
                   />
                 )
               ) : (
@@ -470,8 +505,12 @@ export default function WorkerJobsWebScreen() {
         visible={!!selectedJob}
         onClose={handleCloseDetailsModal}
         onPrimaryAction={() => {
+          if (!selectedJob) {
+            return;
+          }
+
+          handleApply(selectedJob.id);
           handleCloseDetailsModal();
-          handleApply();
         }}
       />
     </ScreenWrapper>

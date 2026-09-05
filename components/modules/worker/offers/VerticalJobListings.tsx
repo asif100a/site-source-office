@@ -21,15 +21,17 @@ export default function VerticalJobListings({
   onToggleFavorite,
   onOpenDetails,
   jobs,
-  isBookmarking
+  isBookmarking,
+  applyingJobIds = [],
 }: {
   handleViewDetails: (id: string) => void;
-  handleApply: () => void;
+  handleApply: (id: string) => void;
   favoriteJobIds?: string[];
   onToggleFavorite?: (id: string) => void;
   onOpenDetails?: (job: WorkerJobItem) => void;
   jobs?: WorkerJobItem[];
-  isBookmarking?: boolean
+  isBookmarking?: boolean;
+  applyingJobIds?: string[];
 }) {
   const source =
     jobs ?? [
@@ -69,6 +71,7 @@ export default function VerticalJobListings({
           onToggleFavorite={onToggleFavorite}
           onOpenDetails={onOpenDetails}
           isBookmarking={isBookmarking}
+          isApplying={applyingJobIds.includes(job.id)}
         />
       ))}
     </View>

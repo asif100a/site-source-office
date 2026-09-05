@@ -16,6 +16,7 @@ type LabourerCardProps = {
   onToggleFavorite?: (id: string) => void;
   onOpenDetails?: (job: any) => void;
   isBookmarking?: boolean;
+  isApplying?: boolean;
 };
 
 export default function LabourerCard({
@@ -26,6 +27,7 @@ export default function LabourerCard({
   onToggleFavorite,
   onOpenDetails,
   isBookmarking = false,
+  isApplying = false,
 }: LabourerCardProps) {
   return (
     <TouchableOpacity
@@ -127,11 +129,12 @@ export default function LabourerCard({
               event.stopPropagation();
               handleApply?.(job.id);
             }}
+            disabled={isApplying}
             style={{ backgroundColor: Colors.common.GRAY_DARK, minWidth: 132 }}
             className="rounded-md px-4 py-2 shadow-sm active:opacity-90"
           >
             <Text className="text-center text-xs font-bold text-white">
-              Apply
+              {isApplying ? "Applying..." : "Apply"}
             </Text>
           </TouchableOpacity>
         </View>
