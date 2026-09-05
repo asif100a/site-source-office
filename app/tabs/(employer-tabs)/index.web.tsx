@@ -53,6 +53,26 @@ const getGoogleMapEmbedUrl = (region: MapRegion, zoom: number) => {
   return `https://maps.google.com/maps?q=${query}&z=${zoom}&output=embed`;
 };
 
+const WEEKEND_DAYS = new Set(["saturday", "sunday"]);
+
+const getWeekendPayValidationMessage = (payload: JobPostPayload) => {
+  const weekendWithoutPremiumPay = payload.workingHours.find((schedule) => {
+    const day = schedule.day.trim().toLowerCase();
+
+    return (
+      WEEKEND_DAYS.has(day) &&
+      !schedule.isPayOnePointFiveX &&
+      !schedule.isPayTwoX
+    );
+  });
+
+  if (!weekendWithoutPremiumPay) {
+    return "";
+  }
+
+  return `${weekendWithoutPremiumPay.day} requires 1.5x pay or 2x pay.`;
+};
+
 export default function EmployerHomeScreenWeb() {
   const router = useRouter();
   const [hourlyRate, setHourlyRate] = useState(24);
@@ -76,6 +96,17 @@ export default function EmployerHomeScreenWeb() {
   );
 
   const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
+    const weekendPayError = getWeekendPayValidationMessage(payload);
+
+    if (weekendPayError) {
+      Toast.show({
+        type: "error",
+        text1: "Select weekend pay",
+        text2: weekendPayError,
+      });
+      return false;
+    }
+
     try {
       const response = await createJob(payload).unwrap();
       console.log("Create job response: ", response);
