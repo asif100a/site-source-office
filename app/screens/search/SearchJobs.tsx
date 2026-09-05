@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -16,6 +16,43 @@ import SearchEmployerFilterModal from "@/components/modules/employer/search-empl
 import LogoWhite from "@/assets/icons/LogoWhite";
 import JobDetailsBottomSheet from "@/components/modules/worker/offers/JobDetailsBottomSheet";
 import type { WorkerJobItem } from "@/components/modules/worker/offers/VerticalJobListings";
+import { useGetAllJobsQuery } from "@/store/api/jobApi";
+import {
+  getAllJobsHasNextPage,
+  getAllJobItems,
+  mapApiJobToWorkerJobItem,
+} from "@/utils/workerJobs";
+
+const JOBS_LIMIT = 10;
+
+type SearchJobItem = WorkerJobItem & {
+  coordinate?: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+const MAP_FALLBACK_COORDINATES = [
+  { latitude: 51.5444, longitude: -0.0031 },
+  { latitude: 51.5382, longitude: -0.012 },
+  { latitude: 51.551, longitude: 0.0048 },
+  { latitude: 51.5326, longitude: -0.0014 },
+];
+
+const getJobCoordinate = (job: any, index: number) => {
+  const [longitude, latitude] = job.location?.coordinates ?? [];
+
+  if (Number.isFinite(Number(latitude)) && Number.isFinite(Number(longitude))) {
+    return { latitude: Number(latitude), longitude: Number(longitude) };
+  }
+
+  return MAP_FALLBACK_COORDINATES[index % MAP_FALLBACK_COORDINATES.length];
+};
+
+const mapApiJobToSearchJobItem = (job: any, index: number): SearchJobItem => ({
+  ...mapApiJobToWorkerJobItem(job),
+  coordinate: getJobCoordinate(job, index),
+});
 
 export default function WorkerSearchScreen() {
   const router = useRouter();
@@ -24,12 +61,112 @@ export default function WorkerSearchScreen() {
   const [viewType, setViewType] = useState<"list" | "map">("list");
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState<WorkerJobItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [jobs, setJobs] = useState<SearchJobItem[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filter States
   const [rateRange, setRateRange] = useState("");
-  const [tradeSkill, setTradeSkill] = useState("Groundworker");
-  const [radius, setRadius] = useState("1 - 10 miles");
+  const [tradeSkill, setTradeSkill] = useState("");
+  const [radius, setRadius] = useState("");
+  const trimmedSearchQuery = searchQuery.trim();
+  const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(trimmedSearchQuery);
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [trimmedSearchQuery]);
+
+  const queryArgs = useMemo(
+    () => ({
+      page,
+      limit: JOBS_LIMIT,
+      status: "POSTED" as const,
+      ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
+    }),
+    [debouncedSearchQuery, page],
+  );
+
+  const allJobsQuery = useGetAllJobsQuery(queryArgs);
+
+  useEffect(() => {
+    setPage(1);
+    setJobs([]);
+  }, [debouncedSearchQuery]);
+
+  useEffect(() => {
+    if (
+      !allJobsQuery.currentData &&
+      (allJobsQuery.isFetching || isWaitingForSearch)
+    ) {
+      return;
+    }
+
+    const response = allJobsQuery.currentData ?? allJobsQuery.data;
+
+    if (!response || (page > 1 && allJobsQuery.isFetching)) {
+      return;
+    }
+
+    const nextJobs = getAllJobItems(response).map(
+      mapApiJobToSearchJobItem,
+    );
+
+    setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
+    setHasNextPage(
+      getAllJobsHasNextPage(response, nextJobs.length, JOBS_LIMIT),
+    );
+  }, [
+    allJobsQuery.currentData,
+    allJobsQuery.data,
+    allJobsQuery.isFetching,
+    isWaitingForSearch,
+    page,
+  ]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setJobs([]);
+
+    try {
+      await allJobsQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!hasNextPage || allJobsQuery.isFetching) {
+      return;
+    }
+
+    setPage((current) => current + 1);
+  };
+
+  const handleChangeSearchQuery = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+    setJobs([]);
+  };
+
+  const handleApply = () => {
+    router.push({
+      pathname: "/auth",
+      params: { role: "worker", step: "register_sso" },
+    });
+  };
+
+  const isInitialLoading =
+    jobs.length === 0 &&
+    (isWaitingForSearch || allJobsQuery.isLoading || allJobsQuery.isFetching);
+  const isLoadingMore = allJobsQuery.isFetching && jobs.length > 0;
 
   const handleViewDetails = (id: string) => {
     router.push(`/screens/employer-details/${id}`);
@@ -52,6 +189,7 @@ export default function WorkerSearchScreen() {
   };
 
   const goBackToOrigin = () => {
+    void originRoute;
     router.back();
   };
 
@@ -113,7 +251,7 @@ export default function WorkerSearchScreen() {
               placeholder="Search Jobs"
               placeholderTextColor="#A3A3A3"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleChangeSearchQuery}
             />
           </View>
 
@@ -130,15 +268,26 @@ export default function WorkerSearchScreen() {
       {viewType === "list" ? (
         /* LIST VIEW */
         <SearchEmployerListView
+          jobs={jobs}
+          isLoading={isInitialLoading}
+          isLoadingMore={isLoadingMore}
+          isError={allJobsQuery.isError}
+          refreshing={refreshing}
           handleViewDetails={handleViewDetails}
+          handleApply={handleApply}
           onOpenDetails={handleOpenDetailsModal}
+          onRefresh={handleRefresh}
+          onLoadMore={handleLoadMore}
         />
       ) : (
         /* MAP VIEW */
         <SearchEmployerMapView
+          jobs={jobs}
+          isLoading={isInitialLoading}
+          isError={allJobsQuery.isError}
           handleViewDetails={handleViewDetails}
           searchQuery={searchQuery}
-          onChangeSearchQuery={setSearchQuery}
+          onChangeSearchQuery={handleChangeSearchQuery}
           onOpenFilters={() => setShowFilters(true)}
           onOpenDetails={handleOpenDetailsModal}
         />

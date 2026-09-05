@@ -124,7 +124,7 @@ export default function WorkerJobsTabLanding() {
 
   const handleOpenSearch = () => {
     router.push({
-      pathname: "/screens/search/SearchEmployer",
+      pathname: "/screens/search/SearchJobs",
       params: { origin: "worker" },
     } as any);
   };
