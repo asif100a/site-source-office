@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Platform, View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as Location from "expo-location";
 import {
   Search,
   Map,
@@ -32,16 +31,10 @@ import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/Worke
 import { getWorkerJobTrade } from "@/utils/workerJobFilters";
 import { getWorkerMapRegion } from "@/utils/workerMapJobs";
 import type { WorkerHomeJob } from "@/types";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 const JOBS_LIMIT = 10;
 const MAP_JOBS_LIMIT = 100;
-
-type WorkerLocation = {
-  latitude: number;
-  longitude: number;
-};
-
-type LocationPermissionState = "checking" | "granted" | "denied";
 
 type SearchJobItem = WorkerJobItem & {
   coordinate?: {
@@ -84,14 +77,13 @@ export default function WorkerSearchScreen() {
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<SearchJobItem[]>([]);
   const [mapJobs, setMapJobs] = useState<WorkerHomeJob[]>([]);
+  const [mapLocationAddress, setMapLocationAddress] = useState("");
+  const [mapLocationCoordinates, setMapLocationCoordinates] = useState<
+    [number, number] | null
+  >(null);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedMapJobId, setSelectedMapJobId] = useState("");
-  const [workerLocation, setWorkerLocation] = useState<WorkerLocation | null>(
-    null,
-  );
-  const [locationPermission, setLocationPermission] =
-    useState<LocationPermissionState>("checking");
 
   // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
@@ -100,8 +92,17 @@ export default function WorkerSearchScreen() {
   const trimmedSearchQuery = searchQuery.trim();
   const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
   const apiTrade = getWorkerJobTrade(tradeSkill);
-  const hasWorkerLocation =
-    locationPermission === "granted" && Boolean(workerLocation);
+  const selectedMapLocation = useMemo(
+    () =>
+      mapLocationCoordinates
+        ? {
+            latitude: mapLocationCoordinates[1],
+            longitude: mapLocationCoordinates[0],
+          }
+        : null,
+    [mapLocationCoordinates],
+  );
+  const hasSelectedMapLocation = Boolean(selectedMapLocation);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -116,10 +117,10 @@ export default function WorkerSearchScreen() {
       page,
       limit: JOBS_LIMIT,
       status: "POSTED" as const,
-      ...(hasWorkerLocation
+      ...(selectedMapLocation
         ? {
-            latitude: workerLocation!.latitude,
-            longitude: workerLocation!.longitude,
+            latitude: selectedMapLocation.latitude,
+            longitude: selectedMapLocation.longitude,
             radius: maxDistanceMiles,
           }
         : {}),
@@ -132,44 +133,41 @@ export default function WorkerSearchScreen() {
     [
       apiTrade,
       debouncedSearchQuery,
-      hasWorkerLocation,
       maxDistanceMiles,
       minRatePerDay,
       page,
-      workerLocation,
+      selectedMapLocation,
     ],
   );
 
   const allJobsQuery = useGetAllJobsQuery(queryArgs);
 
-  // Map search follows the worker home screen and queries the map-specific jobs endpoint.
+  // Map search follows the worker home screen and queries nearby jobs by coordinates.
   const mapJobsQuery = useGetWorkersMapsJobsQuery(
     {
       page: 1,
       limit: MAP_JOBS_LIMIT,
       status: "POSTED",
-      ...(hasWorkerLocation
+      ...(selectedMapLocation
         ? {
-            latitude: workerLocation!.latitude,
-            longitude: workerLocation!.longitude,
+            latitude: selectedMapLocation.latitude,
+            longitude: selectedMapLocation.longitude,
             radius: maxDistanceMiles,
           }
         : {}),
-      ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
       ...(minRatePerDay !== 120
         ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
         : {}),
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
-    { skip: locationPermission === "checking" },
   );
   const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
     skip: !selectedMapJobId,
   });
   const selectedMapJob = mapJobs.find((job) => job.id === selectedMapJobId);
   const mapRegion = useMemo(
-    () => getWorkerMapRegion(workerLocation, mapJobs),
-    [mapJobs, workerLocation],
+    () => getWorkerMapRegion(selectedMapLocation, mapJobs),
+    [mapJobs, selectedMapLocation],
   );
 
   const featuredMapJob = useMemo(() => {
@@ -189,78 +187,6 @@ export default function WorkerSearchScreen() {
   }, [mapJobs, selectedMapJob, selectedMapJobQuery.currentData]);
 
   useEffect(() => {
-    let mounted = true;
-
-    const loadWorkerLocation = async () => {
-      try {
-        // Web and native expose location permissions through different APIs.
-        if (Platform.OS === "web") {
-          if (typeof navigator === "undefined" || !navigator.geolocation) {
-            setLocationPermission("denied");
-            return;
-          }
-
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              if (!mounted) return;
-              setWorkerLocation({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-              });
-              setLocationPermission("granted");
-            },
-            (error) => {
-              console.error("Unable to get worker location:", error);
-              if (!mounted) return;
-              setWorkerLocation(null);
-              setLocationPermission("denied");
-            },
-            {
-              enableHighAccuracy: false,
-              maximumAge: 60_000,
-              timeout: 10_000,
-            },
-          );
-          return;
-        }
-
-        const permission = await Location.requestForegroundPermissionsAsync();
-
-        if (!mounted) return;
-
-        if (permission.status !== Location.PermissionStatus.GRANTED) {
-          setLocationPermission("denied");
-          setWorkerLocation(null);
-          return;
-        }
-
-        const position = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-
-        if (!mounted) return;
-
-        setWorkerLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocationPermission("granted");
-      } catch (error) {
-        console.error("Unable to get worker location:", error);
-        if (!mounted) return;
-        setWorkerLocation(null);
-        setLocationPermission("denied");
-      }
-    };
-
-    void loadWorkerLocation();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     setPage(1);
     setJobs([]);
   }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
@@ -268,7 +194,7 @@ export default function WorkerSearchScreen() {
   useEffect(() => {
     setMapJobs([]);
     setSelectedMapJobId("");
-  }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
+  }, [mapLocationCoordinates, maxDistanceMiles, minRatePerDay, tradeSkill]);
 
   useEffect(() => {
     if (
@@ -327,9 +253,7 @@ export default function WorkerSearchScreen() {
     try {
       const refetches = [allJobsQuery.refetch()];
 
-      if (locationPermission !== "checking") {
-        refetches.push(mapJobsQuery.refetch());
-      }
+      refetches.push(mapJobsQuery.refetch());
 
       await Promise.all(refetches);
     } finally {
@@ -351,6 +275,13 @@ export default function WorkerSearchScreen() {
     setJobs([]);
   };
 
+  const handleMapLocationChange = (details: AddressDetails) => {
+    setMapLocationAddress(details.description);
+    setMapLocationCoordinates(details.coordinates);
+    setMapJobs([]);
+    setSelectedMapJobId("");
+  };
+
   const handleApply = () => {
     router.push({
       pathname: "/auth",
@@ -363,11 +294,7 @@ export default function WorkerSearchScreen() {
     (isWaitingForSearch || allJobsQuery.isLoading || allJobsQuery.isFetching);
   const isLoadingMore = allJobsQuery.isFetching && jobs.length > 0;
   const isMapLoading =
-    mapJobs.length === 0 &&
-    (isWaitingForSearch ||
-      locationPermission === "checking" ||
-      mapJobsQuery.isLoading ||
-      mapJobsQuery.isFetching);
+    mapJobs.length === 0 && (mapJobsQuery.isLoading || mapJobsQuery.isFetching);
 
   const handleViewDetails = (id: string) => {
     router.push(`/screens/employer-details/${id}`);
@@ -493,10 +420,15 @@ export default function WorkerSearchScreen() {
           isError={mapJobsQuery.isError}
           isSelectedJobLoading={selectedMapJobQuery.isFetching}
           mapRegion={mapRegion}
-          hasWorkerLocation={hasWorkerLocation}
+          hasWorkerLocation={hasSelectedMapLocation}
           handleViewDetails={handleViewMapJobDetails}
-          searchQuery={searchQuery}
-          onChangeSearchQuery={handleChangeSearchQuery}
+          locationAddress={mapLocationAddress}
+          onLocationChange={handleMapLocationChange}
+          onLocationValidityChange={(valid) => {
+            if (!valid) {
+              setMapLocationCoordinates(null);
+            }
+          }}
           onOpenFilters={() => setShowFilters(true)}
           onSelectJob={setSelectedMapJobId}
         />

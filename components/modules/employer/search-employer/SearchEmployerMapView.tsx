@@ -4,12 +4,11 @@ import {
   Platform,
   StyleProp,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
-import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
+import { Briefcase, Filter, Navigation } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/Colors";
@@ -26,6 +25,8 @@ import {
   getWorkerMapPosition,
 } from "@/utils/workerMapJobs";
 import type { MapRegion, WorkerHomeJob } from "@/types";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 const getMapZoom = (region: MapRegion) => {
   const delta = Math.max(region.latitudeDelta, region.longitudeDelta);
@@ -55,8 +56,9 @@ export default function SearchEmployerMapView({
   mapRegion,
   hasWorkerLocation,
   handleViewDetails,
-  searchQuery,
-  onChangeSearchQuery,
+  locationAddress,
+  onLocationChange,
+  onLocationValidityChange,
   onOpenFilters,
   onSelectJob,
 }: {
@@ -68,8 +70,9 @@ export default function SearchEmployerMapView({
   mapRegion: MapRegion;
   hasWorkerLocation: boolean;
   handleViewDetails: (job: WorkerHomeJob) => void;
-  searchQuery: string;
-  onChangeSearchQuery: (value: string) => void;
+  locationAddress: string;
+  onLocationChange: (details: AddressDetails) => void;
+  onLocationValidityChange: (isValid: boolean) => void;
   onOpenFilters: () => void;
   onSelectJob: (id: string) => void;
 }) {
@@ -142,14 +145,12 @@ export default function SearchEmployerMapView({
 
       <View className="absolute inset-x-0 top-0 bg-black/10 px-5 pb-4 pt-5">
         <View className="flex-row items-center gap-3">
-          <View className="flex-1 flex-row items-center rounded-2xl bg-white px-4 shadow-sm">
-            <MapPin size={18} color={Colors.common.BRAND} />
-            <TextInput
-              className="ml-2 flex-1 text-sm font-semibold text-neutral-800"
-              placeholder="Enter a location or job"
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={onChangeSearchQuery}
+          <View className="flex-1">
+            <JobLocationPicker
+              address={locationAddress}
+              onChange={onLocationChange}
+              onValidityChange={onLocationValidityChange}
+              onlyField
             />
           </View>
 

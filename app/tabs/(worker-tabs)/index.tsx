@@ -9,7 +9,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -38,6 +37,8 @@ import { useCreateJobApplicationMutation } from "@/store/api/jobApplicationApi";
 import { getWorkerLoginRoute } from "@/constants/authState";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import { getWorkerMapRegion } from "@/utils/workerMapJobs";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 const MAP_JOBS_LIMIT = 100;
 const ALL_JOBS_LIMIT = 10;
@@ -52,7 +53,10 @@ type LocationPermissionState = "checking" | "granted" | "denied";
 export default function WorkerHomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<WorkerHomeFilter>("All");
-  const [locationQuery, setLocationQuery] = useState('');
+  const [locationAddress, setLocationAddress] = useState("");
+  const [locationCoordinates, setLocationCoordinates] = useState<
+    [number, number] | null
+  >(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showBestMatchLoginModal, setShowBestMatchLoginModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
@@ -73,23 +77,28 @@ export default function WorkerHomeScreen() {
     useCreateJobApplicationMutation();
   const apiFilter = getWorkerJobFilter(activeFilter);
   const apiTrade = getWorkerJobTrade(selectedTrade);
-  const locationFilter = locationQuery.trim();
   const isAuthenticated = useIsAuthenticated();
-  const hasWorkerLocation =
-    locationPermission === "granted" && Boolean(workerLocation);
+  const selectedLocation = locationCoordinates
+    ? {
+        latitude: locationCoordinates[1],
+        longitude: locationCoordinates[0],
+      }
+    : workerLocation;
+  const hasWorkerLocation = Boolean(selectedLocation);
+
+  // Location search uses selected coordinates from Google Places, not text search.
   const mapJobsQuery = useGetWorkersMapsJobsQuery(
     {
       page: 1,
       limit: MAP_JOBS_LIMIT,
       status: "POSTED",
-      ...(hasWorkerLocation
+      ...(selectedLocation
         ? {
-            latitude: workerLocation!.latitude,
-            longitude: workerLocation!.longitude,
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude,
             radius: maxDistanceMiles,
           }
         : {}),
-      ...(locationFilter ? { searchTerm: locationFilter } : {}),
       ...(minRatePerDay !== 120
         ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
         : {}),
@@ -101,6 +110,13 @@ export default function WorkerHomeScreen() {
     page: allJobsPage,
     limit: ALL_JOBS_LIMIT,
     status: "POSTED",
+    ...(selectedLocation
+      ? {
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          radius: maxDistanceMiles,
+        }
+      : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
@@ -115,8 +131,8 @@ export default function WorkerHomeScreen() {
   const visibleAllJobs = allJobs;
   const selectedMapJob = filteredMapJobs.find((job) => job.id === selectedJobId);
   const mapRegion = useMemo(
-    () => getWorkerMapRegion(workerLocation, filteredMapJobs),
-    [filteredMapJobs, workerLocation],
+    () => getWorkerMapRegion(selectedLocation, filteredMapJobs),
+    [filteredMapJobs, selectedLocation],
   );
 
   useEffect(() => {
@@ -162,33 +178,48 @@ export default function WorkerHomeScreen() {
 
   useEffect(() => {
     setMapJobs([]);
-  }, [locationQuery, maxDistanceMiles, minRatePerDay, selectedTrade]);
+    setSelectedJobId("");
+  }, [locationCoordinates, maxDistanceMiles, minRatePerDay, selectedTrade]);
 
   useEffect(() => {
     setAllJobsPage(1);
     setAllJobs([]);
-  }, [activeFilter]);
+  }, [activeFilter, locationCoordinates, maxDistanceMiles]);
 
   useEffect(() => {
-    if (!mapJobsQuery.data) return;
-    const nextJobs = getAllJobItems(mapJobsQuery.data).map((job, index) =>
+    if (!mapJobsQuery.currentData && mapJobsQuery.isFetching) return;
+    const response = mapJobsQuery.currentData ?? mapJobsQuery.data;
+    if (!response) return;
+    const nextJobs = getAllJobItems(response).map((job, index) =>
       mapApiJobToWorkerHomeJob(job, index),
     );
+    // Server location results are kept as-is; no client-side search filtering.
     setMapJobs(nextJobs);
-  }, [mapJobsQuery.data]);
+  }, [
+    mapJobsQuery.currentData,
+    mapJobsQuery.data,
+    mapJobsQuery.isFetching,
+  ]);
 
   useEffect(() => {
-    if (!allJobsQuery.data || (allJobsPage > 1 && allJobsQuery.isFetching)) return;
-    const nextJobs = getAllJobItems(allJobsQuery.data).map((job, index) =>
+    if (!allJobsQuery.currentData && allJobsQuery.isFetching) return;
+    const response = allJobsQuery.currentData ?? allJobsQuery.data;
+    if (!response || (allJobsPage > 1 && allJobsQuery.isFetching)) return;
+    const nextJobs = getAllJobItems(response).map((job, index) =>
       mapApiJobToWorkerHomeJob(job, index),
     );
     setAllJobs((current) =>
       allJobsPage === 1 ? nextJobs : [...current, ...nextJobs],
     );
     setAllJobsHasNextPage(
-      getAllJobsHasNextPage(allJobsQuery.data, nextJobs.length, ALL_JOBS_LIMIT),
+      getAllJobsHasNextPage(response, nextJobs.length, ALL_JOBS_LIMIT),
     );
-  }, [allJobsPage, allJobsQuery.data, allJobsQuery.isFetching]);
+  }, [
+    allJobsPage,
+    allJobsQuery.currentData,
+    allJobsQuery.data,
+    allJobsQuery.isFetching,
+  ]);
 
   const refreshJobs = async () => {
     setRefreshing(true);
@@ -238,6 +269,11 @@ export default function WorkerHomeScreen() {
     }
 
     setActiveFilter(filter);
+  };
+
+  const handleLocationChange = (details: AddressDetails) => {
+    setLocationAddress(details.description);
+    setLocationCoordinates(details.coordinates);
   };
 
   const handleApply = (job: WorkerHomeJob) => {
@@ -323,14 +359,16 @@ export default function WorkerHomeScreen() {
 
               <View className="absolute inset-x-0 top-0 bg-black/10 px-4 pb-4 pt-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="flex-1 flex-row items-center rounded-lg bg-white px-4 shadow-sm">
-                    <MapPin size={17} color={Colors.common.BRAND} />
-                    <TextInput
-                      className="ml-2 flex-1 text-xs font-semibold text-neutral-800"
-                      placeholder="Enter a location"
-                      placeholderTextColor="#9CA3AF"
-                      value={locationQuery}
-                      onChangeText={setLocationQuery}
+                  <View className="flex-1">
+                    <JobLocationPicker
+                      address={locationAddress}
+                      onChange={handleLocationChange}
+                      onValidityChange={(valid) => {
+                        if (!valid) {
+                          setLocationCoordinates(null);
+                        }
+                      }}
+                      onlyField
                     />
                   </View>
 

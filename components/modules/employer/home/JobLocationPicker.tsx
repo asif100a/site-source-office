@@ -1,16 +1,29 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { getAddressDetails, getAddressSuggestions, type AddressDetails, type AddressSuggestion } from "@/utils/googlePlaces";
+import {
+  ActivityIndicator,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  getAddressDetails,
+  getAddressSuggestions,
+  type AddressDetails,
+  type AddressSuggestion,
+} from "@/utils/googlePlaces";
 import { Colors } from "@/constants/Colors";
 
 export default function JobLocationPicker({
   address,
   onChange,
   onValidityChange,
+  onlyField = false,
 }: {
   address: string;
   onChange: (details: AddressDetails) => void;
   onValidityChange?: (isValid: boolean) => void;
+  onlyField?: boolean;
 }) {
   const [value, setValue] = useState(address);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -46,7 +59,10 @@ export default function JobLocationPicker({
     setIsLoading(true);
     setError("");
     try {
-      const details = await getAddressDetails(suggestion.placeId, suggestion.description);
+      const details = await getAddressDetails(
+        suggestion.placeId,
+        suggestion.description,
+      );
       setValue(details.description);
       setSuggestions([]);
       onChange(details);
@@ -58,9 +74,8 @@ export default function JobLocationPicker({
     }
   };
 
-  return (
-    <View className="mt-3 rounded-[18px] border border-neutral-200 bg-white p-3">
-      <Text className="mb-2 text-xs font-bold uppercase text-neutral-500">Change site location</Text>
+  return onlyField ? (
+    <View className="">
       <TextInput
         value={value}
         onChangeText={(nextValue) => {
@@ -70,19 +85,72 @@ export default function JobLocationPicker({
         }}
         placeholder="Search for an address"
         placeholderTextColor="#999999"
-        className="rounded-xl border border-neutral-200 px-3 py-3 text-sm text-neutral-900"
+        className="rounded-xl border border-neutral-200 py-3 text-sm text-neutral-900 bg-white"
+        style={{ paddingHorizontal: 12 }}
       />
-      {isLoading ? <ActivityIndicator className="mt-2 self-start" color={Colors.common.BRAND} /> : null}
+      {isLoading ? (
+        <ActivityIndicator
+          className="mt-2 self-start"
+          color={Colors.common.BRAND}
+        />
+      ) : null}
       {suggestions.length > 0 ? (
-        <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200">
+        <View className="mt-2 overflow-hidden rounded-xl bg-white border border-neutral-200">
           {suggestions.map((suggestion) => (
-            <TouchableOpacity key={suggestion.placeId} onPress={() => selectSuggestion(suggestion)} className="border-b border-neutral-100 px-3 py-3">
-              <Text className="text-sm text-neutral-800">{suggestion.description}</Text>
+            <TouchableOpacity
+              key={suggestion.placeId}
+              onPress={() => selectSuggestion(suggestion)}
+              className="border-b border-neutral-100 px-3 py-3"
+            >
+              <Text className="text-sm text-neutral-800">
+                {suggestion.description}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
       ) : null}
-      {error ? <Text className="mt-2 text-xs text-red-600">{error}</Text> : null}
+    </View>
+  ) : (
+    <View className="mt-3 rounded-[18px] border border-neutral-200 bg-white p-3">
+      <Text className="mb-2 text-xs font-bold uppercase text-neutral-500">
+        Change site location
+      </Text>
+      <TextInput
+        value={value}
+        onChangeText={(nextValue) => {
+          setValue(nextValue);
+          onValidityChange?.(nextValue.trim() === address.trim());
+          setError("");
+        }}
+        placeholder="Search for an address"
+        placeholderTextColor="#999999"
+        className="rounded-xl border border-neutral-200 py-3 text-sm text-neutral-900"
+        style={{ paddingHorizontal: 12 }}
+      />
+      {isLoading ? (
+        <ActivityIndicator
+          className="mt-2 self-start"
+          color={Colors.common.BRAND}
+        />
+      ) : null}
+      {suggestions.length > 0 ? (
+        <View className="mt-2 overflow-hidden rounded-xl border border-neutral-200">
+          {suggestions.map((suggestion) => (
+            <TouchableOpacity
+              key={suggestion.placeId}
+              onPress={() => selectSuggestion(suggestion)}
+              className="border-b border-neutral-100 px-3 py-3"
+            >
+              <Text className="text-sm text-neutral-800">
+                {suggestion.description}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+      {error ? (
+        <Text className="mt-2 text-xs text-red-600">{error}</Text>
+      ) : null}
     </View>
   );
 }
