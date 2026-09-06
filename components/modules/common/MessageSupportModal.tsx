@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Alert,
+  Platform,
 } from "react-native";
 import React, { useState } from "react";
 import { Check, Info, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import { useCreateSupportTicketMutation } from "@/store/api/supportApi";
 
 export default function MessageSupportModal({
   showSupportModal,
@@ -16,6 +19,7 @@ export default function MessageSupportModal({
   supportModalState,
   setSupportModalState,
   presentation = "sheet",
+  onSubmitted,
 }: {
   showSupportModal: boolean;
   setShowSupportModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -24,10 +28,53 @@ export default function MessageSupportModal({
     React.SetStateAction<"form" | "submitted">
   >;
   presentation?: "sheet" | "dialog";
+  onSubmitted?: () => void | Promise<void>;
 }) {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
+  const [submittedTicketId, setSubmittedTicketId] = useState("");
+  const [formError, setFormError] = useState("");
+  const [createSupportTicket, { isLoading: isSubmitting }] =
+    useCreateSupportTicketMutation();
   const isDialog = presentation === "dialog";
+
+  const handleSubmit = async () => {
+    const subject = supportSubject.trim();
+    const description = supportDescription.trim();
+
+    if (!subject || !description) {
+      setFormError("Please add a subject and description.");
+      return;
+    }
+
+    try {
+      setFormError("");
+      const response = await createSupportTicket({
+        subject,
+        description,
+      }).unwrap();
+      const ticket =
+        response?.data?.data ??
+        response?.data ??
+        response?.ticket ??
+        response?.support ??
+        response;
+
+      setSubmittedTicketId(ticket?.id ?? ticket?._id ?? ticket?.ticketId ?? "");
+      setSupportSubject("");
+      setSupportDescription("");
+      setSupportModalState("submitted");
+      await onSubmitted?.();
+    } catch (error) {
+      setFormError("Unable to submit your ticket. Please try again.");
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Support ticket failed",
+          "Unable to submit your ticket. Please try again."
+        );
+      }
+    }
+  };
 
   return (
     <Modal
@@ -90,6 +137,7 @@ export default function MessageSupportModal({
                       placeholderTextColor="#A3A3A3"
                       value={supportSubject}
                       onChangeText={setSupportSubject}
+                      editable={!isSubmitting}
                     />
                   </View>
                 </View>
@@ -105,18 +153,29 @@ export default function MessageSupportModal({
                       placeholderTextColor="#A3A3A3"
                       value={supportDescription}
                       onChangeText={setSupportDescription}
+                      editable={!isSubmitting}
+                      multiline
                     />
                   </View>
                 </View>
+
+                {formError ? (
+                  <Text className="text-xs font-semibold text-red-600">
+                    {formError}
+                  </Text>
+                ) : null}
               </View>
             </ScrollView>
 
             <TouchableOpacity
-              onPress={() => setSupportModalState("submitted")}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
               style={{ backgroundColor: Colors.common.GRAY_DARK }}
-              className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90 mb-3"
+              className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90 mb-3 disabled:opacity-60"
             >
-              <Text className="text-white font-extrabold text-sm">Submit</Text>
+              <Text className="text-white font-extrabold text-sm">
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -137,7 +196,7 @@ export default function MessageSupportModal({
               Submitted
             </Text>
             <Text className="text-neutral-400 text-xs font-semibold mb-6">
-              Ticket ID: #SUP-2045
+              Ticket ID: {submittedTicketId ? `#${submittedTicketId}` : "Created"}
             </Text>
 
             <View className="bg-orange-50/80 border border-orange-100/50 rounded-2xl p-4 flex-row items-center gap-3 w-full mb-8">

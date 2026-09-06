@@ -10,18 +10,46 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import { DisputeLogo, ScreenShell, StatusPill } from "./_components";
+import { useGetSupportTicketsQuery } from "@/store/api/supportApi";
 
-const DISPUTES = Array.from({ length: 6 }, (_, index) => ({
-  id: `dispute-${index + 1}`,
-  title: "Hartley Construction",
-  period: "May 12 - May 16",
-  status: index === 5 ? "Resolved" : "Under Review",
-  tone: index === 5 ? ("resolved" as const) : ("review" as const),
-  summary:
-    index === 5
-      ? "Admin reviewed the case and released payment."
-      : "Waiting for admin review and supporting evidence.",
-}));
+type SupportTicket = {
+  id?: string;
+  _id?: string;
+  ticketId?: string;
+  subject?: string;
+  title?: string;
+  description?: string;
+  message?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const getSupportTickets = (response: any): SupportTicket[] => {
+  const data =
+    response?.data?.data ??
+    response?.data?.tickets ??
+    response?.data ??
+    response?.tickets ??
+    response;
+
+  return Array.isArray(data) ? data : [];
+};
+
+const formatTicketDate = (value?: string) => {
+  if (!value) return "Date unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const isResolvedTicket = (status?: string) =>
+  ["resolved", "closed", "completed"].includes(status?.toLowerCase() ?? "");
 
 function DisputeRow({
   title,
@@ -76,6 +104,12 @@ export default function DisputesScreenWeb() {
   const router = useRouter();
   const { origin } = useLocalSearchParams<{ origin?: string | string[] }>();
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
+  const supportTicketsQuery = useGetSupportTicketsQuery(undefined);
+  const tickets = getSupportTickets(supportTicketsQuery.data);
+  const resolvedCount = tickets.filter((ticket) =>
+    isResolvedTicket(ticket.status)
+  ).length;
+  const openCount = tickets.length - resolvedCount;
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportModalState, setSupportModalState] = useState<
     "form" | "submitted"
@@ -107,7 +141,7 @@ export default function DisputesScreenWeb() {
                     <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
                       <View className="h-2 w-2 rounded-full bg-emerald-500" />
                       <Text className="text-xs font-semibold text-neutral-600">
-                        1 resolved, 5 under review
+                        {resolvedCount} resolved, {openCount} under review
                       </Text>
                     </View>
                   </View>
@@ -163,25 +197,65 @@ export default function DisputesScreenWeb() {
             </View>
 
             <View className="gap-4">
-              {DISPUTES.map((item) => (
-                <DisputeRow
-                  key={item.id}
-                  title={item.title}
-                  period={item.period}
-                  status={item.status}
-                  tone={item.tone}
-                  summary={item.summary}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/screens/profile/dispute-detail",
-                      params: {
-                        status: item.tone === "resolved" ? "resolved" : "review",
-                        origin: originRoute,
-                      },
-                    } as any)
-                  }
-                />
-              ))}
+              {supportTicketsQuery.isLoading ? (
+                <View className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <Text className="text-center text-sm font-semibold text-neutral-500">
+                    Loading support tickets...
+                  </Text>
+                </View>
+              ) : supportTicketsQuery.isError ? (
+                <View className="rounded-2xl border border-red-100 bg-red-50 p-6">
+                  <Text className="text-center text-sm font-semibold text-red-700">
+                    Unable to load support tickets. Please try again.
+                  </Text>
+                </View>
+              ) : tickets.length === 0 ? (
+                <View className="rounded-2xl border border-neutral-200 bg-white p-8">
+                  <Text className="text-center text-base font-semibold text-neutral-950">
+                    No support tickets yet
+                  </Text>
+                  <Text className="mt-2 text-center text-sm text-neutral-500">
+                    Open a ticket and it will appear here.
+                  </Text>
+                </View>
+              ) : (
+                tickets.map((ticket, index) => {
+                  const resolved = isResolvedTicket(ticket.status);
+                  const ticketId =
+                    ticket.id ?? ticket._id ?? ticket.ticketId ?? `${index}`;
+
+                  return (
+                    <DisputeRow
+                      key={ticketId}
+                      title={ticket.subject ?? ticket.title ?? "Support ticket"}
+                      period={formatTicketDate(
+                        ticket.createdAt ?? ticket.updatedAt
+                      )}
+                      status={
+                        resolved ? "Resolved" : ticket.status ?? "Under Review"
+                      }
+                      tone={resolved ? "resolved" : "review"}
+                      summary={
+                        ticket.description ??
+                        ticket.message ??
+                        (resolved
+                          ? "Admin reviewed this support ticket."
+                          : "Waiting for admin review.")
+                      }
+                      onPress={() =>
+                        router.push({
+                          pathname: "/screens/profile/dispute-detail",
+                          params: {
+                            status: resolved ? "resolved" : "review",
+                            id: ticketId,
+                            origin: originRoute,
+                          },
+                        } as any)
+                      }
+                    />
+                  );
+                })
+              )}
             </View>
           </View>
         </View>
@@ -202,6 +276,7 @@ export default function DisputesScreenWeb() {
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
         presentation="dialog"
+        onSubmitted={() => supportTicketsQuery.refetch()}
       />
     </ScreenShell>
   );
