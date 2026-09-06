@@ -20,7 +20,7 @@ const formatWeekLabel = (week?: number) =>
 
 const getStatusStyles = (status?: string) => {
   switch (status) {
-    case "ACCEPTED":
+    case "APPROVED":
       return {
         label: "Approved",
         containerClassName: "bg-green-50",
@@ -52,6 +52,7 @@ export default function WorkerWorkSummary({
     { id: jobId },
     { skip: !jobId },
   );
+  console.log("workerTimesheetQuery from the worker work summary component: ", workerTimesheetQuery);
   const timesheets = getWorkerTimesheets(workerTimesheetQuery.data);
 
   return (
