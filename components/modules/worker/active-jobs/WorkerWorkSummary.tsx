@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Colors } from "@/constants/Colors";
 import { useGetWorkerTimesheetQuery } from "@/store/api/timesheetApi";
 
@@ -48,12 +48,38 @@ export default function WorkerWorkSummary({
   setShowApprovalModal: (show: boolean) => void;
   jobId: string;
 }) {
+  const [isCompletedTimesheets, setIsCompletedTimesheets] = useState(false);
+
   const workerTimesheetQuery = useGetWorkerTimesheetQuery(
     { id: jobId },
     { skip: !jobId },
   );
-  console.log("workerTimesheetQuery from the worker work summary component: ", workerTimesheetQuery);
+  // console.log("workerTimesheetQuery from the worker work summary component: ", workerTimesheetQuery);
   const timesheets = getWorkerTimesheets(workerTimesheetQuery.data);
+
+  useEffect(() => {
+    if (timesheets.length > 0) {
+      const allTimesheetsCompleted = timesheets.every(
+        (timesheet) =>
+          timesheet.status === "APPROVED" || timesheet.status === "REJECTED",
+      );
+      // console.log("allTimesheetsCompleted: ", allTimesheetsCompleted);
+      setIsCompletedTimesheets(allTimesheetsCompleted);
+    } else {
+      setIsCompletedTimesheets(false);
+    }
+  }, [timesheets, setIsCompletedTimesheets]);
+
+  const handleRequestCompletion = () => {
+    if (isCompletedTimesheets) {
+      setShowApprovalModal(true);
+    } else {
+      // Show a message or alert to the user indicating that not all timesheets are completed
+      alert(
+        "You cannot request completion until all timesheets are approved or rejected.",
+      );
+    }
+  }
 
   return (
     <View>
@@ -136,6 +162,17 @@ export default function WorkerWorkSummary({
           );
         })}
       </View>
+
+      <TouchableOpacity
+        onPress={handleRequestCompletion}
+        disabled={!isCompletedTimesheets}
+        className="flex-row justify-center items-center px-4 py-3 rounded-xl mt-4"
+        style={{ backgroundColor: isCompletedTimesheets ? Colors.common.BRAND : '#FFAA66' }}
+      >
+        <Text className="text-white font-extrabold text-sm">
+          Request for Completion
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
