@@ -98,6 +98,12 @@ export interface TimesheetApproval {
   submittedAt: string;
   weekLabel: string;
   totalHours: string;
+  days?: {
+    id: string;
+    day: string;
+    hours: number;
+    status: string;
+  }[];
 };
 
 export type JobStatus = "active" | "upcoming" | "completed" | "cancelled";

@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Headphones } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
@@ -59,6 +65,12 @@ export default function ActiveJobDetailScreen() {
     router.back();
   };
 
+  const refreshJob = async () => {
+    if (!jobId) return;
+
+    await singleJobQuery.refetch();
+  };
+
   if (originRoute === "employer") {
     return (
       <ScreenWrapper>
@@ -74,6 +86,12 @@ export default function ActiveJobDetailScreen() {
           className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={singleJobQuery.isFetching}
+              onRefresh={() => void refreshJob()}
+            />
+          }
         >
           <View className="px-4 pt-4">
             {employerJobStatus === "active" ? (
@@ -180,7 +198,16 @@ export default function ActiveJobDetailScreen() {
         onPress={handleNavigateBack}
       />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={singleJobQuery.isFetching}
+            onRefresh={() => void refreshJob()}
+          />
+        }
+      >
         <View className="px-5 pt-4 pb-20">
           <WorkerJobDetails jobDetails={jobDetails} />
 
@@ -200,7 +227,10 @@ export default function ActiveJobDetailScreen() {
 
           {/* Worker Work Summary */}
           {activeSubTab === "timesheet" && (
-            <WorkerWorkSummary setShowApprovalModal={setShowApprovalModal} />
+            <WorkerWorkSummary
+              setShowApprovalModal={setShowApprovalModal}
+              jobId={jobId ?? ""}
+            />
           )}
 
           {/* Worker Work Policy */}

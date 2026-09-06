@@ -7,6 +7,7 @@ import JobRequests from "@/components/modules/employer/home/JobRequests";
 import WorkerApproveModal from "@/components/modules/employer/worker-details/WorkerApproveModal";
 import ApprovalTabs from "@/components/modules/employer/approvals/ApprovalTabs";
 import TimesheetApprovalList from "@/components/modules/employer/approvals/TimesheetApprovalList";
+import TimesheetDetailsModal from "@/components/modules/employer/approvals/TimesheetDetailsModal";
 import { ApprovalTab, TimesheetApproval } from "@/types";
 import { useGetAppliedJobsQuery } from "@/store/api/jobApplicationApi";
 import AppliedJobList from "@/components/modules/employer/approvals/AppliedJobList";
@@ -15,6 +16,49 @@ import {
   getAppliedJobApplications,
   getAppliedJobsHasNextPage,
 } from "@/utils/jobApplications";
+import { useGetEmployerTimesheetQuery } from "@/store/api/timesheetApi";
+
+type EmployerTimesheetDay = {
+  id: string;
+  day: string;
+  hours: number;
+  status: string;
+};
+
+type EmployerTimesheet = {
+  id: string;
+  workerAuthId: string;
+  week: number;
+  createdAt: string;
+  workerAuth?: {
+    profile?: {
+      name?: string;
+    } | null;
+    workerProfile?: {
+      trades?: string[];
+    } | null;
+  } | null;
+  job?: {
+    title?: string;
+    location?: {
+      address?: string;
+      coordinates?: number[];
+    } | null;
+  } | null;
+  timeSheetDays?: EmployerTimesheetDay[];
+};
+
+const getEmployerTimesheets = (response: any): EmployerTimesheet[] => {
+  const timesheets = response?.data?.timeSheets ?? response?.data?.data?.timeSheets ?? [];
+
+  return Array.isArray(timesheets) ? timesheets : [];
+};
+
+const getEmployerTimesheetTotal = (response: any) =>
+  response?.data?.meta?.total ?? response?.data?.data?.meta?.total ?? 0;
+
+const getAppliedJobsTotal = (response: any) =>
+  response?.data?.meta?.total ?? response?.meta?.total ?? 0;
 
 const getOrdinalSuffix = (day: number) => {
   if (day >= 11 && day <= 13) return "th";
@@ -50,44 +94,76 @@ const formatWeekOptionLabel = (weekLabel: string) => {
   return `Week ${weekNumber} - ${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
-const TIMESHEET_APPROVALS: TimesheetApproval[] = [
-  {
-    id: "timesheet-1",
-    workerId: "1",
-    workerName: "James Mitchell",
-    role: "Groundworker",
-    location: "Shoreditch - 2.4 mi away",
-    submittedAt: "Submitted today",
-    weekLabel: "Week 1 - 17th Aug",
-    totalHours: "45 hrs approved time",
-  },
-  {
-    id: "timesheet-2",
-    workerId: "2",
-    workerName: "Michael Turner",
-    role: "Labour",
-    location: "Bethnal Green - 3.1 mi away",
-    submittedAt: "Scheduled for review on August 24, 2026",
-    weekLabel: "Week 2 - 24th Aug",
-    totalHours: "40 hrs approved time",
-  },
-];
+const formatSubmittedAt = (value?: string) => {
+  if (!value) return "Submitted date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Submitted date unavailable";
+
+  return `Submitted ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+};
+
+const formatLocation = (timesheet: EmployerTimesheet) => {
+  const address = timesheet.job?.location?.address;
+  if (address) return address;
+
+  const coordinates = timesheet.job?.location?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2) {
+    return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+  }
+
+  return timesheet.job?.title ?? "Location unavailable";
+};
+
+const formatTotalHours = (days?: EmployerTimesheetDay[]) => {
+  const totalHours = (days ?? []).reduce((sum, day) => {
+    const hours = Number(day.hours);
+    return sum + (Number.isFinite(hours) ? hours : 0);
+  }, 0);
+
+  return `${totalHours} hrs submitted time`;
+};
+
+const mapTimesheetApproval = (
+  timesheet: EmployerTimesheet,
+): TimesheetApproval => ({
+  id: timesheet.id,
+  workerId: timesheet.workerAuthId,
+  workerName: timesheet.workerAuth?.profile?.name ?? "Worker",
+  role:
+    timesheet.workerAuth?.workerProfile?.trades?.join(", ") ||
+    timesheet.job?.title ||
+    "Trade not set",
+  location: formatLocation(timesheet),
+  submittedAt: formatSubmittedAt(timesheet.createdAt),
+  weekLabel: `Week ${timesheet.week}`,
+  totalHours: formatTotalHours(timesheet.timeSheetDays),
+  days: timesheet.timeSheetDays ?? [],
+});
 
 export default function EmployerApprovalsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ApprovalTab>("timesheets");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
+  const [selectedTimesheet, setSelectedTimesheet] =
+    useState<TimesheetApproval | null>(null);
+  const [selectedTimesheetDetails, setSelectedTimesheetDetails] =
+    useState<TimesheetApproval | null>(null);
   const [applicationPage, setApplicationPage] = useState(1);
   const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
   const [hasMoreApplications, setHasMoreApplications] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const timesheetQuery = useGetEmployerTimesheetQuery({ page: 1, limit: 10 });
   const appliedJobsQuery = useGetAppliedJobsQuery({
     page: applicationPage,
     limit: 10,
   });
-  console.log("Applied jobs query: ", appliedJobsQuery);
+  // console.log("Applied jobs query: ", appliedJobsQuery);
 
   useEffect(() => {
     if (!appliedJobsQuery.data || (applicationPage > 1 && appliedJobsQuery.isFetching)) {
@@ -109,18 +185,20 @@ export default function EmployerApprovalsScreen() {
     setApplications([]);
 
     try {
-      await appliedJobsQuery.refetch();
+      await Promise.all([appliedJobsQuery.refetch(), timesheetQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
   };
 
-  const timesheetItems = useMemo(() => TIMESHEET_APPROVALS, []);
-  const weekOptions = useMemo(
-    () => timesheetItems.map((item) => formatWeekOptionLabel(item.weekLabel)),
-    [timesheetItems],
+  const timesheetItems = useMemo(
+    () => getEmployerTimesheets(timesheetQuery.data).map(mapTimesheetApproval),
+    [timesheetQuery.data],
   );
-  const pendingCount = TIMESHEET_APPROVALS.length + 2;
+  console.log("Timesheet items: ", timesheetItems);
+  const pendingCount =
+    getEmployerTimesheetTotal(timesheetQuery.data) +
+    getAppliedJobsTotal(appliedJobsQuery.data);
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -131,13 +209,17 @@ export default function EmployerApprovalsScreen() {
 
   const handleApproveTimesheet = (item: TimesheetApproval) => {
     setSelectedWeek(formatWeekOptionLabel(item.weekLabel));
-    setIsWeekDropdownOpen(false);
+    setSelectedTimesheet(item);
     setShowApprovalModal(true);
+  };
+
+  const openTimesheetDetails = (item: TimesheetApproval) => {
+    setSelectedTimesheetDetails(item);
   };
 
   const handleCloseApprovalModal = () => {
     setShowApprovalModal(false);
-    setIsWeekDropdownOpen(false);
+    setSelectedTimesheet(null);
   };
 
   return (
@@ -173,7 +255,7 @@ export default function EmployerApprovalsScreen() {
           {/* <ApprovalTabs activeTab={activeTab} setActiveTab={setActiveTab} /> */}
         </View>
 
-        <View className="mt-6">
+        {/* <View className="mt-6">
           <AppliedJobList
             applications={applications}
             isLoading={appliedJobsQuery.isLoading}
@@ -182,14 +264,16 @@ export default function EmployerApprovalsScreen() {
             hasNextPage={hasMoreApplications}
             onLoadMore={() => setApplicationPage((current) => current + 1)}
           />
-        </View>
+        </View> */}
 
         {/* {activeTab === "timesheets" ? ( */}
           <View className="mt-6">
             <TimesheetApprovalList
               items={timesheetItems}
               onApprove={handleApproveTimesheet}
-              openWorkerDetails={openWorkerDetails}
+              onViewDetails={openTimesheetDetails}
+              isLoading={timesheetQuery.isLoading}
+              isError={timesheetQuery.isError}
             />
           </View>
         {/* ) : ( */}
@@ -203,16 +287,15 @@ export default function EmployerApprovalsScreen() {
       <WorkerApproveModal
         visible={showApprovalModal}
         selectedWeek={selectedWeek}
-        weekOptions={weekOptions}
-        isWeekDropdownOpen={isWeekDropdownOpen}
-        onToggleWeekDropdown={() =>
-          setIsWeekDropdownOpen((current) => !current)
-        }
-        onSelectWeek={(weekLabel) => {
-          setSelectedWeek(weekLabel);
-          setIsWeekDropdownOpen(false);
-        }}
+        timesheetId={selectedTimesheet?.id}
+        approvalDays={selectedTimesheet?.days ?? []}
         onClose={handleCloseApprovalModal}
+      />
+
+      <TimesheetDetailsModal
+        visible={!!selectedTimesheetDetails}
+        timesheet={selectedTimesheetDetails}
+        onClose={() => setSelectedTimesheetDetails(null)}
       />
     </ScreenWrapper>
   );

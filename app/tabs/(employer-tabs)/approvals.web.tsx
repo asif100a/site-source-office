@@ -80,7 +80,6 @@ export default function EmployerApprovalsScreenWeb() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ApprovalTab>("timesheets");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [isWeekDropdownOpen, setIsWeekDropdownOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
   const [applicationPage, setApplicationPage] = useState(1);
   const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
@@ -116,10 +115,6 @@ export default function EmployerApprovalsScreenWeb() {
       setRefreshing(false);
     }
   };
-  const weekOptions = TIMESHEET_APPROVALS.map((item) =>
-    formatWeekOptionLabel(item.weekLabel),
-  );
-
   const openWorkerDetails = (workerId: string) => {
     router.push({
       pathname: `/screens/worker-details/${workerId}` as any,
@@ -129,13 +124,11 @@ export default function EmployerApprovalsScreenWeb() {
 
   const handleApproveTimesheet = (item: TimesheetApproval) => {
     setSelectedWeek(formatWeekOptionLabel(item.weekLabel));
-    setIsWeekDropdownOpen(false);
     setShowApprovalModal(true);
   };
 
   const handleCloseApprovalModal = () => {
     setShowApprovalModal(false);
-    setIsWeekDropdownOpen(false);
   };
 
   return (
@@ -230,15 +223,6 @@ export default function EmployerApprovalsScreenWeb() {
       <WorkerApproveModal
         visible={showApprovalModal}
         selectedWeek={selectedWeek}
-        weekOptions={weekOptions}
-        isWeekDropdownOpen={isWeekDropdownOpen}
-        onToggleWeekDropdown={() =>
-          setIsWeekDropdownOpen((current) => !current)
-        }
-        onSelectWeek={(weekLabel) => {
-          setSelectedWeek(weekLabel);
-          setIsWeekDropdownOpen(false);
-        }}
         onClose={handleCloseApprovalModal}
       />
     </ScreenWrapper>

@@ -12,17 +12,8 @@ import { Colors } from "@/constants/Colors";
 import Toast from "react-native-toast-message";
 import { useCreateTimesheetMutation } from "@/store/api/timesheetApi";
 
-type WeekdayKey =
-  | "Sunday"
-  | "Monday"
-  | "Tuesday"
-  | "Wednesday"
-  | "Thursday"
-  | "Friday"
-  | "Saturday";
-
 type WeekdayField = {
-  key: WeekdayKey;
+  key: string;
   date: Date;
   dateKey: string;
 };
@@ -49,16 +40,6 @@ type ServerTimesheetWeek = {
   startDate: string;
   endDate: string;
 };
-
-const WEEKDAY_ORDER: WeekdayKey[] = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
 
 const addDays = (date: Date, days: number) => {
   const nextDate = new Date(date);
@@ -95,7 +76,16 @@ const formatWeekdayLabel = (date: Date) => {
 const formatWeekOptionLabel = (week?: TimesheetWeekOption) => {
   if (!week) return "No week available";
 
-  return `${week.label} (${week.startDate.toLocaleDateString()} - ${week.endDate.toLocaleDateString()})`;
+  const startDate = week.startDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const endDate = week.endDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  return `${week.label} (${startDate} - ${endDate})`;
 };
 
 const getPayloadDay = (date: Date) =>
@@ -139,15 +129,21 @@ const createWeekFields = (
   const weekEnd = normalizeDate(weekEndDate);
   if (!weekStart || !weekEnd) return [];
 
-  return WEEKDAY_ORDER.map((key, index) => {
-    const date = addDays(weekStart, index);
+  const fields: WeekdayField[] = [];
+  let currentDate = weekStart;
 
-    return {
-      key,
-      date,
-      dateKey: getDateKey(date),
-    };
-  }).filter((field) => field.date >= weekStart && field.date <= weekEnd);
+  while (currentDate <= weekEnd) {
+    const dateKey = getDateKey(currentDate);
+
+    fields.push({
+      key: dateKey,
+      date: currentDate,
+      dateKey,
+    });
+    currentDate = addDays(currentDate, 1);
+  }
+
+  return fields;
 };
 
 export default function RequestApprovalModal({
