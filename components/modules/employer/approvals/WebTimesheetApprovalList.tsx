@@ -1,15 +1,49 @@
 import { Colors } from "@/constants/Colors";
-import { TimesheetApproval } from "@/types";
+import { EmployerTimesheet, EmployerTimesheetDay } from "@/types";
 import { ChevronRight, MapPin } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
+
+const formatLocation = (item: EmployerTimesheet) => {
+  const address = item.job?.location?.address;
+  if (address) return address;
+
+  const coordinates = item.job?.location?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2) {
+    return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+  }
+
+  return item.job?.title ?? "Location unavailable";
+};
+
+const formatSubmittedAt = (value?: string) => {
+  if (!value) return "Submitted date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Submitted date unavailable";
+
+  return `Submitted ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+};
+
+const formatTotalHours = (days?: EmployerTimesheetDay[]) => {
+  const totalHours = (days ?? []).reduce((sum, day) => {
+    const hours = Number(day.hours);
+    return sum + (Number.isFinite(hours) ? hours : 0);
+  }, 0);
+
+  return `${totalHours} hrs submitted time`;
+};
 
 export default function WebTimesheetApprovalList({
   items,
   onApprove,
   openWorkerDetails
 }: {
-  items: TimesheetApproval[];
-  onApprove: (item: TimesheetApproval) => void;
+  items: EmployerTimesheet[];
+  onApprove: (item: EmployerTimesheet) => void;
   openWorkerDetails: (workerId: string) => void
 }) {
   return (
@@ -39,10 +73,12 @@ export default function WebTimesheetApprovalList({
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1 pr-3">
                     <Text className="text-base font-bold text-neutral-950">
-                      {item.workerName}
+                      {item.workerAuth?.profile?.name ?? "Worker"}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-500">
-                      {item.role}
+                      {item.workerAuth?.workerProfile?.trades?.join(", ") ||
+                        item.job?.title ||
+                        "Trade not set"}
                     </Text>
                   </View>
 
@@ -57,25 +93,25 @@ export default function WebTimesheetApprovalList({
                 </View>
 
                 <Text className="mt-4 text-sm font-semibold text-neutral-900">
-                  {item.weekLabel}
+                  Week {item.week}
                 </Text>
-                {/* <Text className="mt-1 text-xs text-neutral-400">
-                  {item.submittedAt}
-                </Text> */}
+                <Text className="mt-1 text-xs text-neutral-400">
+                  {formatSubmittedAt(item.createdAt)}
+                </Text>
 
                 <View className="mt-3 flex-row items-center gap-2">
                   <MapPin size={15} color="#C81E1E" />
                   <Text className="text-sm text-neutral-500">
-                    {item.location}
+                    {formatLocation(item)}
                   </Text>
                 </View>
 
-                {/* <Text className="mt-2 text-sm text-neutral-500">
-                  {item.totalHours}
-                </Text> */}
+                <Text className="mt-2 text-sm text-neutral-500">
+                  {formatTotalHours(item.timeSheetDays)}
+                </Text>
                 <View className="mt-5 flex-row items-center justify-end gap-3 pt-4">
                   <TouchableOpacity
-                    onPress={() => openWorkerDetails(item.id)}
+                    onPress={() => openWorkerDetails(item.workerAuthId)}
                     activeOpacity={0.85}
                   >
                     <Text className="text-sm font-bold text-neutral-700">

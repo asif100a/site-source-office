@@ -106,6 +106,57 @@ export interface TimesheetApproval {
   }[];
 };
 
+export type EmployerTimesheetDay = {
+  id: string;
+  timeSheetId?: string;
+  day: string;
+  hours: number;
+  status: string;
+};
+
+export type EmployerTimesheet = {
+  id: string;
+  jobId: string;
+  workerAuthId: string;
+  week: number;
+  createdAt: string;
+  workerAuth?: {
+    id?: string;
+    email?: string;
+    profile?: {
+      name?: string;
+      image?: string | null;
+    } | null;
+    workerProfile?: {
+      trades?: string[];
+      experience?: string | null;
+    } | null;
+  } | null;
+  job?: {
+    title?: string;
+    trades?: string[];
+    hourlyRate?: number;
+    workersNeeded?: number;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    mustHave?: string[];
+    note?: string;
+    workingHours?: {
+      day: string;
+      startTime: string;
+      endTime: string;
+      isPayOnePointFiveX?: boolean;
+      isPayTwoX?: boolean;
+    }[];
+    location?: {
+      address?: string;
+      coordinates?: number[];
+    } | null;
+  } | null;
+  timeSheetDays?: EmployerTimesheetDay[];
+};
+
 export type JobStatus = "active" | "upcoming" | "completed" | "cancelled";
 export type JobTab = "active" | "upcoming" | "completed";
 

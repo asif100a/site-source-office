@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { ShieldCheck } from "lucide-react-native";
 import { RefreshControl, ScrollView, Text, View } from "react-native";
@@ -8,7 +8,7 @@ import JobRequests from "@/components/modules/employer/home/JobRequests";
 import WorkerApproveModal from "@/components/modules/employer/worker-details/WorkerApproveModal";
 import WebApprovalTabs from "@/components/modules/employer/approvals/WebApprovalTabs";
 import WebTimesheetApprovalList from "@/components/modules/employer/approvals/WebTimesheetApprovalList";
-import { TimesheetApproval } from "@/types";
+import { EmployerTimesheet } from "@/types";
 import { useGetAppliedJobsQuery } from "@/store/api/jobApplicationApi";
 import AppliedJobList from "@/components/modules/employer/approvals/AppliedJobList";
 import {
@@ -16,75 +16,22 @@ import {
   getAppliedJobApplications,
   getAppliedJobsHasNextPage,
 } from "@/utils/jobApplications";
+import { useGetEmployerTimesheetQuery } from "@/store/api/timesheetApi";
 
 type ApprovalTab = "timesheets" | "requests";
-
-const getOrdinalSuffix = (day: number) => {
-  if (day >= 11 && day <= 13) return "th";
-
-  switch (day % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
-};
-
-const formatWeekOptionLabel = (weekLabel: string) => {
-  const match = weekLabel.match(/^Week\s+(\d+)\s+-\s+([A-Za-z]+)\s+(\d{1,2})/);
-
-  if (!match) {
-    return weekLabel;
-  }
-
-  const [, weekNumber, monthName, dayValue] = match;
-  const day = Number(dayValue);
-  const parsedDate = new Date(`${monthName} ${day}, 2026`);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return weekLabel;
-  }
-
-  const month = parsedDate.toLocaleDateString("en-US", { month: "short" });
-  return `Week ${weekNumber} - ${day}${getOrdinalSuffix(day)} ${month}`;
-};
-
-const TIMESHEET_APPROVALS: TimesheetApproval[] = [
-  {
-    id: "timesheet-1",
-    workerId: "1",
-    workerName: "James Mitchell",
-    role: "Groundworker",
-    location: "Shoreditch - 2.4 mi away",
-    submittedAt: "Submitted on August 17, 2026",
-    weekLabel: "Week 1 - 17th Aug",
-    totalHours: "45 hrs approved time",
-  },
-  {
-    id: "timesheet-2",
-    workerId: "2",
-    workerName: "Michael Turner",
-    role: "Labour",
-    location: "Bethnal Green - 3.1 mi away",
-    submittedAt: "Scheduled for review on August 24, 2026",
-    weekLabel: "Week 2 - 24th Aug",
-    totalHours: "40 hrs approved time",
-  },
-];
 
 export default function EmployerApprovalsScreenWeb() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ApprovalTab>("timesheets");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Select Week");
+  const [selectedTimesheet, setSelectedTimesheet] =
+    useState<EmployerTimesheet | null>(null);
   const [applicationPage, setApplicationPage] = useState(1);
   const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
   const [hasMoreApplications, setHasMoreApplications] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const timesheetQuery = useGetEmployerTimesheetQuery({ page: 1, limit: 10 });
   const appliedJobsQuery = useGetAppliedJobsQuery({
     page: applicationPage,
     limit: 10,
@@ -110,11 +57,17 @@ export default function EmployerApprovalsScreenWeb() {
     setApplications([]);
 
     try {
-      await appliedJobsQuery.refetch();
+      await Promise.all([appliedJobsQuery.refetch(), timesheetQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
   };
+
+  const timesheetItems = useMemo(
+    () => timesheetQuery.data?.timeSheets ?? [],
+    [timesheetQuery.data],
+  );
+
   const openWorkerDetails = (workerId: string) => {
     router.push({
       pathname: `/screens/worker-details/${workerId}` as any,
@@ -122,13 +75,15 @@ export default function EmployerApprovalsScreenWeb() {
     });
   };
 
-  const handleApproveTimesheet = (item: TimesheetApproval) => {
-    setSelectedWeek(formatWeekOptionLabel(item.weekLabel));
+  const handleApproveTimesheet = (item: EmployerTimesheet) => {
+    setSelectedWeek(`Week ${item.week}`);
+    setSelectedTimesheet(item);
     setShowApprovalModal(true);
   };
 
   const handleCloseApprovalModal = () => {
     setShowApprovalModal(false);
+    setSelectedTimesheet(null);
   };
 
   return (
@@ -180,7 +135,8 @@ export default function EmployerApprovalsScreenWeb() {
                           Employer queue
                         </Text>
                         <Text className="mt-1 text-xs text-neutral-500">
-                          4 approvals pending
+                          {(timesheetQuery.data?.meta?.total ?? 0) +
+                            applications.length} approvals pending
                         </Text>
                       </View>
                     </View>
@@ -204,7 +160,7 @@ export default function EmployerApprovalsScreenWeb() {
 
             {/* {activeTab === "timesheets" ? ( */}
               <WebTimesheetApprovalList
-                items={TIMESHEET_APPROVALS}
+                items={timesheetItems}
                 onApprove={handleApproveTimesheet}
                 openWorkerDetails={openWorkerDetails}
               />
@@ -223,6 +179,8 @@ export default function EmployerApprovalsScreenWeb() {
       <WorkerApproveModal
         visible={showApprovalModal}
         selectedWeek={selectedWeek}
+        timesheetId={selectedTimesheet?.id}
+        approvalDays={selectedTimesheet?.timeSheetDays ?? []}
         onClose={handleCloseApprovalModal}
       />
     </ScreenWrapper>

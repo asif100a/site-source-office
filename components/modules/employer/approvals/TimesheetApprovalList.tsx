@@ -1,7 +1,41 @@
 import { Colors } from "@/constants/Colors";
-import { TimesheetApproval } from "@/types";
+import { EmployerTimesheet, EmployerTimesheetDay } from "@/types";
 import { ArrowRight, MapPin } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
+
+const formatLocation = (item: EmployerTimesheet) => {
+  const address = item.job?.location?.address;
+  if (address) return address;
+
+  const coordinates = item.job?.location?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2) {
+    return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+  }
+
+  return item.job?.title ?? "Location unavailable";
+};
+
+const formatSubmittedAt = (value?: string) => {
+  if (!value) return "Submitted date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Submitted date unavailable";
+
+  return `Submitted ${date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+};
+
+const formatTotalHours = (days?: EmployerTimesheetDay[]) => {
+  const totalHours = (days ?? []).reduce((sum, day) => {
+    const hours = Number(day.hours);
+    return sum + (Number.isFinite(hours) ? hours : 0);
+  }, 0);
+
+  return `${totalHours} hrs submitted time`;
+};
 
 export default function TimesheetApprovalList({
   items,
@@ -10,9 +44,9 @@ export default function TimesheetApprovalList({
   isLoading = false,
   isError = false,
 }: {
-  items: TimesheetApproval[];
-  onApprove: (item: TimesheetApproval) => void;
-  onViewDetails: (item: TimesheetApproval) => void;
+  items: EmployerTimesheet[];
+  onApprove: (item: EmployerTimesheet) => void;
+  onViewDetails: (item: EmployerTimesheet) => void;
   isLoading?: boolean;
   isError?: boolean;
 }) {
@@ -54,10 +88,12 @@ export default function TimesheetApprovalList({
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1 pr-2">
                 <Text className="text-sm font-bold text-neutral-950">
-                  {item.workerName}
+                  {item.workerAuth?.profile?.name ?? "Worker"}
                 </Text>
                 <Text className="mt-1 text-xs text-neutral-500">
-                  {item.role}
+                  {item.workerAuth?.workerProfile?.trades?.join(", ") ||
+                    item.job?.title ||
+                    "Trade not set"}
                 </Text>
               </View>
 
@@ -72,21 +108,21 @@ export default function TimesheetApprovalList({
             </View>
 
             <Text className="mt-3 text-sm font-semibold text-neutral-900">
-              {item.weekLabel}
+              Week {item.week}
             </Text>
             <Text className="mt-1 text-xs text-neutral-400">
-              {item.submittedAt}
+              {formatSubmittedAt(item.createdAt)}
             </Text>
 
             <View className="mt-3 flex-row items-center gap-2">
               <MapPin size={14} color="#C81E1E" />
               <Text className="flex-1 text-xs text-neutral-500">
-                {item.location}
+                {formatLocation(item)}
               </Text>
             </View>
 
             <Text className="mt-2 text-xs font-semibold text-neutral-500">
-              {item.totalHours}
+              {formatTotalHours(item.timeSheetDays)}
             </Text>
 
             <View className="mt-4 flex-row items-center justify-end gap-3">

@@ -122,7 +122,7 @@ export default function EmployerMyJobsScreen() {
     setJobs([]);
   }, [activeTab, trimmedSearchQuery]);
 
-  // console.log("jobsQuery: ", jobsQuery);
+  console.log("jobsQuery: ", jobsQuery);
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
