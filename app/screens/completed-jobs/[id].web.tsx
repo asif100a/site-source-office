@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowLeft,
   Briefcase,
@@ -20,6 +20,9 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
+import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import { getSingleJobData } from "@/utils/workerJobs";
+import { mapSingleJobToActiveJobDetails } from "@/utils/activeJobDetails";
 
 type CompletedTab = "schedule" | "summary";
 
@@ -148,7 +151,7 @@ function Hero({
   );
 }
 
-function JobSummaryCard() {
+function JobSummaryCard({ jobDetails }: { jobDetails: JobDetails }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <View className="mb-4 flex-row items-start justify-between">
@@ -158,17 +161,17 @@ function JobSummaryCard() {
           </View>
           <View>
             <Text className="text-base font-extrabold text-neutral-950">
-              {JOB_DETAILS.title}
+              {jobDetails.title}
             </Text>
             <Text className="text-xs font-semibold text-neutral-500">
-              {JOB_DETAILS.company}
+              {jobDetails.company}
             </Text>
           </View>
         </View>
 
         <View className="rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1">
           <Text className="text-[10px] font-bold text-emerald-600">
-            {JOB_DETAILS.statusBadge}
+            {jobDetails.statusBadge}
           </Text>
         </View>
       </View>
@@ -176,15 +179,15 @@ function JobSummaryCard() {
       <View className="gap-2.5 border-t border-neutral-100 pt-3">
         <View className="flex-row items-center gap-2">
           <MapPin size={14} color="#C81E1E" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.location}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.location}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Users size={14} color="#737373" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.team}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.team}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Calendar size={14} color="#737373" />
-          <Text className="text-xs text-neutral-500">{JOB_DETAILS.duration}</Text>
+          <Text className="text-xs text-neutral-500">{jobDetails.duration}</Text>
         </View>
       </View>
     </View>
@@ -230,13 +233,13 @@ function TabSwitch({
   );
 }
 
-function ScheduleCard() {
+function ScheduleCard({ jobDetails }: { jobDetails: JobDetails }) {
   const rows = [
-    { label: "Start Date", value: JOB_DETAILS.startDate },
-    { label: "End date", value: JOB_DETAILS.endDate },
-    { label: "Hours", value: JOB_DETAILS.hours },
-    { label: "Per Week", value: JOB_DETAILS.daysPerWeek },
-    { label: "Next invoice", value: JOB_DETAILS.nextInvoice },
+    { label: "Start Date", value: jobDetails.startDate },
+    { label: "End date", value: jobDetails.endDate },
+    { label: "Hours", value: jobDetails.hours },
+    { label: "Per Week", value: jobDetails.daysPerWeek },
+    { label: "Next invoice", value: jobDetails.nextInvoice },
   ];
 
   return (
@@ -263,16 +266,52 @@ function ScheduleCard() {
   );
 }
 
-function WorkSummaryCard() {
+const formatShortDate = (value?: string) => {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not set";
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+const getWorkSummaryRows = (job: any) => {
+  const weeks = Array.isArray(job?.timeSheetWeeks) ? job.timeSheetWeeks : [];
+  const timesheets = Array.isArray(job?.timeSheets) ? job.timeSheets : [];
+
+  if (!weeks.length && !timesheets.length) return WORK_SUMMARY_ROWS;
+
+  const source = weeks.length ? weeks : timesheets;
+
+  return source.map((item: any, index: number) => {
+    const week = item.week ?? index + 1;
+    const timesheet = timesheets.find((entry: any) => entry.week === week);
+
+    return {
+      week: `Week ${week}`,
+      dates:
+        item.startDate || item.endDate
+          ? `${formatShortDate(item.startDate)} - ${formatShortDate(item.endDate)}`
+          : "Dates not set",
+      status: timesheet?.status ?? "Completed",
+    };
+  });
+};
+
+function WorkSummaryCard({ job }: { job?: any }) {
+  const rows = getWorkSummaryRows(job);
+
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Work Summary" />
       <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white">
-        {WORK_SUMMARY_ROWS.map((item, index) => (
+        {rows.map((item, index) => (
           <View
             key={`${item.week}-${index}`}
             className={`flex-row items-center justify-between p-4 ${
-              index < WORK_SUMMARY_ROWS.length - 1 ? "border-b border-neutral-50" : ""
+              index < rows.length - 1 ? "border-b border-neutral-50" : ""
             }`}
           >
             <View>
@@ -531,6 +570,13 @@ function ActionCard({
 
 export default function CompletedJobDetailWebScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
+    skip: !jobId,
+  });
+  const rawJob = getSingleJobData(singleJobQuery.data);
+  const jobDetails = rawJob ? mapSingleJobToActiveJobDetails(rawJob) : null;
   const [activeTab, setActiveTab] = useState<CompletedTab>("schedule");
   const [showReviewComposer, setShowReviewComposer] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -581,78 +627,102 @@ export default function CompletedJobDetailWebScreen() {
           <View className="mx-auto w-full max-w-7xl gap-6">
             <Hero onBack={handleBack} />
 
-            <View className="flex-col gap-6 xl:flex-row">
-              <View className="flex-[1.45] gap-4">
-                <JobSummaryCard />
+            {singleJobQuery.isLoading ? (
+              <View className="rounded-[24px] border border-neutral-200 bg-white p-8">
+                <Text className="text-center text-sm font-semibold text-neutral-500">
+                  Loading completed job...
+                </Text>
+              </View>
+            ) : singleJobQuery.isError || !jobDetails ? (
+              <View className="rounded-[24px] border border-red-100 bg-red-50 p-8">
+                <Text className="text-center text-sm font-semibold text-red-700">
+                  Unable to load this completed job. Please try again.
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-col gap-6 xl:flex-row">
+                <View className="flex-[1.45] gap-4">
+                  <JobSummaryCard jobDetails={jobDetails} />
 
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                  <SectionTitle title="Completed workspace" />
-                  <TabSwitch activeTab={activeTab} setActiveTab={setActiveTab} />
+                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                    <SectionTitle title="Completed workspace" />
+                    <TabSwitch
+                      activeTab={activeTab}
+                      setActiveTab={setActiveTab}
+                    />
+                  </View>
+
+                  {activeTab === "schedule" ? (
+                    <ScheduleCard jobDetails={jobDetails} />
+                  ) : null}
+                  {activeTab === "summary" ? (
+                    <WorkSummaryCard job={rawJob} />
+                  ) : null}
+
+                  <ReviewsCard reviews={reviews} />
                 </View>
 
-                {activeTab === "schedule" ? <ScheduleCard /> : null}
-                {activeTab === "summary" ? <WorkSummaryCard /> : null}
+                <View className="flex-1 gap-4">
+                  {showReviewComposer ? (
+                    <ReviewComposerCard
+                      reviewRating={reviewRating}
+                      setReviewRating={setReviewRating}
+                      reviewFeedback={reviewFeedback}
+                      setReviewFeedback={setReviewFeedback}
+                      onSubmit={handleSubmitReview}
+                      onCancel={() => {
+                        setShowReviewComposer(false);
+                        setReviewRating(0);
+                        setReviewFeedback("");
+                      }}
+                    />
+                  ) : (
+                    <RatingOverviewCard
+                      reviewCount={reviews.length}
+                      onWriteReview={() => setShowReviewComposer(true)}
+                    />
+                  )}
 
-                <ReviewsCard reviews={reviews} />
-              </View>
-
-              <View className="flex-1 gap-4">
-                {showReviewComposer ? (
-                  <ReviewComposerCard
-                    reviewRating={reviewRating}
-                    setReviewRating={setReviewRating}
-                    reviewFeedback={reviewFeedback}
-                    setReviewFeedback={setReviewFeedback}
-                    onSubmit={handleSubmitReview}
-                    onCancel={() => {
-                      setShowReviewComposer(false);
-                      setReviewRating(0);
-                      setReviewFeedback("");
-                    }}
-                  />
-                ) : (
-                  <RatingOverviewCard
-                    reviewCount={reviews.length}
-                    onWriteReview={() => setShowReviewComposer(true)}
-                  />
-                )}
-
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                  <View className="flex-row items-center gap-3">
-                    <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
-                      <ShieldCheck size={18} color={Colors.common.BRAND} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-semibold text-neutral-900">
-                        Completed work summary
-                      </Text>
-                      <Text className="mt-1 text-sm leading-6 text-neutral-600">
-                        Keep the final job record visible while reviews and follow-up
-                        actions stay accessible on the right.
-                      </Text>
+                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                    <View className="flex-row items-center gap-3">
+                      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
+                        <ShieldCheck size={18} color={Colors.common.BRAND} />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-sm font-semibold text-neutral-900">
+                          Completed work summary
+                        </Text>
+                        <Text className="mt-1 text-sm leading-6 text-neutral-600">
+                          Keep the final job record visible while reviews and
+                          follow-up actions stay accessible on the right.
+                        </Text>
+                      </View>
                     </View>
                   </View>
+
+                  <ActionCard
+                    onSupport={handleOpenSupport}
+                    onBack={handleBack}
+                  />
+
+                  <TouchableOpacity
+                    onPress={handleOpenSupport}
+                    activeOpacity={0.9}
+                    className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
+                  >
+                    <View className="flex-1 pr-3">
+                      <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
+                        Need support?
+                      </Text>
+                      <Text className="mt-2 text-lg font-black tracking-tight text-white">
+                        Open a support ticket
+                      </Text>
+                    </View>
+                    <Headphones size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
                 </View>
-
-                <ActionCard onSupport={handleOpenSupport} onBack={handleBack} />
-
-                <TouchableOpacity
-                  onPress={handleOpenSupport}
-                  activeOpacity={0.9}
-                  className="flex-row items-center justify-between rounded-[24px] bg-neutral-950 px-5 py-5"
-                >
-                  <View className="flex-1 pr-3">
-                    <Text className="text-xs font-bold uppercase tracking-[0px] text-white/60">
-                      Need support?
-                    </Text>
-                    <Text className="mt-2 text-lg font-black tracking-tight text-white">
-                      Open a support ticket
-                    </Text>
-                  </View>
-                  <Headphones size={20} color="#FFFFFF" />
-                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         </View>
       </ScrollView>

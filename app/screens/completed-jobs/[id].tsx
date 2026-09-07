@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import { View, ScrollView, TouchableOpacity, Text } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CommonHeader from "@/components/modules/common/CommonHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
@@ -8,25 +8,26 @@ import CompletedEmployerContact from "@/components/modules/common/completed-jobs
 import CompletedToggleChips from "@/components/modules/common/completed-jobs/CompletedToggleChips";
 import CompletedSchedule from "@/components/modules/common/completed-jobs/CompletedSchedule";
 import CompletedWorkSummary from "@/components/modules/common/completed-jobs/CompletedWorkSummary";
-import {
-  getDashboardRouteForRole,
-  normalizeUserRole,
-} from "@/constants/Routes";
 import StandardButton from "@/components/standard_ui/buttons/StandardButton";
 import ReviewModal from "@/components/modules/common/ReviewModal";
 import { Colors } from "@/constants/Colors";
 import { Headphones } from "lucide-react-native";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
+import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import { getSingleJobData } from "@/utils/workerJobs";
+import { mapSingleJobToActiveJobDetails } from "@/utils/activeJobDetails";
 
 export default function CompletedJobDetailScreen() {
   const router = useRouter();
-  const { id, origin, status } = useLocalSearchParams<{
+  const { id } = useLocalSearchParams<{
     id?: string;
-    origin?: string;
-    status?: string;
   }>();
-  const originRoute = Array.isArray(origin) ? origin[0] : origin;
-  const statusRoute = Array.isArray(status) ? status[0] : status;
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
+    skip: !jobId,
+  });
+  const rawJob = getSingleJobData(singleJobQuery.data);
+  const jobDetails = rawJob ? mapSingleJobToActiveJobDetails(rawJob) : null;
 
   const [activeSubTab, setActiveSubTab] = useState<"schedule" | "summary">(
     "schedule",
@@ -41,24 +42,6 @@ export default function CompletedJobDetailScreen() {
   const [supportModalState, setSupportModalState] = useState<
     "form" | "submitted"
   >("form");
-
-  const jobDetails = {
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    statusBadge: "Day 20 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    contactName: "James Hartley",
-    contactTitle: "Director - Hartley Construction",
-    contactEmail: "olivia@untitledui.com",
-    contactPhone: "+44 723 456 7891",
-    startDate: "3 Jun 2026",
-    endDate: "28 Jun 2026",
-    hours: "07:30 - 17:00",
-    daysPerWeek: "5 Days",
-    nextInvoice: "Friday 7 Jun",
-  };
 
   const handleNavigateBack = () => {
     router.back();
@@ -100,39 +83,57 @@ export default function CompletedJobDetailScreen() {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-5 pt-4 pb-12">
-          {/* Job Details */}
-          <CompletedJobDetails jobDetails={jobDetails} />
+          {singleJobQuery.isLoading ? (
+            <View className="items-center rounded-2xl bg-white px-5 py-8">
+              <Text className="text-sm font-semibold text-neutral-500">
+                Loading completed job...
+              </Text>
+            </View>
+          ) : singleJobQuery.isError || !jobDetails ? (
+            <View className="items-center rounded-2xl bg-red-50 px-5 py-8">
+              <Text className="text-center text-sm font-semibold text-red-700">
+                Unable to load this completed job. Please try again.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {/* Job Details */}
+              <CompletedJobDetails jobDetails={jobDetails} />
 
-          {/* Employer Contact */}
-          {/* <CompletedEmployerContact jobDetails={jobDetails} /> */}
+              {/* Employer Contact */}
+              <CompletedEmployerContact jobDetails={jobDetails} />
 
-          {/* Toggle Chips */}
-          <CompletedToggleChips
-            activeSubTab={activeSubTab}
-            setActiveSubTab={setActiveSubTab}
-          />
+              {/* Toggle Chips */}
+              <CompletedToggleChips
+                activeSubTab={activeSubTab}
+                setActiveSubTab={setActiveSubTab}
+              />
 
-          {activeSubTab === "schedule" && (
-            <CompletedSchedule jobDetails={jobDetails} />
+              {activeSubTab === "schedule" && (
+                <CompletedSchedule jobDetails={jobDetails} />
+              )}
+
+              {activeSubTab === "summary" && (
+                <CompletedWorkSummary jobDetails={rawJob} />
+              )}
+
+              <StandardButton
+                text="Write review"
+                style={{
+                  backgroundColor: "#000000",
+                  marginTop: 20,
+                }}
+                buttonTextStyle={{
+                  minWidth: 120,
+                }}
+                onPress={() => setIsReviewModalOpen(true)}
+              />
+            </>
           )}
-
-          {activeSubTab === "summary" && <CompletedWorkSummary />}
-
-          <StandardButton
-            text="Write review"
-            style={{
-              backgroundColor: "#000000",
-              marginTop: 20,
-            }}
-            buttonTextStyle={{
-              minWidth: 120,
-            }}
-            onPress={() => setIsReviewModalOpen(true)}
-          />
         </View>
       </ScrollView>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={() => {
           setSupportModalState("form");
           setShowSupportModal(true);
@@ -141,15 +142,15 @@ export default function CompletedJobDetailScreen() {
         className="absolute bottom-16 right-6 w-14 h-14 rounded-full items-center justify-center active:opacity-90 z-20"
       >
         <Headphones size={24} color="#FFFFFF" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Message Support Modal */}
-      <MessageSupportModal
+      {/* <MessageSupportModal
         showSupportModal={showSupportModal}
         setShowSupportModal={setShowSupportModal}
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
-      />
+      /> */}
 
       {/* Review Modal */}
       <ReviewModal
