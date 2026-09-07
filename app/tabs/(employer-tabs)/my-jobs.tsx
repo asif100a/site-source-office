@@ -89,7 +89,7 @@ export default function EmployerMyJobsScreen() {
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
   // console.log("requestedStatus from the my jobs screen: ", requestedStatus);
-  console.log("jobsQuery from the my jobs screen: ", jobsQuery);
+  // console.log("jobsQuery from the my jobs screen: ", jobsQuery);
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
@@ -122,7 +122,7 @@ export default function EmployerMyJobsScreen() {
     setJobs([]);
   }, [activeTab, trimmedSearchQuery]);
 
-  console.log("jobsQuery: ", jobsQuery);
+  // console.log("jobsQuery: ", jobsQuery);
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;

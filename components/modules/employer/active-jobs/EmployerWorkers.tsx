@@ -3,22 +3,48 @@ import React from "react";
 import { Image } from "expo-image";
 import { ChevronRight } from "lucide-react-native";
 
-const EMPLOYER_WORKERS = [
+const DEFAULT_EMPLOYER_WORKERS = [
   { id: "1", name: "James Hartley", progress: "Day 3 of 20" },
   { id: "2", name: "James Hartley", progress: "Day 3 of 20" },
   { id: "3", name: "James Hartley", progress: "Day 3 of 20" },
 ];
 
-export default function EmployerWorkers({ openWorkerDetails }: {
-  openWorkerDetails: (id: string) => void
+const getWorkers = (jobDetails: any) => {
+  const applications = Array.isArray(jobDetails?.jobApplications)
+    ? jobDetails.jobApplications
+    : [];
+  const acceptedWorkers = applications
+    .filter((application: any) => application?.status === "ACCEPTED")
+    .map((application: any) => {
+      const auth = application?.auth;
+
+      return {
+        id: auth?.id ?? application?.authId ?? application?.id,
+        name: auth?.profile?.name ?? "Worker",
+        image: auth?.profile?.image,
+        progress: `Week ${jobDetails?.timeSheetWeeks?.length ?? 0} scheduled`,
+      };
+    });
+
+  return acceptedWorkers.length ? acceptedWorkers : DEFAULT_EMPLOYER_WORKERS;
+};
+
+export default function EmployerWorkers({
+  openWorkerDetails,
+  jobDetails,
+}: {
+  openWorkerDetails: (id: string) => void;
+  jobDetails?: any;
 }) {
+  const workers = getWorkers(jobDetails);
+
   return (
     <View className="mt-4">
       <Text className="text-neutral-900 text-sm font-extrabold mb-3">
         Workers
       </Text>
       <View className="gap-3">
-        {EMPLOYER_WORKERS.map((worker) => (
+        {workers.map((worker) => (
           <TouchableOpacity
             key={worker.id}
             onPress={() => openWorkerDetails(worker.id)}
@@ -29,7 +55,9 @@ export default function EmployerWorkers({ openWorkerDetails }: {
               <View className="flex-row items-center gap-3">
                 <Image
                   source={{
-                    uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
+                    uri:
+                      worker.image ??
+                      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
                   }}
                   className="w-10 h-10 rounded-full"
                 />

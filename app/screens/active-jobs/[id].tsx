@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   View,
   Text,
   ScrollView,
@@ -24,8 +25,103 @@ import WorkerWorkSummary from "@/components/modules/worker/active-jobs/WorkerWor
 import WorkerWorkPolicy from "@/components/modules/worker/active-jobs/WorkerWorkPolicy";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import RequestApprovalModal from "@/components/modules/worker/active-jobs/RequestApprovalModal";
-import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import {
+  useChangeCompletionStatusMutation,
+  useGetSingleJobQuery,
+} from "@/store/api/jobApi";
 import { getSingleJobData } from "@/utils/workerJobs";
+import Toast from "react-native-toast-message";
+
+function EmployerCompletionRequestCard({
+  jobId,
+  status,
+  onUpdated,
+}: {
+  jobId: string;
+  status?: string;
+  onUpdated: () => void | Promise<void>;
+}) {
+  const [changeCompletionStatus, { isLoading }] =
+    useChangeCompletionStatusMutation();
+
+  if (!status) return null;
+
+  const updateCompletionStatus = async (nextStatus: "COMPLETED" | "REJECTED") => {
+    if (!jobId) {
+      Toast.show({
+        type: "error",
+        text1: "Job unavailable",
+        text2: "Unable to find this job."
+      });
+      return;
+    }
+
+    try {
+     const response = await changeCompletionStatus({ jobId, status: nextStatus }).unwrap();
+     console.log("changeCompletionStatus response: ", response);
+      await onUpdated();
+      Toast.show({
+        type: "success",
+        text1: "Completion request updated",
+        text2: nextStatus === "COMPLETED"
+          ? "The job completion request has been approved."
+          : "The job completion request has been rejected."
+      });
+    } catch (error) {
+      console.error("error updating completion status: ", error);
+      Toast.show({
+        type: "error",
+        text1: "Update failed",
+        text2: "Unable to update this completion request. Please try again."
+      });
+    }
+  };
+
+  return (
+    <View className="mt-4 rounded-2xl border border-neutral-200/80 bg-white p-4">
+      <View className="mb-4 flex-row items-center justify-between gap-3">
+        <View className="flex-1">
+          <Text className="text-neutral-900 text-base font-extrabold">
+            Completion Request
+          </Text>
+          <Text className="mt-1 text-xs font-semibold text-neutral-500">
+            Worker requested to complete this job.
+          </Text>
+        </View>
+        <View className="rounded-full bg-orange-50 px-3 py-1">
+          <Text
+            style={{ color: Colors.common.BRAND }}
+            className="text-[10px] font-extrabold"
+          >
+            {status}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex-row gap-3">
+        <TouchableOpacity
+          onPress={() => void updateCompletionStatus("COMPLETED")}
+          disabled={isLoading || status === "COMPLETED"}
+          style={{ backgroundColor: Colors.common.BRAND }}
+          className="flex-1 items-center rounded-xl px-4 py-3 disabled:opacity-60"
+        >
+          <Text className="text-xs font-extrabold text-white">
+            {isLoading ? "Updating..." : "Approve"}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => void updateCompletionStatus("REJECTED")}
+          disabled={isLoading || status === "REJECTED"}
+          className="flex-1 items-center rounded-xl border border-neutral-200 bg-white px-4 py-3 disabled:opacity-60"
+        >
+          <Text className="text-xs font-extrabold text-neutral-700">
+            Reject
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function ActiveJobDetailScreen() {
   const router = useRouter();
@@ -72,6 +168,44 @@ export default function ActiveJobDetailScreen() {
   };
 
   if (originRoute === "employer") {
+    if (singleJobQuery.isLoading) {
+      return (
+        <ScreenWrapper>
+          <CommonHeader
+            headerTitle={
+              statusRoute === "upcoming" ? "Upcoming Job" : "Active Job"
+            }
+            withBackButton
+            onPress={handleNavigateBack}
+          />
+          <View className="flex-1 items-center justify-center px-5">
+            <Text className="text-sm font-semibold text-neutral-500">
+              Loading job details...
+            </Text>
+          </View>
+        </ScreenWrapper>
+      );
+    }
+
+    if (singleJobQuery.isError || !jobDetails) {
+      return (
+        <ScreenWrapper>
+          <CommonHeader
+            headerTitle={
+              statusRoute === "upcoming" ? "Upcoming Job" : "Active Job"
+            }
+            withBackButton
+            onPress={handleNavigateBack}
+          />
+          <View className="flex-1 items-center justify-center px-5">
+            <Text className="text-center text-sm font-semibold text-red-700">
+              Unable to load this job. Please try again.
+            </Text>
+          </View>
+        </ScreenWrapper>
+      );
+    }
+
     return (
       <ScreenWrapper>
         <CommonHeader
@@ -96,13 +230,22 @@ export default function ActiveJobDetailScreen() {
           <View className="px-4 pt-4">
             {employerJobStatus === "active" ? (
               <>
-                <EmployerJobDetails />
+                <EmployerJobDetails jobDetails={jobDetails} />
 
                 {/* EMPLOYER_WORKERS */}
-                <EmployerWorkers openWorkerDetails={openWorkerDetails} />
+                <EmployerWorkers
+                  openWorkerDetails={openWorkerDetails}
+                  jobDetails={jobDetails}
+                />
 
                 {/* Project Schedule */}
-                <ProjectSchedule />
+                <ProjectSchedule jobDetails={jobDetails} />
+
+                <EmployerCompletionRequestCard
+                  jobId={jobId ?? ""}
+                  status={jobDetails?.jobCompletion?.status}
+                  onUpdated={refreshJob}
+                />
               </>
             ) : (
               <>

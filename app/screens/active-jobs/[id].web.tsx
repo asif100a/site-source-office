@@ -27,6 +27,7 @@ import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import {
   useCompleteJobMutation,
+  useChangeCompletionStatusMutation,
   useGetSingleJobQuery,
 } from "@/store/api/jobApi";
 import { getSingleJobData } from "@/utils/workerJobs";
@@ -237,14 +238,27 @@ function JobSummaryCard({
 
 function EmployerWorkersCard({
   openWorkerDetails,
+  rawJob,
 }: {
   openWorkerDetails: (workerId: string) => void;
+  rawJob?: any;
 }) {
+  const workers = Array.isArray(rawJob?.jobApplications)
+    ? rawJob.jobApplications
+        .filter((application: any) => application?.status === "ACCEPTED")
+        .map((application: any) => ({
+          id: application?.auth?.id ?? application?.authId ?? application?.id,
+          name: application?.auth?.profile?.name ?? "Worker",
+          progress: `Week ${rawJob?.timeSheetWeeks?.length ?? 0} scheduled`,
+        }))
+    : [];
+  const visibleWorkers = workers.length ? workers : EMPLOYER_WORKERS;
+
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Workers" />
       <View className="gap-3">
-        {EMPLOYER_WORKERS.map((worker) => (
+        {visibleWorkers.map((worker: any) => (
           <TouchableOpacity
             key={worker.id}
             onPress={() => openWorkerDetails(worker.id)}
@@ -356,12 +370,16 @@ function EmployerUpcomingApplicantsCard({
   );
 }
 
-function ProjectScheduleCard() {
+function ProjectScheduleCard({
+  jobDetails = JOB_DETAILS,
+}: {
+  jobDetails?: JobDetails;
+}) {
   const rows = [
-    { label: "Start Date", value: JOB_DETAILS.startDate },
-    { label: "End date", value: JOB_DETAILS.endDate },
-    { label: "Hours", value: JOB_DETAILS.hours },
-    { label: "Per Week", value: JOB_DETAILS.daysPerWeek },
+    { label: "Start Date", value: jobDetails.startDate },
+    { label: "End date", value: jobDetails.endDate },
+    { label: "Hours", value: jobDetails.hours },
+    { label: "Per Week", value: jobDetails.daysPerWeek },
   ];
 
   return (
@@ -711,6 +729,92 @@ function ActionCard({
   );
 }
 
+function EmployerCompletionRequestCard({
+  jobId,
+  status,
+  onUpdated,
+}: {
+  jobId: string;
+  status?: string;
+  onUpdated: () => void | Promise<void>;
+}) {
+  const [changeCompletionStatus, { isLoading }] =
+    useChangeCompletionStatusMutation();
+
+  if (!status) return null;
+
+  const updateCompletionStatus = async (nextStatus: "COMPLETED" | "REJECTED") => {
+    if (!jobId) {
+      Alert.alert("Job unavailable", "Unable to find this job.");
+      return;
+    }
+
+    try {
+      await changeCompletionStatus({ jobId, status: nextStatus }).unwrap();
+      await onUpdated();
+      Alert.alert(
+        "Completion request updated",
+        nextStatus === "COMPLETED"
+          ? "The job completion request has been approved."
+          : "The job completion request has been rejected."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Update failed",
+        "Unable to update this completion request. Please try again."
+      );
+    }
+  };
+
+  return (
+    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+      <View className="mb-5 flex-row items-start justify-between gap-4">
+        <View className="flex-1">
+          <Text className="text-sm font-bold uppercase tracking-[0px] text-neutral-500">
+            Completion request
+          </Text>
+          <Text className="mt-2 text-2xl font-black tracking-tight text-neutral-950">
+            Worker requested completion
+          </Text>
+          <Text className="mt-2 text-sm leading-6 text-neutral-600">
+            Review and update the worker's job completion request.
+          </Text>
+        </View>
+        <View className="rounded-full bg-orange-50 px-3 py-1">
+          <Text
+            style={{ color: Colors.common.BRAND }}
+            className="text-[10px] font-extrabold"
+          >
+            {status}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex-row gap-3">
+        <TouchableOpacity
+          onPress={() => void updateCompletionStatus("COMPLETED")}
+          disabled={isLoading || status === "COMPLETED"}
+          style={{ backgroundColor: Colors.common.BRAND }}
+          className="flex-1 items-center justify-center rounded-2xl px-4 py-4 disabled:opacity-60"
+        >
+          <Text className="text-sm font-extrabold text-white">
+            {isLoading ? "Updating..." : "Approve"}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => void updateCompletionStatus("REJECTED")}
+          disabled={isLoading || status === "REJECTED"}
+          className="flex-1 items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-4 disabled:opacity-60"
+        >
+          <Text className="text-sm font-extrabold text-neutral-700">
+            Reject
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 function ApprovalPanel({
   scheduleStartDate,
   onClose,
@@ -969,8 +1073,9 @@ export default function ActiveJobDetailWebScreen() {
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
     skip: !jobId,
   });
-  const jobDetails = singleJobQuery.data
-    ? mapSingleJobToActiveJobDetails(getSingleJobData(singleJobQuery.data))
+  const rawJob = getSingleJobData(singleJobQuery.data);
+  const jobDetails = rawJob
+    ? mapSingleJobToActiveJobDetails(rawJob)
     : JOB_DETAILS;
 
   const [activeSubTab, setActiveSubTab] = useState<WorkerTab>("schedule");
@@ -998,6 +1103,26 @@ export default function ActiveJobDetailWebScreen() {
   };
 
   if (originRoute === "employer") {
+    if (singleJobQuery.isLoading) {
+      return (
+        <View className="flex-1 items-center justify-center bg-neutral-50 px-6">
+          <Text className="text-sm font-semibold text-neutral-500">
+            Loading job details...
+          </Text>
+        </View>
+      );
+    }
+
+    if (singleJobQuery.isError || !rawJob) {
+      return (
+        <View className="flex-1 items-center justify-center bg-neutral-50 px-6">
+          <Text className="text-center text-sm font-semibold text-red-700">
+            Unable to load this job. Please try again.
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View className="flex-1 bg-neutral-50">
         <ScrollView
@@ -1025,13 +1150,17 @@ export default function ActiveJobDetailWebScreen() {
               <View className="flex-col gap-6 xl:flex-row">
                 <View className="flex-[1.45] gap-4">
                   <JobSummaryCard
+                    jobDetails={jobDetails}
                     showRate={employerJobStatus === "upcoming"}
                     statusRoute={statusRoute}
                   />
                   {employerJobStatus === "active" ? (
                     <>
-                      <EmployerWorkersCard openWorkerDetails={openWorkerDetails} />
-                      <ProjectScheduleCard />
+                      <EmployerWorkersCard
+                        openWorkerDetails={openWorkerDetails}
+                        rawJob={rawJob}
+                      />
+                      <ProjectScheduleCard jobDetails={jobDetails} />
                     </>
                   ) : (
                     <EmployerUpcomingApplicantsCard
@@ -1059,15 +1188,11 @@ export default function ActiveJobDetailWebScreen() {
                   </View>
 
                   {employerJobStatus === "active" ? (
-                    // <ActionCard
-                    //   title="Cancel or dispute"
-                    //   description="The mobile footer actions are moved into a desktop action card here."
-                    //   primaryLabel="Cancel Job"
-                    //   secondaryLabel="Dispute"
-                    //   onPrimary={handleNavigateBack}
-                    //   onSecondary={handleNavigateBack}
-                    // />
-                    <></>
+                    <EmployerCompletionRequestCard
+                      jobId={jobId ?? ""}
+                      status={rawJob?.jobCompletion?.status}
+                      onUpdated={refreshJob}
+                    />
                   ) : (
                     <ActionCard
                       title="Review applicants"
