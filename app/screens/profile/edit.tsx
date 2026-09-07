@@ -20,12 +20,9 @@ import {
   useGetWorkerProfileQuery as useGetWorkerAccountProfileQuery,
   useUpdateWorkerProfileMutation,
 } from "@/store/api/workerProfileApi";
-import {
-  useGetWorkerProfileQuery as useGetEmployerAccountProfileQuery,
-  useUpdateWorkerProfileMutation as useUpdateEmployerProfileMutation,
-} from "@/store/api/employerProfileApi";
 import { buildProfileEditFormData } from "@/utils/profileEditFormData";
 import { TRADES } from "@/assets/data";
+import { useGetEmployerProfileQuery, useUpdateEmployerProfileMutation } from "@/store/api/employerProfileApi";
 
 type EditProfileFormValues = {
   fullName: string;
@@ -104,7 +101,7 @@ export default function EditProfileScreen() {
     data: employerProfile,
     isFetching: isFetchingEmployerProfile,
     refetch: refetchEmployerProfile,
-  } = useGetEmployerAccountProfileQuery(undefined, {
+  } = useGetEmployerProfileQuery(undefined, {
     skip: isWorker,
   });
   const [updateWorkerProfile, { isLoading: isUpdatingWorkerProfile }] =
