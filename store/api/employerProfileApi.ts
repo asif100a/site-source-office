@@ -7,14 +7,14 @@ const BASE_POINT = "/employers";
 
 export const employerProfileApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getWorkerProfile: builder.query<any, void>({
+    getEmployerProfile: builder.query<any, void>({
       query: () => ({
         url: BASE_POINT + "/profile",
         method: "GET",
       }),
       providesTags: [tagTypes.user],
     }),
-    updateWorkerProfile: builder.mutation<any, any>({
+    updateEmployerProfile: builder.mutation<any, any>({
       query: (data) => ({
         url: BASE_POINT + "/profile",
         method: "PATCH",
@@ -22,7 +22,7 @@ export const employerProfileApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.user],
     }),
-    deleteWorkerProfile: builder.mutation<any, void>({
+    deleteEmployerProfile: builder.mutation<any, void>({
       query: () => ({
         url: "/user/me",
         method: "DELETE",
@@ -45,7 +45,7 @@ export const employerProfileApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetWorkerProfileQuery,
-  useUpdateWorkerProfileMutation,
-  useDeleteWorkerProfileMutation,
+  useGetEmployerProfileQuery,
+  useUpdateEmployerProfileMutation,
+  useDeleteEmployerProfileMutation,
 } = employerProfileApi;

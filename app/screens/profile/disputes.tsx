@@ -1,10 +1,16 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { DisputeLogo, ScreenShell, StatusPill } from "./_components";
 import { Headphones } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetSupportTicketsQuery } from "@/store/api/supportApi";
 
 type SupportTicket = {
@@ -30,6 +36,23 @@ const getSupportTickets = (response: any): SupportTicket[] => {
   return Array.isArray(data) ? data : [];
 };
 
+const getHasNextPage = (
+  response: any,
+  currentPage: number,
+  receivedCount: number,
+  limit: number
+) => {
+  const meta = response?.data?.meta ?? response?.meta ?? response?.pagination;
+  const totalPages = meta?.totalPages ?? meta?.totalPage ?? meta?.pages;
+  const hasNext =
+    meta?.hasNextPage ?? meta?.hasNext ?? meta?.nextPage ?? meta?.next;
+
+  if (typeof hasNext === "boolean") return hasNext;
+  if (typeof totalPages === "number") return currentPage < totalPages;
+
+  return receivedCount >= limit;
+};
+
 const formatTicketDate = (value?: string) => {
   if (!value) return "Date unavailable";
   const date = new Date(value);
@@ -45,23 +68,77 @@ const formatTicketDate = (value?: string) => {
 const isResolvedTicket = (status?: string) =>
   ["resolved", "closed", "completed"].includes(status?.toLowerCase() ?? "");
 
+const getTicketId = (ticket: SupportTicket) =>
+  ticket.id ?? ticket._id ?? ticket.ticketId;
+
 export default function DisputesScreen() {
   const router = useRouter();
   const { origin } = useLocalSearchParams<{ origin?: string | string[] }>();
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
-  const supportTicketsQuery = useGetSupportTicketsQuery(undefined);
-  const tickets = getSupportTickets(supportTicketsQuery.data);
+  const [page, setPage] = useState(1);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const supportTicketsQuery = useGetSupportTicketsQuery(
+    { page, limit: 10 },
+    { refetchOnMountOrArgChange: true }
+  );
+  console.log("Support tickets query data: ", supportTicketsQuery.data);
 
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportModalState, setSupportModalState] = useState<
     "form" | "submitted"
   >("form");
 
+  useEffect(() => {
+    if (
+      !supportTicketsQuery.data ||
+      (page > 1 && supportTicketsQuery.isFetching)
+    ) {
+      return;
+    }
+
+    const nextTickets = getSupportTickets(supportTicketsQuery.data);
+    setTickets((current) => {
+      if (page === 1) return nextTickets;
+
+      const existingIds = new Set(
+        current.map(getTicketId).filter(Boolean)
+      );
+      return [
+        ...current,
+        ...nextTickets.filter((ticket) => {
+          const ticketId = getTicketId(ticket);
+          if (!ticketId) return true;
+
+          return !existingIds.has(ticketId);
+        }),
+      ];
+    });
+    setHasNextPage(
+      getHasNextPage(supportTicketsQuery.data, page, nextTickets.length, 10)
+    );
+  }, [supportTicketsQuery.data, supportTicketsQuery.isFetching, page]);
+
+  const refreshSupportTickets = async () => {
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    await supportTicketsQuery.refetch();
+  };
+
   return (
     <ScreenShell title="Profile">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={supportTicketsQuery.isFetching && page === 1}
+            onRefresh={() => void refreshSupportTickets()}
+          />
+        }
       >
         <View className="gap-4">
           {supportTicketsQuery.isLoading ? (
@@ -88,8 +165,7 @@ export default function DisputesScreen() {
           ) : (
             tickets.map((ticket, index) => {
               const resolved = isResolvedTicket(ticket.status);
-              const ticketId =
-                ticket.id ?? ticket._id ?? ticket.ticketId ?? `${index}`;
+              const ticketId = getTicketId(ticket) ?? `${index}`;
 
               return (
                 <TouchableOpacity
@@ -128,6 +204,21 @@ export default function DisputesScreen() {
               );
             })
           )}
+
+          {hasNextPage && tickets.length > 0 ? (
+            <TouchableOpacity
+              disabled={supportTicketsQuery.isFetching}
+              onPress={() => setPage((current) => current + 1)}
+              className="items-center rounded-xl bg-white px-4 py-3 disabled:opacity-60"
+              activeOpacity={0.85}
+            >
+              <Text className="text-xs font-bold text-neutral-900">
+                {supportTicketsQuery.isFetching
+                  ? "Loading..."
+                  : "Load more tickets"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -147,7 +238,9 @@ export default function DisputesScreen() {
         setShowSupportModal={setShowSupportModal}
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
-        onSubmitted={() => supportTicketsQuery.refetch()}
+        onSubmitted={() => {
+          void refreshSupportTickets();
+        }}
       />
     </ScreenShell>
   );

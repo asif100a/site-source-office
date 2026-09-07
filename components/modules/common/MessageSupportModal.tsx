@@ -9,9 +9,32 @@ import {
   Platform,
 } from "react-native";
 import React, { useState } from "react";
-import { Check, Info, X } from "lucide-react-native";
+import { Check, Info, Trash2, X } from "lucide-react-native";
+import * as DocumentPicker from "expo-document-picker";
+import { File as ExpoFile } from "expo-file-system";
 import { Colors } from "@/constants/Colors";
 import { useCreateSupportTicketMutation } from "@/store/api/supportApi";
+
+type SupportAttachment = {
+  uri: string;
+  name: string;
+  type: string;
+  size?: number;
+};
+
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+
+async function appendAttachment(formData: FormData, file: SupportAttachment) {
+  if (Platform.OS === "web") {
+    const response = await fetch(file.uri);
+    const blob = await response.blob();
+    formData.append("attachments", blob, file.name);
+    return;
+  }
+
+  const expoFile = new ExpoFile(file.uri);
+  formData.append("attachments", expoFile, file.name);
+}
 
 export default function MessageSupportModal({
   showSupportModal,
@@ -32,11 +55,63 @@ export default function MessageSupportModal({
 }) {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportDescription, setSupportDescription] = useState("");
+  const [attachments, setAttachments] = useState<SupportAttachment[]>([]);
   const [submittedTicketId, setSubmittedTicketId] = useState("");
   const [formError, setFormError] = useState("");
   const [createSupportTicket, { isLoading: isSubmitting }] =
     useCreateSupportTicketMutation();
   const isDialog = presentation === "dialog";
+
+  const handlePickAttachments = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/jpeg", "image/png", "application/pdf"],
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (result.canceled) return;
+
+      const nextAttachments = result.assets
+        .filter((asset) => {
+          if (asset.size && asset.size > MAX_ATTACHMENT_SIZE) {
+            setFormError("Please select attachments under 10MB.");
+            return false;
+          }
+
+          return Boolean(asset.uri && asset.name);
+        })
+        .map((asset) => ({
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType ?? "application/octet-stream",
+          size: asset.size ?? undefined,
+        }));
+
+      if (nextAttachments.length === 0) return;
+
+      setFormError("");
+      setAttachments((current) => {
+        const existing = new Set(
+          current.map((file) => `${file.name}-${file.size ?? 0}`)
+        );
+        return [
+          ...current,
+          ...nextAttachments.filter(
+            (file) => !existing.has(`${file.name}-${file.size ?? 0}`)
+          ),
+        ];
+      });
+    } catch (error) {
+      setFormError("Unable to select attachments. Please try again.");
+    }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
 
   const handleSubmit = async () => {
     const subject = supportSubject.trim();
@@ -49,20 +124,34 @@ export default function MessageSupportModal({
 
     try {
       setFormError("");
-      const response = await createSupportTicket({
-        subject,
-        description,
-      }).unwrap();
+      const supportFormData = new FormData();
+      supportFormData.append(
+        "payload",
+        JSON.stringify({
+          subject,
+          message: description,
+        })
+      );
+
+      if (attachments.length === 0) {
+        supportFormData.append("attachments", JSON.stringify([]));
+      }
+
+      for (const attachment of attachments) {
+        await appendAttachment(supportFormData, attachment);
+      }
+
+      const response = await createSupportTicket(supportFormData).unwrap();
       const ticket =
         response?.data?.data ??
         response?.data ??
-        response?.ticket ??
-        response?.support ??
         response;
+      // console.log("Support ticket submitted: ", ticket);
 
       setSubmittedTicketId(ticket?.id ?? ticket?._id ?? ticket?.ticketId ?? "");
       setSupportSubject("");
       setSupportDescription("");
+      setAttachments([]);
       setSupportModalState("submitted");
       await onSubmitted?.();
     } catch (error) {
@@ -119,12 +208,48 @@ export default function MessageSupportModal({
                   <Text className="text-neutral-400 text-[9px] font-semibold mb-4">
                     JPG - PNG - PDF - MAX 10MB
                   </Text>
-                  <TouchableOpacity className="bg-neutral-950 px-5 py-2.5 rounded-full active:opacity-85 shadow-sm">
+                  <TouchableOpacity
+                    onPress={handlePickAttachments}
+                    disabled={isSubmitting}
+                    className="bg-neutral-950 px-5 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60"
+                  >
                     <Text className="text-white text-xs font-extrabold">
                       Upload
                     </Text>
                   </TouchableOpacity>
                 </View>
+
+                {attachments.length > 0 ? (
+                  <View className="gap-2">
+                    {attachments.map((attachment, index) => (
+                      <View
+                        key={`${attachment.name}-${attachment.size ?? index}`}
+                        className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3"
+                      >
+                        <View className="flex-1 pr-3">
+                          <Text
+                            className="text-xs font-bold text-neutral-800"
+                            numberOfLines={1}
+                          >
+                            {attachment.name}
+                          </Text>
+                          {attachment.size ? (
+                            <Text className="mt-0.5 text-[10px] font-semibold text-neutral-400">
+                              {(attachment.size / (1024 * 1024)).toFixed(2)} MB
+                            </Text>
+                          ) : null}
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleRemoveAttachment(index)}
+                          disabled={isSubmitting}
+                          className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 disabled:opacity-60"
+                        >
+                          <Trash2 size={14} color="#525252" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
 
                 <View>
                   <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">

@@ -4,11 +4,19 @@ import { Colors } from "@/constants/Colors";
 import { useRouter, useSegments } from "expo-router";
 import { DEFAULT_USER_ROLE, Routes, type UserRole } from "@/constants/Routes";
 import LogoWhite from "@/assets/icons/LogoWhite";
+import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
+import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
 
 export default function ScreenHeader() {
   const router = useRouter();
   const segments = useSegments();
   const routeSegments = segments as string[];
+
+  const { data: workerProfile } = useGetWorkerProfileQuery();
+  const { data: employerProfile } = useGetEmployerProfileQuery();
+
+  const profile = workerProfile?.data || employerProfile?.data;
+  console.log("Profile data in ScreenHeader: ", profile);
 
   const handleNotificationPress = () => {
     router.push(Routes.CommonRoutes.NOTIFICATIONS);
@@ -38,7 +46,7 @@ export default function ScreenHeader() {
         >
           <Image
             source={{
-              uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
+              uri: profile?.profile?.image || undefined,
             }}
             className="w-14 h-14 rounded-full border-2 border-white/30"
           />

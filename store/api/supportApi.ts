@@ -11,9 +11,20 @@ export const supportApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.support],
     }),
-    getSupportTickets: builder.query<any, any>({
-      query: () => ({
+    getSupportTickets: builder.query<
+      any,
+      { page?: number; limit?: number } | void
+    >({
+      query: (params) => ({
         url: "/support",
+        method: "GET",
+        ...(params ? { params } : {}),
+      }),
+      providesTags: [tagTypes.support],
+    }),
+    getSingleSupportTicket: builder.query<any, { id: string }>({
+      query: ({ id }) => ({
+        url: `/support/${id}`,
         method: "GET",
       }),
       providesTags: [tagTypes.support],
@@ -22,5 +33,8 @@ export const supportApi = baseApi.injectEndpoints({
   overrideExisting: true,
 });
 
-export const { useCreateSupportTicketMutation, useGetSupportTicketsQuery } =
-  supportApi;
+export const {
+  useCreateSupportTicketMutation,
+  useGetSupportTicketsQuery,
+  useGetSingleSupportTicketQuery,
+} = supportApi;

@@ -1,12 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ArrowRight,
   AlertTriangle,
   Headphones,
   MessageCircle,
+  RefreshCw,
 } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
 import { DisputeLogo, ScreenShell, StatusPill } from "./_components";
@@ -36,6 +43,23 @@ const getSupportTickets = (response: any): SupportTicket[] => {
   return Array.isArray(data) ? data : [];
 };
 
+const getHasNextPage = (
+  response: any,
+  currentPage: number,
+  receivedCount: number,
+  limit: number
+) => {
+  const meta = response?.data?.meta ?? response?.meta ?? response?.pagination;
+  const totalPages = meta?.totalPages ?? meta?.totalPage ?? meta?.pages;
+  const hasNext =
+    meta?.hasNextPage ?? meta?.hasNext ?? meta?.nextPage ?? meta?.next;
+
+  if (typeof hasNext === "boolean") return hasNext;
+  if (typeof totalPages === "number") return currentPage < totalPages;
+
+  return receivedCount >= limit;
+};
+
 const formatTicketDate = (value?: string) => {
   if (!value) return "Date unavailable";
   const date = new Date(value);
@@ -50,6 +74,9 @@ const formatTicketDate = (value?: string) => {
 
 const isResolvedTicket = (status?: string) =>
   ["resolved", "closed", "completed"].includes(status?.toLowerCase() ?? "");
+
+const getTicketId = (ticket: SupportTicket) =>
+  ticket.id ?? ticket._id ?? ticket.ticketId;
 
 function DisputeRow({
   title,
@@ -104,8 +131,13 @@ export default function DisputesScreenWeb() {
   const router = useRouter();
   const { origin } = useLocalSearchParams<{ origin?: string | string[] }>();
   const originRoute = Array.isArray(origin) ? origin[0] : origin;
-  const supportTicketsQuery = useGetSupportTicketsQuery(undefined);
-  const tickets = getSupportTickets(supportTicketsQuery.data);
+  const [page, setPage] = useState(1);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const supportTicketsQuery = useGetSupportTicketsQuery(
+    { page, limit: 10 },
+    { refetchOnMountOrArgChange: true }
+  );
   const resolvedCount = tickets.filter((ticket) =>
     isResolvedTicket(ticket.status)
   ).length;
@@ -120,11 +152,56 @@ export default function DisputesScreenWeb() {
     setShowSupportModal(true);
   };
 
+  useEffect(() => {
+    if (
+      !supportTicketsQuery.data ||
+      (page > 1 && supportTicketsQuery.isFetching)
+    ) {
+      return;
+    }
+
+    const nextTickets = getSupportTickets(supportTicketsQuery.data);
+    setTickets((current) => {
+      if (page === 1) return nextTickets;
+
+      const existingIds = new Set(
+        current.map(getTicketId).filter(Boolean)
+      );
+      return [
+        ...current,
+        ...nextTickets.filter((ticket) => {
+          const ticketId = getTicketId(ticket);
+          if (!ticketId) return true;
+
+          return !existingIds.has(ticketId);
+        }),
+      ];
+    });
+    setHasNextPage(
+      getHasNextPage(supportTicketsQuery.data, page, nextTickets.length, 10)
+    );
+  }, [supportTicketsQuery.data, supportTicketsQuery.isFetching, page]);
+
+  const refreshSupportTickets = async () => {
+    if (page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    await supportTicketsQuery.refetch();
+  };
+
   return (
     <ScreenShell title="My Supports">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={supportTicketsQuery.isFetching && page === 1}
+            onRefresh={() => void refreshSupportTickets()}
+          />
+        }
       >
         <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -165,6 +242,18 @@ export default function DisputesScreenWeb() {
                   <MessageCircle size={18} color="#FFFFFF" />
                   <Text className="text-sm font-semibold text-white">
                     Message support
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => void refreshSupportTickets()}
+                  disabled={supportTicketsQuery.isFetching}
+                  activeOpacity={0.9}
+                  className="flex-row items-center gap-2 self-start rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 disabled:opacity-60 lg:self-auto"
+                >
+                  <RefreshCw size={18} color="#171717" />
+                  <Text className="text-sm font-semibold text-neutral-950">
+                    Refresh
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -221,8 +310,7 @@ export default function DisputesScreenWeb() {
               ) : (
                 tickets.map((ticket, index) => {
                   const resolved = isResolvedTicket(ticket.status);
-                  const ticketId =
-                    ticket.id ?? ticket._id ?? ticket.ticketId ?? `${index}`;
+                  const ticketId = getTicketId(ticket) ?? `${index}`;
 
                   return (
                     <DisputeRow
@@ -256,6 +344,21 @@ export default function DisputesScreenWeb() {
                   );
                 })
               )}
+
+              {hasNextPage && tickets.length > 0 ? (
+                <TouchableOpacity
+                  disabled={supportTicketsQuery.isFetching}
+                  onPress={() => setPage((current) => current + 1)}
+                  className="items-center rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 disabled:opacity-60"
+                  activeOpacity={0.9}
+                >
+                  <Text className="text-sm font-semibold text-neutral-950">
+                    {supportTicketsQuery.isFetching
+                      ? "Loading..."
+                      : "Load more tickets"}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         </View>
@@ -276,7 +379,9 @@ export default function DisputesScreenWeb() {
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
         presentation="dialog"
-        onSubmitted={() => supportTicketsQuery.refetch()}
+        onSubmitted={() => {
+          void refreshSupportTickets();
+        }}
       />
     </ScreenShell>
   );
