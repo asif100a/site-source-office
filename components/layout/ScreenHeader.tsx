@@ -16,7 +16,7 @@ export default function ScreenHeader() {
   const { data: employerProfile } = useGetEmployerProfileQuery();
 
   const profile = workerProfile?.data || employerProfile?.data;
-  console.log("Profile data in ScreenHeader: ", profile);
+  // console.log("Profile data in ScreenHeader: ", profile);
 
   const handleNotificationPress = () => {
     router.push(Routes.CommonRoutes.NOTIFICATIONS);

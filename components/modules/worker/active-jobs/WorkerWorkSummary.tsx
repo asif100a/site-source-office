@@ -47,11 +47,14 @@ export default function WorkerWorkSummary({
   setShowApprovalModal,
   jobId,
   onCompletionRequested,
+  isAppliedForJobCompletion
 }: {
   setShowApprovalModal: (show: boolean) => void;
   jobId: string;
   onCompletionRequested?: () => void | Promise<void>;
+  isAppliedForJobCompletion?: boolean;
 }) {
+  console.log("isAppliedForJobCompletion from the worker work summary component: ", isAppliedForJobCompletion);
   const [isCompletedTimesheets, setIsCompletedTimesheets] = useState(false);
   const [completeJob, { isLoading: isCompletingJob }] =
     useCompleteJobMutation();
@@ -89,7 +92,7 @@ export default function WorkerWorkSummary({
       Alert.alert("Job unavailable", "Unable to find this job.");
       return;
     }
-    console.log("Requesting job completion for jobId: ", jobId);
+    // console.log("Requesting job completion for jobId: ", jobId);
 
     try {
       const response = await completeJob({ jobId }).unwrap();
@@ -198,17 +201,17 @@ export default function WorkerWorkSummary({
 
       <TouchableOpacity
         onPress={() => void handleRequestCompletion()}
-        disabled={!isCompletedTimesheets || isCompletingJob}
+        disabled={!isCompletedTimesheets || isCompletingJob || isAppliedForJobCompletion}
         className="flex-row justify-center items-center px-4 py-3 rounded-xl mt-4"
         style={{
           backgroundColor:
-            isCompletedTimesheets && !isCompletingJob
+            isCompletedTimesheets && !isCompletingJob && !isAppliedForJobCompletion
               ? Colors.common.BRAND
               : "#FFAA66",
         }}
       >
         <Text className="text-white font-extrabold text-sm">
-          {isCompletingJob ? "Requesting..." : "Request for Completion"}
+          {isCompletingJob ? "Requesting..." : isAppliedForJobCompletion ? "Requested" : "Request for Completion"}
         </Text>
       </TouchableOpacity>
     </View>

@@ -233,6 +233,7 @@ export default function ActiveJobDetailScreen() {
               onCompletionRequested={() => {
                 void refreshJob();
               }}
+              isAppliedForJobCompletion={Boolean(jobDetails?.jobCompletion?.status)}
             />
           )}
 

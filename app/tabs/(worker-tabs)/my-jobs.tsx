@@ -35,6 +35,8 @@ export default function MyJobsScreen() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const appliedJobsQuery = useGetAppliedJobsQuery({ page, limit: 10 });
 
+  // console.log("appliedJobsQuery from the my jobs screen: ", appliedJobsQuery);
+
   useEffect(() => {
     if (!appliedJobsQuery.data || (page > 1 && appliedJobsQuery.isFetching)) {
       return;
