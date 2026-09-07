@@ -102,6 +102,21 @@ export const jobApi = baseApi.injectEndpoints({
       },
       providesTags: [tagTypes.job],
     }),
+    completeJob: builder.mutation<any, { jobId: string }>({
+      query: ({ jobId }) => ({
+        url: BASE_POINT + `/completion/${jobId}`,
+        method: "POST",
+      }),
+      invalidatesTags: [tagTypes.job],
+    }),
+    changeCompletionStatus: builder.mutation<any, { jobId: string; status: "COMPLETED" | "REJECTED" }>({
+      query: ({ jobId, status }) => ({
+        url: BASE_POINT + `/completion/${jobId}`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: [tagTypes.job],
+    }),
   }),
   overrideExisting: true,
 });
@@ -112,4 +127,6 @@ export const {
   useGetMyJobsQuery,
   useGetSingleJobQuery,
   useGetWorkersMapsJobsQuery,
+  useCompleteJobMutation,
+  useChangeCompletionStatusMutation,
 } = jobApi;

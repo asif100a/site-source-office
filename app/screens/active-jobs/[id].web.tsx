@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react-native";
 import {
+  Alert,
   Linking,
   ScrollView,
   Text,
@@ -24,7 +25,10 @@ import {
 } from "react-native";
 import { Colors } from "@/constants/Colors";
 import MessageSupportModal from "@/components/modules/common/MessageSupportModal";
-import { useGetSingleJobQuery } from "@/store/api/jobApi";
+import {
+  useCompleteJobMutation,
+  useGetSingleJobQuery,
+} from "@/store/api/jobApi";
 import { getSingleJobData } from "@/utils/workerJobs";
 import {
   DEFAULT_ACTIVE_JOB_DETAILS,
@@ -501,9 +505,48 @@ function WorkerScheduleCard({
 
 function WorkerTimesheetCard({
   onShowApproval,
+  jobId,
+  onCompletionRequested,
 }: {
   onShowApproval: () => void;
+  jobId: string;
+  onCompletionRequested?: () => void | Promise<void>;
 }) {
+  const [completeJob, { isLoading: isCompletingJob }] =
+    useCompleteJobMutation();
+  const canRequestCompletion = WORK_SUMMARY_ROWS.every(
+    (item) => item.status === "Approved" || item.status === "Completed"
+  );
+
+  const handleRequestCompletion = async () => {
+    if (!canRequestCompletion) {
+      Alert.alert(
+        "Timesheets pending",
+        "You cannot request completion until all timesheets are approved or completed."
+      );
+      return;
+    }
+
+    if (!jobId) {
+      Alert.alert("Job unavailable", "Unable to find this job.");
+      return;
+    }
+
+    try {
+      await completeJob({ jobId }).unwrap();
+      await onCompletionRequested?.();
+      Alert.alert(
+        "Completion requested",
+        "Your job completion request has been submitted."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Request failed",
+        "Unable to request job completion. Please try again."
+      );
+    }
+  };
+
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Timesheet" />
@@ -547,6 +590,22 @@ function WorkerTimesheetCard({
           </View>
         ))}
       </View>
+
+      <TouchableOpacity
+        onPress={() => void handleRequestCompletion()}
+        disabled={!canRequestCompletion || isCompletingJob}
+        className="mt-4 items-center justify-center rounded-2xl px-4 py-4 disabled:opacity-70"
+        style={{
+          backgroundColor:
+            canRequestCompletion && !isCompletingJob
+              ? Colors.common.BRAND
+              : "#FFAA66",
+        }}
+      >
+        <Text className="text-sm font-extrabold text-white">
+          {isCompletingJob ? "Requesting..." : "Request for Completion"}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -932,6 +991,12 @@ export default function ActiveJobDetailWebScreen() {
     router.back();
   };
 
+  const refreshJob = async () => {
+    if (!jobId) return;
+
+    await singleJobQuery.refetch();
+  };
+
   if (originRoute === "employer") {
     return (
       <View className="flex-1 bg-neutral-50">
@@ -1079,7 +1144,11 @@ export default function ActiveJobDetailWebScreen() {
                 ) : null}
                 {activeSubTab === "timesheet" ? (
                   <WorkerTimesheetCard
+                    jobId={jobId ?? ""}
                     onShowApproval={() => setShowApprovalPanel(true)}
+                    onCompletionRequested={() => {
+                      void refreshJob();
+                    }}
                   />
                 ) : null}
                 {activeSubTab === "policy" ? <WorkerPolicyCard /> : null}

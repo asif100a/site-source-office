@@ -1,7 +1,9 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { Alert, View, Text, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Colors } from "@/constants/Colors";
 import { useGetWorkerTimesheetQuery } from "@/store/api/timesheetApi";
+import { useCompleteJobMutation } from "@/store/api/jobApi";
+import Toast from "react-native-toast-message";
 
 type WorkerTimesheet = {
   id: string;
@@ -44,11 +46,15 @@ const getStatusStyles = (status?: string) => {
 export default function WorkerWorkSummary({
   setShowApprovalModal,
   jobId,
+  onCompletionRequested,
 }: {
   setShowApprovalModal: (show: boolean) => void;
   jobId: string;
+  onCompletionRequested?: () => void | Promise<void>;
 }) {
   const [isCompletedTimesheets, setIsCompletedTimesheets] = useState(false);
+  const [completeJob, { isLoading: isCompletingJob }] =
+    useCompleteJobMutation();
 
   const workerTimesheetQuery = useGetWorkerTimesheetQuery(
     { id: jobId },
@@ -70,16 +76,43 @@ export default function WorkerWorkSummary({
     }
   }, [timesheets, setIsCompletedTimesheets]);
 
-  const handleRequestCompletion = () => {
-    if (isCompletedTimesheets) {
-      setShowApprovalModal(true);
-    } else {
-      // Show a message or alert to the user indicating that not all timesheets are completed
-      alert(
-        "You cannot request completion until all timesheets are approved or rejected.",
+  const handleRequestCompletion = async () => {
+    if (!isCompletedTimesheets) {
+      Alert.alert(
+        "Timesheets pending",
+        "You cannot request completion until all timesheets are approved or rejected."
+      );
+      return;
+    }
+
+    if (!jobId) {
+      Alert.alert("Job unavailable", "Unable to find this job.");
+      return;
+    }
+    console.log("Requesting job completion for jobId: ", jobId);
+
+    try {
+      const response = await completeJob({ jobId }).unwrap();
+      console.log("completeJob response: ", response);
+      await onCompletionRequested?.();
+      Toast.show(
+        {
+          type: "success",
+          text1: "Request submitted",
+          text2: "Your job completion request has been submitted.",
+        }
+      );
+    } catch (error) {
+      console.error("error requesting job completion: ", error);
+       Toast.show(
+        {
+          type: "error",
+          text1: "Request failed",
+          text2: "Unable to request job completion. Please try again.",
+        }
       );
     }
-  }
+  };
 
   return (
     <View>
@@ -164,13 +197,18 @@ export default function WorkerWorkSummary({
       </View>
 
       <TouchableOpacity
-        onPress={handleRequestCompletion}
-        disabled={!isCompletedTimesheets}
+        onPress={() => void handleRequestCompletion()}
+        disabled={!isCompletedTimesheets || isCompletingJob}
         className="flex-row justify-center items-center px-4 py-3 rounded-xl mt-4"
-        style={{ backgroundColor: isCompletedTimesheets ? Colors.common.BRAND : '#FFAA66' }}
+        style={{
+          backgroundColor:
+            isCompletedTimesheets && !isCompletingJob
+              ? Colors.common.BRAND
+              : "#FFAA66",
+        }}
       >
         <Text className="text-white font-extrabold text-sm">
-          Request for Completion
+          {isCompletingJob ? "Requesting..." : "Request for Completion"}
         </Text>
       </TouchableOpacity>
     </View>

@@ -230,6 +230,9 @@ export default function ActiveJobDetailScreen() {
             <WorkerWorkSummary
               setShowApprovalModal={setShowApprovalModal}
               jobId={jobId ?? ""}
+              onCompletionRequested={() => {
+                void refreshJob();
+              }}
             />
           )}
 
