@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import {
@@ -18,50 +18,53 @@ import {
 } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
+import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 
 type Worker = {
   id: string;
   name: string;
-  role: string;
-  location: string;
-  availability: string;
-  badge: string;
+  image?: string | null;
+  avgRating?: number;
+  totalReviews?: number;
+  location?: {
+    coordinates?: [number, number];
+  };
+  experience?: number | null;
+  distance?: number | null;
 };
 
-const WORKERS: Worker[] = [
-  {
-    id: "1",
-    name: "Michael Turner",
-    role: "Labour",
-    location: "Shoreditch - 1.2 mi away",
-    availability: "Available 8am - 5pm",
-    badge: "8 Years Experience",
-  },
-  {
-    id: "2",
-    name: "Amina Rahman",
-    role: "Groundworker",
-    location: "Hackney - 3.8 mi away",
-    availability: "Available 8am - 5pm",
-    badge: "6 Years Experience",
-  },
-  {
-    id: "3",
-    name: "Daniel Brooks",
-    role: "Electrician",
-    location: "Waterloo - 11.4 mi away",
-    availability: "Available 9am - 6pm",
-    badge: "11 Years Experience",
-  },
-  {
-    id: "4",
-    name: "Sarah Khan",
-    role: "Carpenter",
-    location: "Islington - 18.6 mi away",
-    availability: "Night shift",
-    badge: "5 Years Experience",
-  },
-];
+const getWorkers = (response: any): Worker[] => {
+  const data = response?.data ?? response;
+  const workers = data?.workers ?? data?.data?.workers ?? data?.items ?? [];
+
+  return Array.isArray(workers) ? workers : [];
+};
+
+const getTotalWorkers = (response: any, fallback: number) => {
+  const data = response?.data ?? response;
+  return data?.meta?.total ?? data?.data?.meta?.total ?? fallback;
+};
+
+const getImageUrl = (value?: string | null) => {
+  if (!value) return null;
+  return value.match(/\]\((https?:\/\/[^)]+)\)/)?.[1] ?? value;
+};
+
+const getDistanceLabel = (distance?: number | null) => {
+  const value = Number(distance);
+  if (!Number.isFinite(value)) return "";
+
+  return `${(value / 1000).toFixed(1)} km away`;
+};
+
+const getCoordinateLabel = (coordinates?: [number, number]) => {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    return "Location not available";
+  }
+
+  return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+};
 
 const TRADE_OPTIONS = [
   "All trades",
@@ -132,6 +135,18 @@ export default function EmployerWorkersScreenWeb() {
   const [tradeSkill, setTradeSkill] = useState("All trades");
   const [radius, setRadius] = useState("Any radius");
   const [availableTime, setAvailableTime] = useState("Any time");
+  const [page, setPage] = useState(1);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [addressByWorkerId, setAddressByWorkerId] = useState<
+    Record<string, string>
+  >({});
+  const workersQuery = useGetAllWorkersQuery({ page, limit: 10 });
+  const pageWorkers = useMemo(
+    () => getWorkers(workersQuery.data),
+    [workersQuery.data]
+  );
+  const totalWorkers = getTotalWorkers(workersQuery.data, workers.length);
+  const hasNextPage = workers.length < totalWorkers;
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -143,38 +158,73 @@ export default function EmployerWorkersScreenWeb() {
   const filteredWorkers = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return WORKERS.filter((worker) => {
+    return workers.filter((worker) => {
+      const address =
+        addressByWorkerId[worker.id] ??
+        getCoordinateLabel(worker.location?.coordinates);
+      const distanceLabel = getDistanceLabel(worker.distance);
       const matchesQuery =
         !normalizedQuery ||
-        [worker.name, worker.role, worker.location, worker.availability, worker.badge]
+        [
+          worker.name,
+          address,
+          distanceLabel,
+          `${worker.experience ?? 0} Years Experience`,
+          `${worker.avgRating ?? 0} rating`,
+        ]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
 
-      const matchesTrade =
-        tradeSkill === "All trades" ||
-        worker.role.toLowerCase() === tradeSkill.toLowerCase();
+      const matchesTrade = tradeSkill === "All trades";
 
-      const distance = Number(worker.location.match(/(\d+(\.\d+)?)\s*mi/)?.[1] ?? "0");
+      const distance = Number(worker.distance ?? 0) / 1000;
       const matchesRadius =
         radius === "Any radius" ||
-        (radius === "1 - 10 miles" && distance <= 10) ||
-        (radius === "11 - 20 miles" && distance > 10 && distance <= 20) ||
-        (radius === "21 - 50 miles" && distance > 20 && distance <= 50);
+        (radius === "1 - 10 miles" && distance <= 16.09) ||
+        (radius === "11 - 20 miles" && distance > 16.09 && distance <= 32.19) ||
+        (radius === "21 - 50 miles" && distance > 32.19 && distance <= 80.47);
 
-      const normalizedAvailability = worker.availability.toLowerCase();
-      const matchesTime =
-        availableTime === "Any time" ||
-        (availableTime === "8am - 5pm" &&
-          normalizedAvailability.includes("8am - 5pm")) ||
-        (availableTime === "9am - 6pm" &&
-          normalizedAvailability.includes("9am - 6pm")) ||
-        (availableTime === "Night shift" &&
-          normalizedAvailability.includes("night shift"));
+      const matchesTime = availableTime === "Any time";
 
       return matchesQuery && matchesTrade && matchesRadius && matchesTime;
     });
-  }, [availableTime, radius, searchQuery, tradeSkill]);
+  }, [addressByWorkerId, availableTime, radius, searchQuery, tradeSkill, workers]);
+
+  useEffect(() => {
+    if (!workersQuery.data || (page > 1 && workersQuery.isFetching)) return;
+
+    setWorkers((current) => {
+      if (page === 1) return pageWorkers;
+
+      const existingIds = new Set(current.map((worker) => worker.id));
+      return [
+        ...current,
+        ...pageWorkers.filter((worker) => !existingIds.has(worker.id)),
+      ];
+    });
+  }, [page, pageWorkers, workersQuery.data, workersQuery.isFetching]);
+
+  useEffect(() => {
+    workers.forEach((worker) => {
+      const coordinates = worker.location?.coordinates;
+      if (!coordinates || addressByWorkerId[worker.id]) return;
+
+      getAddressFromCoordinates(coordinates)
+        .then((address) => {
+          setAddressByWorkerId((current) => ({
+            ...current,
+            [worker.id]: address,
+          }));
+        })
+        .catch(() => {
+          setAddressByWorkerId((current) => ({
+            ...current,
+            [worker.id]: getCoordinateLabel(coordinates),
+          }));
+        });
+    });
+  }, [addressByWorkerId, workers]);
 
   return (
     <ScreenWrapper>
@@ -293,13 +343,29 @@ export default function EmployerWorkersScreenWeb() {
                     style={{ color: Colors.common.BRAND }}
                     className="text-xs font-medium"
                   >
-                    {filteredWorkers.length} Results
+                    {totalWorkers} Results
                   </Text>
                 </View>
               </View>
 
               <View className="gap-4">
-                {filteredWorkers.map((worker) => (
+                {workersQuery.isLoading ? (
+                  <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-10">
+                    <Text className="text-center text-sm font-semibold text-neutral-500">
+                      Loading workers...
+                    </Text>
+                  </View>
+                ) : workersQuery.isError ? (
+                  <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-10">
+                    <Text className="text-center text-sm font-semibold text-red-700">
+                      Unable to load workers. Please try again.
+                    </Text>
+                  </View>
+                ) : null}
+
+                {!workersQuery.isLoading &&
+                  !workersQuery.isError &&
+                  filteredWorkers.map((worker) => (
                   <View
                     key={worker.id}
                     className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white"
@@ -309,7 +375,9 @@ export default function EmployerWorkersScreenWeb() {
                         <View className="flex-1 flex-row items-center gap-3 pr-3">
                           <Image
                             source={{
-                              uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
+                              uri:
+                                getImageUrl(worker.image) ??
+                                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
                             }}
                             className="h-12 w-12 rounded-full"
                           />
@@ -318,7 +386,8 @@ export default function EmployerWorkersScreenWeb() {
                               {worker.name}
                             </Text>
                             <Text className="text-sm text-neutral-500">
-                              {worker.role}
+                              {worker.avgRating?.toFixed(1) ?? "0.0"} rating -{" "}
+                              {worker.totalReviews ?? 0} reviews
                             </Text>
                           </View>
                         </View>
@@ -332,13 +401,17 @@ export default function EmployerWorkersScreenWeb() {
                         <View className="flex-row items-center gap-2">
                           <MapPin size={14} color="#C81E1E" />
                           <Text className="text-xs text-neutral-500">
-                            {worker.location}
+                            {addressByWorkerId[worker.id] ??
+                              getCoordinateLabel(worker.location?.coordinates)}
+                            {worker.distance
+                              ? ` - ${getDistanceLabel(worker.distance)}`
+                              : ""}
                           </Text>
                         </View>
                         <View className="flex-row items-center gap-2">
                           <Clock size={14} color="#737373" />
                           <Text className="text-xs text-neutral-500">
-                            {worker.availability}
+                            Available for job offers
                           </Text>
                         </View>
                       </View>
@@ -350,7 +423,7 @@ export default function EmployerWorkersScreenWeb() {
                           style={{ color: Colors.common.BRAND }}
                           className="text-xs font-medium"
                         >
-                          {worker.badge}
+                          {worker.experience ?? 0} Years Experience
                         </Text>
                       </View>
 
@@ -375,9 +448,11 @@ export default function EmployerWorkersScreenWeb() {
                       </View>
                     </View>
                   </View>
-                ))}
+                  ))}
 
-                {filteredWorkers.length === 0 ? (
+                {!workersQuery.isLoading &&
+                !workersQuery.isError &&
+                filteredWorkers.length === 0 ? (
                   <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
                     <Text className="text-base font-bold text-neutral-900">
                       No matching workers found
@@ -387,6 +462,21 @@ export default function EmployerWorkersScreenWeb() {
                       see more worker profiles.
                     </Text>
                   </View>
+                ) : null}
+
+                {hasNextPage && workers.length > 0 ? (
+                  <TouchableOpacity
+                    disabled={workersQuery.isFetching}
+                    onPress={() => setPage((current) => current + 1)}
+                    className="items-center rounded-2xl border border-neutral-200 bg-white px-4 py-3.5 disabled:opacity-60"
+                    activeOpacity={0.9}
+                  >
+                    <Text className="text-sm font-semibold text-neutral-950">
+                      {workersQuery.isFetching
+                        ? "Loading..."
+                        : "Load more workers"}
+                    </Text>
+                  </TouchableOpacity>
                 ) : null}
               </View>
             </View>

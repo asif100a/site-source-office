@@ -5,6 +5,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BASE_POINT = "/workers";
 
+interface GetAllWorkerParams {
+  page?: number;
+  limit?: number;
+  lat?: number;
+  long?: number;
+}
+
 export const workerProfileApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getWorkerProfile: builder.query<any, void>({
@@ -40,6 +47,14 @@ export const workerProfileApi = baseApi.injectEndpoints({
       },
       invalidatesTags: [tagTypes.user, tagTypes.auth],
     }),
+    getAllWorkers: builder.query<any, GetAllWorkerParams>({
+      query: (params) => ({
+        url: BASE_POINT,
+        method: "GET",
+        params,
+      }),
+      providesTags: [tagTypes.user],
+    }),
   }),
   overrideExisting: true,
 });
@@ -48,4 +63,5 @@ export const {
   useGetWorkerProfileQuery,
   useUpdateWorkerProfileMutation,
   useDeleteWorkerProfileMutation,
+  useGetAllWorkersQuery,
 } = workerProfileApi;
