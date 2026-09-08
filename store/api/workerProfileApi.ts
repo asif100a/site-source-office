@@ -13,6 +13,7 @@ interface GetAllWorkerParams {
   radius?: number;
   searchTerm?: string;
   trade?: string;
+  experience?: string;
   availableTime?: string;
 }
 

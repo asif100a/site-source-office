@@ -4,11 +4,13 @@ import { ChevronDown, X } from "lucide-react-native";
 import { Controller } from "react-hook-form";
 import type { Control } from "react-hook-form";
 import { Colors } from "@/constants/Colors";
+import { EXPERIENCES, TRADES } from "@/assets/data";
 
 type FilterFieldId =
   | "project"
   | "jobPosting"
   | "tradeSkill"
+  | "experience"
   | "radius"
   | "availableTime";
 
@@ -18,10 +20,13 @@ type SelectOption = {
 };
 
 const TRADE_OPTIONS = [
-  { label: "Groundworker", value: "groundworker" },
-  { label: "Labourer", value: "labourer" },
-  { label: "Electrician", value: "electrician" },
-  { label: "Carpenter", value: "carpenter" },
+  { label: "All trades", value: "all" },
+  ...TRADES,
+];
+
+const EXPERIENCE_OPTIONS = [
+  { label: "All experience", value: "all" },
+  ...EXPERIENCES,
 ];
 
 const PROJECT_OPTIONS = [
@@ -37,6 +42,7 @@ const JOB_POSTING_OPTIONS = [
 ];
 
 const RADIUS_OPTIONS = [
+  { label: "All radius", value: "all" },
   { label: "1 - 10 miles", value: "1-10" },
   { label: "11 - 20 miles", value: "11-20" },
   { label: "21 - 50 miles", value: "21-50" },
@@ -193,17 +199,27 @@ export default function SearchWorkerModal({
               id="tradeSkill"
               control={control}
               options={TRADE_OPTIONS}
-              placeholder="Groundworker"
+              placeholder="All trades"
               openField={openField}
               setOpenField={setOpenField}
             />
+
+            {/* <FilterSelectField
+              label="Experience"
+              id="experience"
+              control={control}
+              options={EXPERIENCE_OPTIONS}
+              placeholder="All experience"
+              openField={openField}
+              setOpenField={setOpenField}
+            /> */}
 
             <FilterSelectField
               label="Radius"
               id="radius"
               control={control}
               options={RADIUS_OPTIONS}
-              placeholder="1 - 10 miles"
+              placeholder="All radius"
               openField={openField}
               setOpenField={setOpenField}
             />

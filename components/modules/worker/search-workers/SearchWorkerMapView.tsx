@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Text, View } from "react-native";
 import type { Region } from "react-native-maps";
 import { MapPin } from "lucide-react-native";
@@ -78,11 +78,19 @@ export default function SearchWorkerMapView({
   isError?: boolean;
   openWorkerDetails: (id: string) => void;
 }) {
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const nativeMapComponents = getNativeMapComponents();
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
-  const featuredWorker = WORKERS[0];
+  const selectedWorker =
+    WORKERS.find((worker) => worker.id === selectedWorkerId) ?? WORKERS[0];
+
+  useEffect(() => {
+    if (!WORKERS.some((worker) => worker.id === selectedWorkerId)) {
+      setSelectedWorkerId(WORKERS[0]?.id ?? "");
+    }
+  }, [WORKERS, selectedWorkerId]);
 
   return (
     <View className="flex-1 overflow-hidden bg-neutral-100">
@@ -107,7 +115,7 @@ export default function SearchWorkerMapView({
                 coordinate={worker.coordinate}
                 title={worker.name}
                 description={worker.role}
-                onPress={() => openWorkerDetails(worker.id)}
+                onPress={() => setSelectedWorkerId(worker.id)}
               >
                 <WorkerMarkerBubble label={worker.name.split(" ")[0]} />
               </NativeMarker>
@@ -131,11 +139,11 @@ export default function SearchWorkerMapView({
             Unable to load nearby workers. Please try again.
           </Text>
         </View>
-      ) : featuredWorker ? (
+      ) : selectedWorker ? (
         <View className="absolute bottom-14 left-5 right-5">
           <WorkerSearchCardRow
-            worker={featuredWorker}
-            onPress={() => openWorkerDetails(featuredWorker.id)}
+            worker={selectedWorker}
+            onPress={() => openWorkerDetails(selectedWorker.id)}
           />
         </View>
       ) : null}

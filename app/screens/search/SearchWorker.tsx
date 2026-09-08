@@ -37,6 +37,7 @@ type FilterValues = {
   project: string;
   jobPosting: string;
   tradeSkill: string;
+  experience: string;
   radius: string;
   availableTime: string;
 };
@@ -58,6 +59,7 @@ const getWorkersTotal = (response: any, fallback: number) => {
 };
 
 const getRadiusMiles = (value?: string) => {
+  if (!value || value === "all") return undefined;
   if (value === "1-10") return 10;
   if (value === "11-20") return 20;
   if (value === "21-50") return 50;
@@ -65,8 +67,13 @@ const getRadiusMiles = (value?: string) => {
 };
 
 const getTradeFilter = (value?: string) => {
-  if (!value) return undefined;
-  return value.toUpperCase().replace(/-/g, "_");
+  if (!value || value === "all") return undefined;
+  return value;
+};
+
+const getExperienceFilter = (value?: string) => {
+  if (!value || value === "all") return undefined;
+  return value;
 };
 
 const getAvailabilityLabel = (value?: string) => {
@@ -161,8 +168,9 @@ export default function SearchWorkerScreen() {
     defaultValues: {
       project: "",
       jobPosting: "",
-      tradeSkill: "",
-      radius: "1-10",
+      tradeSkill: "all",
+      experience: "all",
+      radius: "all",
       availableTime: "",
     },
   });
@@ -170,6 +178,7 @@ export default function SearchWorkerScreen() {
   const trimmedSearchQuery = searchQuery.trim();
   const radius = getRadiusMiles(filterValues.radius);
   const trade = getTradeFilter(filterValues.tradeSkill);
+  const experience = getExperienceFilter(filterValues.experience);
   const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
 
   useEffect(() => {
@@ -186,6 +195,7 @@ export default function SearchWorkerScreen() {
   }, [
     debouncedSearchQuery,
     filterValues.availableTime,
+    filterValues.experience,
     filterValues.radius,
     filterValues.tradeSkill,
   ]);
@@ -193,8 +203,14 @@ export default function SearchWorkerScreen() {
   useEffect(() => {
     let isMounted = true;
 
-    if (viewType !== "map" || debouncedSearchQuery.length < 3) {
-      setMapCoordinates(null);
+    if (viewType !== "map") {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    if (debouncedSearchQuery.length < 3) {
+      setMapCoordinates(DEFAULT_MAP_COORDINATE);
       return () => {
         isMounted = false;
       };
@@ -223,7 +239,7 @@ export default function SearchWorkerScreen() {
         });
       })
       .catch(() => {
-        if (isMounted) setMapCoordinates(null);
+        if (isMounted) setMapCoordinates(DEFAULT_MAP_COORDINATE);
       });
 
     return () => {
@@ -237,22 +253,18 @@ export default function SearchWorkerScreen() {
     ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
     ...(radius ? { radius } : {}),
     ...(trade ? { trade } : {}),
-    ...(filterValues.availableTime
-      ? { availableTime: filterValues.availableTime }
-      : {}),
+    // ...(experience ? { experience } : {}),
   });
 
   const mapWorkersQuery = useGetAllWorkersQuery({
     page: 1,
     limit: MAP_WORKERS_LIMIT,
-    lat: mapCoordinates?.latitude,
-    long: mapCoordinates?.longitude,
+    lat: mapCoordinates?.latitude ?? DEFAULT_MAP_COORDINATE.latitude,
+    long: mapCoordinates?.longitude ?? DEFAULT_MAP_COORDINATE.longitude,
     ...(radius ? { radius } : {}),
     ...(trade ? { trade } : {}),
-    ...(filterValues.availableTime
-      ? { availableTime: filterValues.availableTime }
-      : {}),
-  }, { skip: viewType !== "map" || !mapCoordinates });
+    // ...(experience ? { experience } : {}),
+  }, { skip: viewType !== "map" });
 
   useEffect(() => {
     if (
