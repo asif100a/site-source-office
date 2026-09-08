@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Image, ImageSourcePropType, Text, View } from "react-native";
+import { Image, ImageSourcePropType, Text, View, ViewStyle } from "react-native";
 import { User } from "lucide-react-native";
+import { TextStyle } from "react-native";
 
 type ProfileAvatarProps = {
   name?: string | null;
   uri?: string | null;
   size?: number;
-  className?: string;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
 };
 
 const getInitials = (name?: string | null) => {
@@ -24,7 +26,8 @@ export default function ProfileAvatar({
   name,
   uri,
   size = 44,
-  className = "",
+  style = {},
+  textStyle = {},
 }: ProfileAvatarProps) {
   const [hasImageError, setHasImageError] = useState(false);
   const initials = useMemo(() => getInitials(name), [name]);
@@ -40,8 +43,8 @@ export default function ProfileAvatar({
 
   return (
     <View
-      className={`items-center justify-center overflow-hidden rounded-full bg-orange-50 ${className}`}
-      style={{ width: size, height: size }}
+      className={`items-center justify-center overflow-hidden rounded-full bg-orange-50`}
+      style={{ width: size, height: size, ...style }}
     >
       {showImage && imageSource ? (
         <Image
@@ -53,7 +56,7 @@ export default function ProfileAvatar({
       ) : initials ? (
         <Text
           className="font-bold"
-          style={{ color: "#C81E1E", fontSize: Math.max(12, size * 0.34) }}
+          style={{ color: "#C81E1E", fontSize: Math.max(12, size * 0.34), ...textStyle }}
         >
           {initials}
         </Text>

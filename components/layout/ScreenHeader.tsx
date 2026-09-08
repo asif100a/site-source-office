@@ -6,6 +6,7 @@ import { DEFAULT_USER_ROLE, Routes, type UserRole } from "@/constants/Routes";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
+import ProfileAvatar from "../common/ProfileAvatar";
 
 export default function ScreenHeader() {
   const router = useRouter();
@@ -44,12 +45,14 @@ export default function ScreenHeader() {
           }
           className="active:opacity-75"
         >
-          <Image
-            source={{
-              uri: profile?.profile?.image || undefined,
-            }}
-            className="w-14 h-14 rounded-full border-2 border-white/30"
-          />
+          <ProfileAvatar
+          uri={profile?.profile?.image}
+          style={{
+            width: 50,
+            height: 50,
+            borderWidth: 1,
+            borderColor: '#ffffff4d'
+          }} />
         </Pressable>
 
         <View className="-mb-3">
