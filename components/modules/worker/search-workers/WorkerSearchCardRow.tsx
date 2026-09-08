@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
-import { Bookmark, Briefcase, Clock, MapPin } from "lucide-react-native";
+import { Bookmark, Clock, MapPin } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import ProfileAvatar from "@/components/common/ProfileAvatar";
 
 export default function WorkerCardRow({
   worker,
@@ -19,9 +20,7 @@ export default function WorkerCardRow({
       <View className="px-4 pt-4 pb-3">
         <View className="flex-row items-start justify-between">
           <View className="flex-row items-center gap-3 flex-1 pr-3">
-            <View className="w-11 h-11 rounded-full bg-blue-600 items-center justify-center">
-              <Briefcase size={20} color="#FFFFFF" />
-            </View>
+            <ProfileAvatar uri={worker.image} name={worker.name} size={44} />
             <View className="flex-1">
               <Text className="text-neutral-950 text-base font-bold">
                 {worker.name}

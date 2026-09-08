@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Text, View } from "react-native";
 import type { Region } from "react-native-maps";
 import { MapPin } from "lucide-react-native";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
@@ -13,6 +13,7 @@ type WorkerMapItem = {
   location: string;
   availability: string;
   experience: string;
+  image?: string | null;
   coordinate: {
     latitude: number;
     longitude: number;
@@ -68,9 +69,13 @@ function WorkerMarkerBubble({ label }: { label: string }) {
 
 export default function SearchWorkerMapView({
   WORKERS,
+  isLoading = false,
+  isError = false,
   openWorkerDetails,
 }: {
   WORKERS: WorkerMapItem[];
+  isLoading?: boolean;
+  isError?: boolean;
   openWorkerDetails: (id: string) => void;
 }) {
   const nativeMapComponents = getNativeMapComponents();
@@ -113,7 +118,20 @@ export default function SearchWorkerMapView({
         )}
       </View>
 
-      {featuredWorker ? (
+      {isLoading ? (
+        <View className="absolute bottom-14 left-5 right-5 items-center rounded-2xl bg-white px-5 py-8">
+          <ActivityIndicator color={Colors.common.BRAND} />
+          <Text className="mt-3 text-sm font-semibold text-neutral-500">
+            Loading nearby workers...
+          </Text>
+        </View>
+      ) : isError ? (
+        <View className="absolute bottom-14 left-5 right-5 rounded-2xl bg-red-50 px-5 py-8">
+          <Text className="text-center text-sm font-semibold text-red-700">
+            Unable to load nearby workers. Please try again.
+          </Text>
+        </View>
+      ) : featuredWorker ? (
         <View className="absolute bottom-14 left-5 right-5">
           <WorkerSearchCardRow
             worker={featuredWorker}

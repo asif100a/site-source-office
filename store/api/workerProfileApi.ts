@@ -10,6 +10,10 @@ interface GetAllWorkerParams {
   limit?: number;
   lat?: number;
   long?: number;
+  radius?: number;
+  searchTerm?: string;
+  trade?: string;
+  availableTime?: string;
 }
 
 export const workerProfileApi = baseApi.injectEndpoints({

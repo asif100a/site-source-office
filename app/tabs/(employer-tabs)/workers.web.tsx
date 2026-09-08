@@ -347,7 +347,7 @@ export default function EmployerWorkersScreenWeb() {
     { skip: !isAuthenticated }
   );
   const sentOffersQuery = useGetSentJobOffersQuery(
-    { id: "", page: 1, limit: 10 },
+    { page: 1, limit: 10 },
     { skip: !isAuthenticated }
   );
   const pageWorkers = useMemo(

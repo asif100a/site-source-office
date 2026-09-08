@@ -207,7 +207,7 @@ export default function SearchWorkerModal({
               openField={openField}
               setOpenField={setOpenField}
             />
-
+{/* 
             <FilterSelectField
               label="Available time"
               id="availableTime"
@@ -216,7 +216,7 @@ export default function SearchWorkerModal({
               placeholder="8 am - 5 pm"
               openField={openField}
               setOpenField={setOpenField}
-            />
+            /> */}
           </View>
 
           <TouchableOpacity
