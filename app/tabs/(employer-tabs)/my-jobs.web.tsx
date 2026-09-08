@@ -40,155 +40,6 @@ type JobCard = {
   }>;
 };
 
-const ACTIVE_JOBS: JobCard[] = [
-  {
-    id: "active-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-  {
-    id: "active-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-  {
-    id: "active-3",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 3 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "active",
-    applications: "+ 21 Application",
-  },
-];
-
-const UPCOMING_JOBS: JobCard[] = [
-  {
-    id: "upcoming-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "120",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "upcoming",
-    rate: "Market Rate",
-    applicants: [
-      {
-        id: "1",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "2",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "3",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-    ],
-  },
-  {
-    id: "upcoming-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "80",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "upcoming",
-    rate: "Market Rate",
-    applicants: [
-      {
-        id: "1",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "2",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-      {
-        id: "3",
-        name: "Michael Turner",
-        role: "Labour",
-        location: "Shoreditch - 1.2 mi away",
-        availability: "Available 8am - 5pm",
-        experience: "8 Years Experience",
-      },
-    ],
-  },
-];
-
-const COMPLETED_JOBS: JobCard[] = [
-  {
-    id: "completed-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 20 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "completed",
-  },
-  {
-    id: "completed-2",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Day 20 of 20",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "completed",
-  },
-];
-
-const CANCELLED_JOBS: JobCard[] = [
-  {
-    id: "cancelled-1",
-    title: "Labourer",
-    company: "Tech Innovators Inc.",
-    badge: "Cancelled",
-    location: "Shoreditch - 1.2 mi away",
-    team: "2 developers, 1 designer",
-    duration: "12 Jun - 1 month",
-    status: "cancelled",
-  },
-];
-
 export default function EmployerMyJobsScreenWeb() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -201,8 +52,10 @@ export default function EmployerMyJobsScreenWeb() {
   const trimmedSearchQuery = searchQuery.trim();
   const requestedStatus =
     activeTab === "upcoming"
-      ? "posted"
-      : (activeTab as "active" | "completed");
+      ? "POSTED"
+      : activeTab === "active"
+      ? "ACTIVE"
+      : "COMPLETED";
   const jobsQuery = useGetMyJobsQuery({
     page,
     limit: 10,
