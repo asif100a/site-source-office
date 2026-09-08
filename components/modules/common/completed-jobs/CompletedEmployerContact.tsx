@@ -9,7 +9,7 @@ export default function CompletedEmployerContact({jobDetails}: {jobDetails: any}
         Employer Contact
       </Text>
 
-      <View className="flex-row items-center gap-3 mb-4">
+      <View className="flex-row items-center gap-3 mb-0">
         <View className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 justify-center items-center">
           <Text className="text-slate-700 font-extrabold text-sm">JH</Text>
         </View>

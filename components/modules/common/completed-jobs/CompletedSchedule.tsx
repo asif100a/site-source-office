@@ -38,14 +38,14 @@ export default function CompletedSchedule({ jobDetails }: { jobDetails: any }) {
             {jobDetails.daysPerWeek}
           </Text>
         </View>
-        <View className="flex-row justify-between items-center p-4">
+        {/* <View className="flex-row justify-between items-center p-4">
           <Text className="text-neutral-400 text-sm font-semibold">
             Next invoice
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
             {jobDetails.nextInvoice}
           </Text>
-        </View>
+        </View> */}
       </View>
     </View>
   );

@@ -146,15 +146,15 @@ export default function ProfileScreen() {
             params: { origin: "employer" },
           }),
       },
-      {
-        icon: MessageSquare,
-        label: "Contact Site Source",
-        onPress: () =>
-          router.push({
-            pathname: "/screens/profile/contact",
-            params: { origin: "employer" },
-          }),
-      },
+      // {
+      //   icon: MessageSquare,
+      //   label: "Contact Site Source",
+      //   onPress: () =>
+      //     router.push({
+      //       pathname: "/screens/profile/contact",
+      //       params: { origin: "employer" },
+      //     }),
+      // },
       {
         icon: LogOut,
         label: "Log out",

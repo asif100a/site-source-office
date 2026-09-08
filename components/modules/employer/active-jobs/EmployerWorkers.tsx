@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { Image } from "expo-image";
 import { ChevronRight } from "lucide-react-native";
+import { router } from "expo-router";
 
 const DEFAULT_EMPLOYER_WORKERS = [
   { id: "1", name: "James Hartley", progress: "Day 3 of 20" },
@@ -38,17 +39,22 @@ export default function EmployerWorkers({
 }) {
   const workers = getWorkers(jobDetails);
 
+  const handleUpdateTimesheetPress = (workerId: string) => {
+    router.push({
+      pathname: `/tabs/approvals`,
+      params: { origin: "employer" },
+    });
+  };
+
   return (
     <View className="mt-4">
       <Text className="text-neutral-900 text-sm font-extrabold mb-3">
         Workers
       </Text>
       <View className="gap-3">
-        {workers.map((worker) => (
-          <TouchableOpacity
+        {workers.map((worker: any) => (
+          <View
             key={worker.id}
-            onPress={() => openWorkerDetails(worker.id)}
-            activeOpacity={0.9}
             className="bg-white rounded-xl border border-neutral-200/80 px-3 py-3.5"
           >
             <View className="flex-row items-center justify-between">
@@ -62,23 +68,32 @@ export default function EmployerWorkers({
                   className="w-10 h-10 rounded-full"
                 />
                 <View>
-                  <Text className="text-neutral-900 text-sm font-bold">
-                    {worker.name}
-                  </Text>
+                  <TouchableOpacity
+                    key={worker.id}
+                    onPress={() => openWorkerDetails(worker.id)}
+                    activeOpacity={0.9}
+                  >
+                    <Text className="text-neutral-900 text-sm font-bold">
+                      {worker.name}
+                    </Text>
+                  </TouchableOpacity>
                   <Text className="text-neutral-400 text-xs mt-0.5">
                     {worker.progress}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center gap-1">
+              <TouchableOpacity
+                onPress={() => handleUpdateTimesheetPress(worker.id)}
+                className="flex-row items-center gap-1"
+              >
                 <Text className="min-w-[100px] text-right text-neutral-500 text-xs font-medium">
                   Update Timesheet
                 </Text>
                 <ChevronRight size={16} color="#737373" />
-              </View>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </View>
         ))}
       </View>
     </View>

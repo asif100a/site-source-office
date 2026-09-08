@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   Text,
@@ -19,9 +20,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Image } from "expo-image";
+import Toast from "react-native-toast-message";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import ProfileAvatar from "@/components/common/ProfileAvatar";
+import {
+  useCreateWorkerBookmarkMutation,
+  useGetBookmarkWorkersQuery,
+} from "@/store/api/bookmarkApi";
 
 type SavedWorker = {
   id: string;
@@ -30,73 +36,57 @@ type SavedWorker = {
   location: string;
   availability: string;
   experience: string;
-  avatar: string;
+  image?: string | null;
   rating: string;
   status: "Available" | "Busy" | "Shortlisted";
   distance: string;
   skills: string[];
 };
 
-const SAVED_WORKERS: SavedWorker[] = [
-  {
-    id: "1",
-    name: "Michael Turner",
-    role: "Labourer",
-    location: "Shoreditch",
-    availability: "Available 8am - 5pm",
-    experience: "8 Years Experience",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&h=160&fit=crop",
-    rating: "4.9/5",
-    status: "Available",
-    distance: "1.2 mi away",
-    skills: ["Site prep", "Loading", "Cleanup"],
-  },
-  {
-    id: "2",
-    name: "Amina Rahman",
-    role: "Painter",
-    location: "Hackney",
-    availability: "Available tomorrow",
-    experience: "6 Years Experience",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&h=160&fit=crop",
-    rating: "4.8/5",
-    status: "Shortlisted",
-    distance: "0.8 mi away",
-    skills: ["Interior finish", "Detail work", "Colour matching"],
-  },
-  {
-    id: "3",
-    name: "Daniel Brooks",
-    role: "Electrician",
-    location: "Waterloo",
-    availability: "Busy until 2pm",
-    experience: "11 Years Experience",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=160&h=160&fit=crop",
-    rating: "4.7/5",
-    status: "Busy",
-    distance: "2.1 mi away",
-    skills: ["Fault finding", "Wiring", "Testing"],
-  },
-  {
-    id: "4",
-    name: "Sarah Khan",
-    role: "Site Assistant",
-    location: "Islington",
-    availability: "Available now",
-    experience: "5 Years Experience",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=160&h=160&fit=crop",
-    rating: "5.0/5",
-    status: "Available",
-    distance: "1.5 mi away",
-    skills: ["Coordination", "Inventory", "Reporting"],
-  },
-];
-
 const FILTERS = ["All", "Available", "Shortlisted", "Busy"] as const;
+
+const getImageUrl = (value?: string | null) => {
+  if (!value) return null;
+  return value.match(/\]\((https?:\/\/[^)]+)\)/)?.[1] ?? value;
+};
+
+const getBookmarkItems = (response: any): any[] => {
+  const data = response?.data ?? response;
+  const items =
+    data?.workers ?? data?.data?.workers ?? data?.bookmarks ?? data?.items ?? [];
+
+  return Array.isArray(items) ? items : [];
+};
+
+const mapBookmarkToWorker = (item: any): SavedWorker | null => {
+  const workerAuth = item?.workerAuth ?? item?.worker ?? item;
+  const profile = workerAuth?.profile ?? item?.profile ?? workerAuth;
+  const workerProfile = workerAuth?.workerProfile ?? item?.workerProfile ?? {};
+  const id = item?.workerAuthId ?? workerAuth?.id ?? workerAuth?._id ?? profile?.id;
+
+  if (!id || !profile) return null;
+
+  const trades = profile?.trades ?? workerProfile?.trades ?? [];
+  const skills = Array.isArray(trades) ? trades : [];
+  const distance = Number(profile?.distance ?? item?.distance);
+  const avgRating = Number(profile?.avgRating ?? item?.avgRating);
+
+  return {
+    id: String(id),
+    name: profile?.name ?? "Worker",
+    role: skills.length > 0 ? skills.join(", ") : "Worker",
+    location: "Location not available",
+    availability: "Available for job offers",
+    experience: `${profile?.experience ?? workerProfile?.experience ?? 0} Years Experience`,
+    image: getImageUrl(profile?.image),
+    rating: Number.isFinite(avgRating) ? `${avgRating.toFixed(1)}/5` : "0/5",
+    status: "Available",
+    distance: Number.isFinite(distance)
+      ? `${distance.toFixed(1)} km away`
+      : "Distance unavailable",
+    skills: skills.length > 0 ? skills : ["Worker"],
+  };
+};
 
 function statusTone(status: SavedWorker["status"]) {
   switch (status) {
@@ -141,19 +131,19 @@ function StatCard({
 function WorkerCard({
   worker,
   onOpenDetails,
+  onToggleFavorite,
+  isBookmarking,
 }: {
   worker: SavedWorker;
   onOpenDetails: (workerId: string) => void;
+  onToggleFavorite: (workerId: string) => void;
+  isBookmarking: boolean;
 }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5">
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-row flex-1 items-center gap-4">
-          <Image
-            source={{ uri: worker.avatar }}
-            contentFit="cover"
-            className="h-14 w-14 rounded-full"
-          />
+          <ProfileAvatar uri={worker.image} name={worker.name} size={56} />
           <View className="flex-1">
             <View className="flex-row flex-wrap items-center gap-2">
               <Text className="text-lg font-bold text-neutral-950">
@@ -171,8 +161,17 @@ function WorkerCard({
           </View>
         </View>
 
-        <TouchableOpacity activeOpacity={0.85} className="p-2">
-          <Bookmark size={18} color="#737373" />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={isBookmarking}
+          onPress={() => onToggleFavorite(worker.id)}
+          className="p-2 disabled:opacity-60"
+        >
+          <Bookmark
+            size={18}
+            color={Colors.common.BRAND}
+            fill={Colors.common.BRAND}
+          />
         </TouchableOpacity>
       </View>
 
@@ -246,9 +245,22 @@ export default function SavedWorkersWebScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<(typeof FILTERS)[number]>("All");
+  const [removedWorkerIds, setRemovedWorkerIds] = useState<string[]>([]);
+  const [bookmarkingWorkerIds, setBookmarkingWorkerIds] = useState<string[]>([]);
+  const [createWorkerBookmark] = useCreateWorkerBookmarkMutation();
+  const bookmarkedWorkersQuery = useGetBookmarkWorkersQuery({ page: 1, limit: 100 });
+
+  const savedWorkers = useMemo(
+    () =>
+      getBookmarkItems(bookmarkedWorkersQuery.data)
+        .map(mapBookmarkToWorker)
+        .filter(Boolean)
+        .filter((worker) => !removedWorkerIds.includes(worker.id)) as SavedWorker[],
+    [bookmarkedWorkersQuery.data, removedWorkerIds],
+  );
 
   const filteredWorkers = useMemo(() => {
-    return SAVED_WORKERS.filter((worker) => {
+    return savedWorkers.filter((worker) => {
       const matchesQuery =
         query.trim().length === 0 ||
         [worker.name, worker.role, worker.location, ...worker.skills]
@@ -261,13 +273,45 @@ export default function SavedWorkersWebScreen() {
 
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, query]);
+  }, [activeFilter, query, savedWorkers]);
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
       pathname: "/screens/worker-details/[id]",
       params: { id: workerId, origin: "employer" },
     });
+  };
+
+  const toggleFavoriteWorker = (workerId: string) => {
+    if (bookmarkingWorkerIds.includes(workerId)) return;
+
+    setRemovedWorkerIds((current) =>
+      current.includes(workerId) ? current : [...current, workerId],
+    );
+    setBookmarkingWorkerIds((current) => [...current, workerId]);
+
+    void createWorkerBookmark({ workerAuthId: workerId })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: "Favorite updated",
+        });
+        bookmarkedWorkersQuery.refetch();
+      })
+      .catch((error) => {
+        setRemovedWorkerIds((current) => current.filter((id) => id !== workerId));
+        Toast.show({
+          type: "error",
+          text1: "Favorite failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setBookmarkingWorkerIds((current) =>
+          current.filter((id) => id !== workerId),
+        );
+      });
   };
 
   return (
@@ -292,7 +336,7 @@ export default function SavedWorkersWebScreen() {
                     <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
                       <View className="h-2 w-2 rounded-full bg-emerald-500" />
                       <Text className="text-xs font-semibold text-neutral-600">
-                        {filteredWorkers.length} workers saved
+                        {savedWorkers.length} workers saved
                       </Text>
                     </View>
                   </View>
@@ -335,26 +379,36 @@ export default function SavedWorkersWebScreen() {
                     <StatCard
                       icon={<Bookmark size={18} color={Colors.common.BRAND} />}
                       label="Saved workers"
-                      value="24"
-                      note="4 new this week"
+                      value={String(savedWorkers.length)}
+                      note="Bookmarked"
                     />
                     <StatCard
                       icon={<Star size={18} color={Colors.common.BRAND} />}
                       label="Average rating"
-                      value="4.8/5"
-                      note="Trusted picks"
+                      value={
+                        savedWorkers.length
+                          ? `${(
+                              savedWorkers.reduce(
+                                (total, worker) =>
+                                  total + Number(worker.rating.replace("/5", "")),
+                                0,
+                              ) / savedWorkers.length
+                            ).toFixed(1)}/5`
+                          : "0/5"
+                      }
+                      note="Saved pool"
                     />
                     <StatCard
                       icon={<Clock3 size={18} color={Colors.common.BRAND} />}
                       label="Fastest response"
-                      value="11 min"
-                      note="Today"
+                      value="-"
+                      note="Not tracked"
                     />
                     <StatCard
                       icon={<Filter size={18} color={Colors.common.BRAND} />}
                       label="Shortlisted"
-                      value="9"
-                      note="Ready to hire"
+                      value={String(savedWorkers.length)}
+                      note="Ready to view"
                     />
                   </View>
                 </View>
@@ -447,11 +501,26 @@ export default function SavedWorkersWebScreen() {
                 </View>
 
                 <View className="gap-4">
-                  {filteredWorkers.map((worker) => (
+                  {bookmarkedWorkersQuery.isLoading ? (
+                    <View className="items-center rounded-[24px] border border-neutral-200 bg-white px-6 py-10">
+                      <ActivityIndicator color={Colors.common.BRAND} />
+                      <Text className="mt-3 text-sm font-semibold text-neutral-500">
+                        Loading saved workers...
+                      </Text>
+                    </View>
+                  ) : bookmarkedWorkersQuery.isError ? (
+                    <View className="items-center rounded-[24px] border border-red-100 bg-red-50 px-6 py-10">
+                      <Text className="text-sm font-semibold text-red-700">
+                        Unable to load saved workers. Please try again.
+                      </Text>
+                    </View>
+                  ) : filteredWorkers.map((worker) => (
                     <WorkerCard
                       key={worker.id}
                       worker={worker}
                       onOpenDetails={openWorkerDetails}
+                      onToggleFavorite={toggleFavoriteWorker}
+                      isBookmarking={bookmarkingWorkerIds.includes(worker.id)}
                     />
                   ))}
 
