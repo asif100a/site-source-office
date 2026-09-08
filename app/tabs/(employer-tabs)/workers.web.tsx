@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
-import { Image } from "expo-image";
 import {
   Bookmark,
   ChevronDown,
@@ -16,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ProfileAvatar from "@/components/common/ProfileAvatar";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
@@ -373,13 +373,10 @@ export default function EmployerWorkersScreenWeb() {
                     <View className="px-5 pt-5 pb-4">
                       <View className="flex-row items-start justify-between gap-4">
                         <View className="flex-1 flex-row items-center gap-3 pr-3">
-                          <Image
-                            source={{
-                              uri:
-                                getImageUrl(worker.image) ??
-                                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
-                            }}
-                            className="h-12 w-12 rounded-full"
+                          <ProfileAvatar
+                            uri={getImageUrl(worker.image)}
+                            name={worker.name}
+                            size={48}
                           />
                           <View className="flex-1">
                             <Text className="text-base font-bold text-neutral-950">

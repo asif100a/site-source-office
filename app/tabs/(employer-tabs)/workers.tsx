@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Image,
   RefreshControl,
   ScrollView,
   Text,
@@ -16,6 +15,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
+import ProfileAvatar from "@/components/common/ProfileAvatar";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
@@ -215,13 +215,10 @@ export default function EmployerWorkersScreen() {
                 <View className="px-4 pt-4 pb-3">
                   <View className="flex-row items-start justify-between">
                     <View className="flex-row items-center gap-3 flex-1 pr-3">
-                      <Image
-                        source={{
-                          uri:
-                            getImageUrl(worker.image) ??
-                            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop",
-                        }}
-                        className="w-11 h-11 rounded-full"
+                      <ProfileAvatar
+                        uri={getImageUrl(worker.image)}
+                        name={worker.name}
+                        size={44}
                       />
                       <View className="flex-1">
                         <Text className="text-neutral-950 text-base font-bold">
