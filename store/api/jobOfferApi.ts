@@ -21,9 +21,9 @@ export const jobOfferApi = baseApi.injectEndpoints({
     }),
     getSentJobOffers: builder.query<
       any,
-      { id: string; page: number; limit: number }
+      { page: number; limit: number }
     >({
-      query: ({ id, page, limit }) => ({
+      query: ({ page, limit }) => ({
         url: BASE_POINT + `/offers/sent`,
         method: "GET",
         params: { page, limit },

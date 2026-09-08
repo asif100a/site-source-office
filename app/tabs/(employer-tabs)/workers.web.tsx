@@ -27,7 +27,10 @@ import {
   useGetBookmarkWorkersQuery,
 } from "@/store/api/bookmarkApi";
 import { useGetMyJobsQuery } from "@/store/api/jobApi";
-import { useCreateJobOfferMutation } from "@/store/api/jobOfferApi";
+import {
+  useCreateJobOfferMutation,
+  useGetSentJobOffersQuery,
+} from "@/store/api/jobOfferApi";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
@@ -45,7 +48,7 @@ type Worker = {
   distance?: number | null;
 };
 
-type WorkerTab = "all" | "favorite";
+type WorkerTab = "all" | "favorite" | "sent";
 
 type OfferJob = {
   id: string;
@@ -54,6 +57,27 @@ type OfferJob = {
   hourlyRate?: number;
   startDate?: string;
   endDate?: string;
+};
+
+type SentJobOffer = {
+  id: string;
+  jobId: string;
+  workerAuthId: string;
+  status?: string;
+  offeredAt?: string;
+  job?: OfferJob & {
+    location?: {
+      coordinates?: [number, number];
+    };
+    trades?: string[];
+  };
+  workerAuth?: {
+    profile?: Worker;
+    workerProfile?: {
+      trades?: string[];
+      experience?: number | null;
+    };
+  };
 };
 
 const getWorkers = (response: any): Worker[] => {
@@ -87,6 +111,18 @@ const getMyJobs = (response: any): OfferJob[] => {
   return Array.isArray(jobs) ? jobs : [];
 };
 
+const getSentJobOffers = (response: any): SentJobOffer[] => {
+  const data = response?.data ?? response;
+  const offers = data?.offers ?? data?.data?.offers ?? data?.items ?? [];
+
+  return Array.isArray(offers) ? offers : [];
+};
+
+const getTotalSentOffers = (response: any, fallback: number) => {
+  const data = response?.data ?? response;
+  return data?.meta?.total ?? data?.data?.meta?.total ?? fallback;
+};
+
 const getImageUrl = (value?: string | null) => {
   if (!value) return null;
   return value.match(/\]\((https?:\/\/[^)]+)\)/)?.[1] ?? value;
@@ -113,6 +149,7 @@ const getWorkerId = (worker: Worker) =>
 const workerTabs: { key: WorkerTab; label: string }[] = [
   { key: "all", label: "All Worker" },
   { key: "favorite", label: "Favorite" },
+  { key: "sent", label: "Sent Offers" },
 ];
 
 const formatJobDate = (value?: string) => {
@@ -309,6 +346,10 @@ export default function EmployerWorkersScreenWeb() {
     { page: 1, limit: 100, status: "POSTED" },
     { skip: !isAuthenticated }
   );
+  const sentOffersQuery = useGetSentJobOffersQuery(
+    { id: "", page: 1, limit: 10 },
+    { skip: !isAuthenticated }
+  );
   const pageWorkers = useMemo(
     () => getWorkers(workersQuery.data),
     [workersQuery.data]
@@ -318,6 +359,14 @@ export default function EmployerWorkersScreenWeb() {
     [bookmarkedWorkersQuery.data]
   );
   const myJobs = useMemo(() => getMyJobs(myJobsQuery.data), [myJobsQuery.data]);
+  const sentOffers = useMemo(
+    () => getSentJobOffers(sentOffersQuery.data),
+    [sentOffersQuery.data]
+  );
+  const totalSentOffers = getTotalSentOffers(
+    sentOffersQuery.data,
+    sentOffers.length
+  );
   const totalWorkers = getTotalWorkers(workersQuery.data, workers.length);
   const visibleFavoriteWorkers = favoriteWorkers.filter((worker) =>
     favoriteWorkerIds.includes(getWorkerId(worker))
@@ -328,9 +377,15 @@ export default function EmployerWorkersScreenWeb() {
   const isListLoading =
     activeTab === "all"
       ? workersQuery.isLoading
-      : bookmarkedWorkersQuery.isLoading;
+      : activeTab === "favorite"
+        ? bookmarkedWorkersQuery.isLoading
+        : sentOffersQuery.isLoading;
   const isListError =
-    activeTab === "all" ? workersQuery.isError : bookmarkedWorkersQuery.isError;
+    activeTab === "all"
+      ? workersQuery.isError
+      : activeTab === "favorite"
+        ? bookmarkedWorkersQuery.isError
+        : sentOffersQuery.isError;
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -664,23 +719,32 @@ export default function EmployerWorkersScreenWeb() {
             <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
               <View className="mb-5 flex-row items-center justify-between gap-4">
                 <Text className="text-lg font-bold tracking-tight text-neutral-900">
-                  {activeTab === "all" ? "Search Result" : "Favorite Workers"}
+                  {activeTab === "all"
+                    ? "Search Result"
+                    : activeTab === "favorite"
+                      ? "Favorite Workers"
+                      : "Sent Offers"}
                 </Text>
                 <View className="rounded-md bg-orange-50 px-2.5 py-1.5">
                   <Text
                     style={{ color: Colors.common.BRAND }}
                     className="text-xs font-medium"
                   >
-                    {activeTab === "all" ? totalWorkers : favoriteWorkers.length} Results
+                    {activeTab === "all"
+                      ? totalWorkers
+                      : activeTab === "favorite"
+                        ? favoriteWorkers.length
+                        : totalSentOffers} Results
                   </Text>
                 </View>
               </View>
 
               <View className="gap-4">
-                {activeTab === "favorite" && !isAuthenticated ? (
+                {activeTab !== "all" && !isAuthenticated ? (
                   <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-10">
                     <Text className="text-center text-sm font-semibold text-neutral-500">
-                      Login to view your favorite workers.
+                      Login to view your{" "}
+                      {activeTab === "favorite" ? "favorite workers" : "sent offers"}.
                     </Text>
                   </View>
                 ) : isListLoading ? (
@@ -688,7 +752,9 @@ export default function EmployerWorkersScreenWeb() {
                     <Text className="text-center text-sm font-semibold text-neutral-500">
                       {activeTab === "all"
                         ? "Loading workers..."
-                        : "Loading favorite workers..."}
+                        : activeTab === "favorite"
+                          ? "Loading favorite workers..."
+                          : "Loading sent offers..."}
                     </Text>
                   </View>
                 ) : isListError ? (
@@ -696,13 +762,91 @@ export default function EmployerWorkersScreenWeb() {
                     <Text className="text-center text-sm font-semibold text-red-700">
                       {activeTab === "all"
                         ? "Unable to load workers. Please try again."
-                        : "Unable to load favorite workers. Please try again."}
+                        : activeTab === "favorite"
+                          ? "Unable to load favorite workers. Please try again."
+                          : "Unable to load sent offers. Please try again."}
                     </Text>
                   </View>
+                ) : activeTab === "sent" && sentOffers.length > 0 ? (
+                  sentOffers.map((offer) => {
+                    const worker = offer.workerAuth?.profile;
+                    const workerProfile = offer.workerAuth?.workerProfile;
+                    const job = offer.job;
+
+                    return (
+                      <View
+                        key={offer.id}
+                        className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white"
+                      >
+                        <View className="px-5 pt-5 pb-4">
+                          <View className="flex-row items-start justify-between gap-4">
+                            <View className="flex-1 flex-row items-center gap-3 pr-3">
+                              <ProfileAvatar
+                                uri={getImageUrl(worker?.image)}
+                                name={worker?.name}
+                                size={48}
+                              />
+                              <View className="flex-1">
+                                <Text className="text-base font-bold text-neutral-950">
+                                  {worker?.name ?? "Worker"}
+                                </Text>
+                                <Text className="text-sm text-neutral-500">
+                                  {job?.title ?? "Job offer"}
+                                </Text>
+                              </View>
+                            </View>
+
+                            <View className="rounded-full bg-orange-50 px-2.5 py-1">
+                              <Text
+                                style={{ color: Colors.common.BRAND }}
+                                className="text-[10px] font-bold"
+                              >
+                                {offer.status ?? "PENDING"}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View className="mt-4 gap-2.5 border-t border-neutral-100 pt-4">
+                            <View className="flex-row items-center gap-2">
+                              <MapPin size={14} color="#C81E1E" />
+                              <Text className="text-xs text-neutral-500">
+                                {job?.location?.coordinates
+                                  ? getCoordinateLabel(job.location.coordinates)
+                                  : "Location not available"}
+                              </Text>
+                            </View>
+                            <View className="flex-row items-center gap-2">
+                              <Clock size={14} color="#737373" />
+                              <Text className="text-xs text-neutral-500">
+                                Offered {formatJobDate(offer.offeredAt)}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View className="flex-row items-center justify-between px-5 pb-5">
+                          <View className="rounded-md bg-orange-50 px-3 py-1.5">
+                            <Text
+                              style={{ color: Colors.common.BRAND }}
+                              className="text-xs font-medium"
+                            >
+                              {job?.hourlyRate != null
+                                ? `GBP ${job.hourlyRate}/hour`
+                                : "Rate not set"}
+                            </Text>
+                          </View>
+                          <Text className="text-xs font-medium text-neutral-500">
+                            {workerProfile?.experience ?? 0} Years Experience
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
                 ) : null}
 
                 {!isListLoading &&
                   !isListError &&
+                  activeTab !== "sent" &&
                   !(activeTab === "favorite" && !isAuthenticated) &&
                   filteredWorkers.map((worker) => {
                     const workerId = getWorkerId(worker);
@@ -804,13 +948,17 @@ export default function EmployerWorkersScreenWeb() {
 
                 {!isListLoading &&
                 !isListError &&
-                !(activeTab === "favorite" && !isAuthenticated) &&
-                filteredWorkers.length === 0 ? (
+                !(activeTab !== "all" && !isAuthenticated) &&
+                (activeTab === "sent"
+                  ? sentOffers.length === 0
+                  : filteredWorkers.length === 0) ? (
                   <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
                     <Text className="text-base font-bold text-neutral-900">
                       {activeTab === "all"
                         ? "No matching workers found"
-                        : "No favorite workers found"}
+                        : activeTab === "favorite"
+                          ? "No favorite workers found"
+                          : "No sent offers found"}
                     </Text>
                     <Text className="mt-2 text-sm leading-6 text-neutral-600">
                       Try a different search term or reset the current filters to
