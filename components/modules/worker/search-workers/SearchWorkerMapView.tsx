@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import type { Region } from "react-native-maps";
-import { MapPin } from "lucide-react-native";
+import { Filter, MapPin } from "lucide-react-native";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import WorkerSearchCardRow from "./WorkerSearchCardRow";
 import { Colors } from "@/constants/Colors";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 type WorkerMapItem = {
   id: string;
@@ -24,13 +32,6 @@ type NativeMapComponents = {
   MapView: typeof import("react-native-maps").default;
   Marker: typeof import("react-native-maps").Marker;
   ProviderGoogle: typeof import("react-native-maps").PROVIDER_GOOGLE;
-};
-
-const MAP_REGION: Region = {
-  latitude: 51.5295,
-  longitude: -0.056,
-  latitudeDelta: 0.05,
-  longitudeDelta: 0.05,
 };
 
 function getNativeMapComponents(): NativeMapComponents | null {
@@ -72,11 +73,21 @@ export default function SearchWorkerMapView({
   isLoading = false,
   isError = false,
   openWorkerDetails,
+  mapRegion,
+  locationAddress,
+  onLocationChange,
+  onLocationValidityChange,
+  onOpenFilters,
 }: {
   WORKERS: WorkerMapItem[];
   isLoading?: boolean;
   isError?: boolean;
   openWorkerDetails: (id: string) => void;
+  mapRegion: Region;
+  locationAddress: string;
+  onLocationChange: (details: AddressDetails) => void;
+  onLocationValidityChange: (isValid: boolean) => void;
+  onOpenFilters: () => void;
 }) {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const nativeMapComponents = getNativeMapComponents();
@@ -99,7 +110,8 @@ export default function SearchWorkerMapView({
           <NativeMapView
             style={{ flex: 1 }}
             provider={NativeProviderGoogle}
-            initialRegion={MAP_REGION}
+            initialRegion={mapRegion}
+            region={mapRegion}
             mapType="standard"
             loadingEnabled
             loadingBackgroundColor="#E5E7EB"
@@ -124,6 +136,37 @@ export default function SearchWorkerMapView({
         ) : (
           <MapFallback />
         )}
+      </View>
+
+      <View className="absolute inset-x-0 top-0 bg-black/10 px-5 pb-4 pt-5">
+        <View className="flex-row items-center gap-3">
+          <View className="flex-1">
+            <JobLocationPicker
+              address={locationAddress}
+              onChange={onLocationChange}
+              onValidityChange={onLocationValidityChange}
+              onlyField
+            />
+          </View>
+
+          <TouchableOpacity
+            className="rounded-2xl bg-[#111111] px-4 py-3 shadow-sm"
+            onPress={onOpenFilters}
+          >
+            <View className="flex-row items-center gap-2">
+              <Filter size={18} color="#FFFFFF" />
+              <Text className="text-sm font-bold text-white">Filters</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View className="mt-4 flex-row items-center justify-between">
+          <View className="rounded-full bg-[#111111] px-4 py-2.5">
+            <Text className="text-sm font-bold text-white">
+              {WORKERS.length} workers {locationAddress ? "nearby" : "available"}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {isLoading ? (

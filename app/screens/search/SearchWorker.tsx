@@ -17,7 +17,7 @@ import SearchWorkerSearchBar from "@/components/modules/worker/search-workers/Se
 import SearchWorkerMapView from "@/components/modules/worker/search-workers/SearchWorkerMapView";
 import SearchWorkerModal from "@/components/modules/worker/search-workers/SearchWorkerModal";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
-import { getAddressDetails, getAddressSuggestions } from "@/utils/googlePlaces";
+import type { AddressDetails } from "@/utils/googlePlaces";
 
 type WorkerCard = {
   id: string;
@@ -101,25 +101,6 @@ const getWorkerCoordinate = (worker: any, index: number) => {
   };
 };
 
-const parseCoordinateSearch = (value: string) => {
-  const match = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-  if (!match) return null;
-
-  const latitude = Number(match[1]);
-  const longitude = Number(match[2]);
-
-  if (
-    !Number.isFinite(latitude) ||
-    !Number.isFinite(longitude) ||
-    Math.abs(latitude) > 90 ||
-    Math.abs(longitude) > 180
-  ) {
-    return null;
-  }
-
-  return { latitude, longitude };
-};
-
 const mapWorkerToCard = (
   worker: any,
   index: number,
@@ -157,6 +138,7 @@ export default function SearchWorkerScreen() {
   const [page, setPage] = useState(1);
   const [workers, setWorkers] = useState<WorkerCard[]>([]);
   const [mapWorkers, setMapWorkers] = useState<WorkerCard[]>([]);
+  const [mapLocationAddress, setMapLocationAddress] = useState("");
   const [mapCoordinates, setMapCoordinates] = useState<{
     latitude: number;
     longitude: number;
@@ -200,52 +182,15 @@ export default function SearchWorkerScreen() {
     filterValues.tradeSkill,
   ]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    if (viewType !== "map") {
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    if (debouncedSearchQuery.length < 3) {
-      setMapCoordinates(DEFAULT_MAP_COORDINATE);
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    const parsedCoordinates = parseCoordinateSearch(debouncedSearchQuery);
-    if (parsedCoordinates) {
-      setMapCoordinates(parsedCoordinates);
-      return () => {
-        isMounted = false;
-      };
-    }
-
-    getAddressSuggestions(debouncedSearchQuery)
-      .then((suggestions) => {
-        const suggestion = suggestions[0];
-        if (!suggestion) return null;
-        return getAddressDetails(suggestion.placeId, suggestion.description);
-      })
-      .then((details) => {
-        if (!isMounted || !details) return;
-
-        setMapCoordinates({
-          latitude: details.coordinates[1],
-          longitude: details.coordinates[0],
-        });
-      })
-      .catch(() => {
-        if (isMounted) setMapCoordinates(DEFAULT_MAP_COORDINATE);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [debouncedSearchQuery, viewType]);
+  const mapRegion = useMemo(
+    () => ({
+      latitude: mapCoordinates?.latitude ?? DEFAULT_MAP_COORDINATE.latitude,
+      longitude: mapCoordinates?.longitude ?? DEFAULT_MAP_COORDINATE.longitude,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    }),
+    [mapCoordinates],
+  );
 
   const listWorkersQuery = useGetAllWorkersQuery({
     page,
@@ -259,8 +204,9 @@ export default function SearchWorkerScreen() {
   const mapWorkersQuery = useGetAllWorkersQuery({
     page: 1,
     limit: MAP_WORKERS_LIMIT,
-    lat: mapCoordinates?.latitude ?? DEFAULT_MAP_COORDINATE.latitude,
-    long: mapCoordinates?.longitude ?? DEFAULT_MAP_COORDINATE.longitude,
+    ...(mapCoordinates
+      ? { lat: mapCoordinates.latitude, long: mapCoordinates.longitude }
+      : {}),
     ...(radius ? { radius } : {}),
     ...(trade ? { trade } : {}),
     // ...(experience ? { experience } : {}),
@@ -334,6 +280,15 @@ export default function SearchWorkerScreen() {
     setSearchQuery(value);
     setPage(1);
     setWorkers([]);
+  };
+
+  const handleMapLocationChange = (details: AddressDetails) => {
+    setMapLocationAddress(details.description);
+    setMapCoordinates({
+      latitude: details.coordinates[1],
+      longitude: details.coordinates[0],
+    });
+    setMapWorkers([]);
   };
 
   const refreshWorkers = async () => {
@@ -456,15 +411,14 @@ export default function SearchWorkerScreen() {
             isLoading={isMapLoading}
             isError={mapWorkersQuery.isError}
             openWorkerDetails={openWorkerDetails}
+            mapRegion={mapRegion}
+            locationAddress={mapLocationAddress}
+            onLocationChange={handleMapLocationChange}
+            onLocationValidityChange={(isValid) => {
+              if (!isValid) setMapCoordinates(null);
+            }}
+            onOpenFilters={() => setShowFilters(true)}
           />
-
-          <View className="absolute top-0 w-full">
-            <SearchWorkerSearchBar
-              searchQuery={searchQuery}
-              setSearchQuery={handleChangeSearchQuery}
-              setShowFilters={setShowFilters}
-            />
-          </View>
         </View>
       )}
 
