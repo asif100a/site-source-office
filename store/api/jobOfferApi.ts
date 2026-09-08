@@ -5,10 +5,17 @@ const BASE_POINT = "/jobs";
 
 export const jobOfferApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    createJobOffer: builder.mutation<any, any>({
-      query: (id) => ({
+    createJobOffer: builder.mutation<
+      any,
+      {
+        jobId: string;
+        workerAuthId: string;
+      }
+    >({
+      query: ({ jobId, workerAuthId }) => ({
         url: BASE_POINT + `/offers`,
         method: "POST",
+        body: { jobId, workerAuthId },
       }),
       invalidatesTags: [tagTypes.jobOffer, tagTypes.job, tagTypes.meta],
     }),
@@ -31,11 +38,14 @@ export const jobOfferApi = baseApi.injectEndpoints({
       }),
       providesTags: [tagTypes.jobOffer],
     }),
-    updateJobOfferStatus: builder.mutation<any, {id: string, status: "ACCEPTED" | "REJECTED"}>({
-      query: ({id, status}) => ({
+    updateJobOfferStatus: builder.mutation<
+      any,
+      { id: string; status: "ACCEPTED" | "REJECTED" }
+    >({
+      query: ({ id, status }) => ({
         url: BASE_POINT + `/offers/${id}/status`,
         method: "PATCH",
-        body: {status}
+        body: { status },
       }),
       invalidatesTags: [tagTypes.jobOffer, tagTypes.job, tagTypes.meta],
     }),
@@ -47,5 +57,5 @@ export const {
   useCreateJobOfferMutation,
   useGetSentJobOffersQuery,
   useGetReceivedJobOffersQuery,
-  useUpdateJobOfferStatusMutation
+  useUpdateJobOfferStatusMutation,
 } = jobOfferApi;

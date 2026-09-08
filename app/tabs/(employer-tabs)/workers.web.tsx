@@ -9,16 +9,27 @@ import {
   SlidersHorizontal,
 } from "lucide-react-native";
 import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import ProfileAvatar from "@/components/common/ProfileAvatar";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import {
+  useCreateWorkerBookmarkMutation,
+  useGetBookmarkWorkersQuery,
+} from "@/store/api/bookmarkApi";
+import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import { useCreateJobOfferMutation } from "@/store/api/jobOfferApi";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 
 type Worker = {
@@ -34,16 +45,46 @@ type Worker = {
   distance?: number | null;
 };
 
+type WorkerTab = "all" | "favorite";
+
+type OfferJob = {
+  id: string;
+  title: string;
+  workersNeeded?: number;
+  hourlyRate?: number;
+  startDate?: string;
+  endDate?: string;
+};
+
 const getWorkers = (response: any): Worker[] => {
   const data = response?.data ?? response;
-  const workers = data?.workers ?? data?.data?.workers ?? data?.items ?? [];
+  const workers =
+    data?.workers ?? data?.data?.workers ?? data?.bookmarks ?? data?.items ?? [];
 
   return Array.isArray(workers) ? workers : [];
 };
 
+const getBookmarkedWorkers = (response: any): Worker[] =>
+  getWorkers(response)
+    .map((item: any) => {
+      const worker = item?.workerAuth ?? item?.worker ?? item;
+      const profile = worker?.profile ?? item?.profile ?? worker;
+      const id = item?.workerAuthId ?? worker?.id ?? worker?._id ?? profile?.id;
+
+      return profile ? { ...profile, id } : null;
+    })
+    .filter(Boolean);
+
 const getTotalWorkers = (response: any, fallback: number) => {
   const data = response?.data ?? response;
   return data?.meta?.total ?? data?.data?.meta?.total ?? fallback;
+};
+
+const getMyJobs = (response: any): OfferJob[] => {
+  const data = response?.data ?? response;
+  const jobs = data?.jobs ?? data?.data?.jobs ?? data?.items ?? [];
+
+  return Array.isArray(jobs) ? jobs : [];
 };
 
 const getImageUrl = (value?: string | null) => {
@@ -65,6 +106,115 @@ const getCoordinateLabel = (coordinates?: [number, number]) => {
 
   return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
 };
+
+const getWorkerId = (worker: Worker) =>
+  String((worker as any).authId ?? worker.id);
+
+const workerTabs: { key: WorkerTab; label: string }[] = [
+  { key: "all", label: "All Worker" },
+  { key: "favorite", label: "Favorite" },
+];
+
+const formatJobDate = (value?: string) => {
+  if (!value) return "Date not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date not set";
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+function SendOfferModal({
+  visible,
+  worker,
+  jobs,
+  isLoadingJobs,
+  isSending,
+  onClose,
+  onSendOffer,
+}: {
+  visible: boolean;
+  worker: Worker | null;
+  jobs: OfferJob[];
+  isLoadingJobs: boolean;
+  isSending: boolean;
+  onClose: () => void;
+  onSendOffer: (jobId: string) => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 items-center justify-center bg-black/40 px-5">
+        <Pressable className="absolute inset-0" onPress={onClose} />
+        <View className="max-h-[80%] w-full max-w-xl rounded-[28px] bg-white p-6 shadow-xl">
+          <View className="mb-5 flex-row items-start justify-between gap-4">
+            <View className="flex-1">
+              <Text className="text-xl font-bold text-neutral-950">
+                Send job offer
+              </Text>
+              <Text className="mt-1 text-sm text-neutral-500">
+                Select a posted job for {worker?.name ?? "this worker"}.
+              </Text>
+            </View>
+            <TouchableOpacity onPress={onClose} className="px-2 py-1">
+              <Text className="text-sm font-bold text-neutral-500">Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isLoadingJobs ? (
+            <View className="items-center rounded-2xl border border-neutral-100 bg-neutral-50 px-5 py-10">
+              <ActivityIndicator color={Colors.common.BRAND} />
+              <Text className="mt-3 text-sm font-semibold text-neutral-500">
+                Loading jobs...
+              </Text>
+            </View>
+          ) : jobs.length === 0 ? (
+            <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
+              <Text className="text-center text-sm font-semibold text-neutral-500">
+                No posted jobs available.
+              </Text>
+            </View>
+          ) : (
+            <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
+              <View className="gap-3">
+                {jobs.map((job) => (
+                  <TouchableOpacity
+                    key={job.id}
+                    disabled={isSending}
+                    onPress={() => onSendOffer(job.id)}
+                    activeOpacity={0.88}
+                    className="rounded-2xl border border-neutral-200 bg-white p-4 disabled:opacity-60"
+                  >
+                    <Text className="text-base font-bold text-neutral-950">
+                      {job.title}
+                    </Text>
+                    <Text className="mt-1 text-xs text-neutral-500">
+                      {job.workersNeeded ?? 0} worker
+                      {job.workersNeeded === 1 ? "" : "s"} needed
+                      {job.hourlyRate != null
+                        ? ` - GBP ${job.hourlyRate}/hour`
+                        : ""}
+                    </Text>
+                    <Text className="mt-1 text-xs text-neutral-500">
+                      {formatJobDate(job.startDate)} - {formatJobDate(job.endDate)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 const TRADE_OPTIONS = [
   "All trades",
@@ -130,23 +280,57 @@ function FilterGroup({
 
 export default function EmployerWorkersScreenWeb() {
   const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [tradeSkill, setTradeSkill] = useState("All trades");
   const [radius, setRadius] = useState("Any radius");
   const [availableTime, setAvailableTime] = useState("Any time");
+  const [activeTab, setActiveTab] = useState<WorkerTab>("all");
   const [page, setPage] = useState(1);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [selectedOfferWorker, setSelectedOfferWorker] = useState<Worker | null>(
+    null
+  );
+  const [favoriteWorkerIds, setFavoriteWorkerIds] = useState<string[]>([]);
+  const [bookmarkingWorkerIds, setBookmarkingWorkerIds] = useState<string[]>([]);
   const [addressByWorkerId, setAddressByWorkerId] = useState<
     Record<string, string>
   >({});
+  const [createWorkerBookmark] = useCreateWorkerBookmarkMutation();
+  const [createJobOffer, { isLoading: isSendingOffer }] =
+    useCreateJobOfferMutation();
   const workersQuery = useGetAllWorkersQuery({ page, limit: 10 });
+  const bookmarkedWorkersQuery = useGetBookmarkWorkersQuery(
+    { page: 1, limit: 100 },
+    { skip: !isAuthenticated }
+  );
+  const myJobsQuery = useGetMyJobsQuery(
+    { page: 1, limit: 100, status: "POSTED" },
+    { skip: !isAuthenticated }
+  );
   const pageWorkers = useMemo(
     () => getWorkers(workersQuery.data),
     [workersQuery.data]
   );
+  const favoriteWorkers = useMemo(
+    () => getBookmarkedWorkers(bookmarkedWorkersQuery.data),
+    [bookmarkedWorkersQuery.data]
+  );
+  const myJobs = useMemo(() => getMyJobs(myJobsQuery.data), [myJobsQuery.data]);
   const totalWorkers = getTotalWorkers(workersQuery.data, workers.length);
-  const hasNextPage = workers.length < totalWorkers;
+  const visibleFavoriteWorkers = favoriteWorkers.filter((worker) =>
+    favoriteWorkerIds.includes(getWorkerId(worker))
+  );
+  const visibleSourceWorkers =
+    activeTab === "all" ? workers : visibleFavoriteWorkers;
+  const hasNextPage = activeTab === "all" && workers.length < totalWorkers;
+  const isListLoading =
+    activeTab === "all"
+      ? workersQuery.isLoading
+      : bookmarkedWorkersQuery.isLoading;
+  const isListError =
+    activeTab === "all" ? workersQuery.isError : bookmarkedWorkersQuery.isError;
 
   const openWorkerDetails = (workerId: string) => {
     router.push({
@@ -158,9 +342,10 @@ export default function EmployerWorkersScreenWeb() {
   const filteredWorkers = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
-    return workers.filter((worker) => {
+    return visibleSourceWorkers.filter((worker) => {
+      const workerId = getWorkerId(worker);
       const address =
-        addressByWorkerId[worker.id] ??
+        addressByWorkerId[workerId] ??
         getCoordinateLabel(worker.location?.coordinates);
       const distanceLabel = getDistanceLabel(worker.distance);
       const matchesQuery =
@@ -189,7 +374,14 @@ export default function EmployerWorkersScreenWeb() {
 
       return matchesQuery && matchesTrade && matchesRadius && matchesTime;
     });
-  }, [addressByWorkerId, availableTime, radius, searchQuery, tradeSkill, workers]);
+  }, [
+    addressByWorkerId,
+    availableTime,
+    radius,
+    searchQuery,
+    tradeSkill,
+    visibleSourceWorkers,
+  ]);
 
   useEffect(() => {
     if (!workersQuery.data || (page > 1 && workersQuery.isFetching)) return;
@@ -206,25 +398,131 @@ export default function EmployerWorkersScreenWeb() {
   }, [page, pageWorkers, workersQuery.data, workersQuery.isFetching]);
 
   useEffect(() => {
-    workers.forEach((worker) => {
+    const idsFromAllWorkers = workers
+      .filter((worker) => Boolean((worker as any).hasBookmarked))
+      .map(getWorkerId);
+    const idsFromBookmarks = favoriteWorkers.map(getWorkerId);
+
+    setFavoriteWorkerIds(
+      Array.from(new Set([...idsFromAllWorkers, ...idsFromBookmarks]))
+    );
+  }, [favoriteWorkers, workers]);
+
+  useEffect(() => {
+    visibleSourceWorkers.forEach((worker) => {
       const coordinates = worker.location?.coordinates;
-      if (!coordinates || addressByWorkerId[worker.id]) return;
+      const workerId = getWorkerId(worker);
+      if (!coordinates || addressByWorkerId[workerId]) return;
 
       getAddressFromCoordinates(coordinates)
         .then((address) => {
           setAddressByWorkerId((current) => ({
             ...current,
-            [worker.id]: address,
+            [workerId]: address,
           }));
         })
         .catch(() => {
           setAddressByWorkerId((current) => ({
             ...current,
-            [worker.id]: getCoordinateLabel(coordinates),
+            [workerId]: getCoordinateLabel(coordinates),
           }));
         });
     });
-  }, [addressByWorkerId, workers]);
+  }, [addressByWorkerId, visibleSourceWorkers]);
+
+  const toggleFavoriteWorker = (worker: Worker) => {
+    if (!isAuthenticated) {
+      router.push({
+        pathname: "/auth",
+        params: {
+          step: "login",
+          role: "employer",
+          returnTo: "/tabs/(employer-tabs)/workers",
+        },
+      } as any);
+      return;
+    }
+
+    const workerId = getWorkerId(worker);
+    if (bookmarkingWorkerIds.includes(workerId)) return;
+
+    const wasFavorite = favoriteWorkerIds.includes(workerId);
+
+    setFavoriteWorkerIds((current) =>
+      current.includes(workerId)
+        ? current.filter((id) => id !== workerId)
+        : [...current, workerId]
+    );
+    setBookmarkingWorkerIds((current) => [...current, workerId]);
+
+    void createWorkerBookmark({ workerAuthId: workerId })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: wasFavorite ? "Favorite updated" : "Worker added to favorites",
+        });
+        bookmarkedWorkersQuery.refetch();
+        workersQuery.refetch();
+      })
+      .catch((error) => {
+        setFavoriteWorkerIds((current) =>
+          wasFavorite
+            ? Array.from(new Set([...current, workerId]))
+            : current.filter((id) => id !== workerId)
+        );
+        Toast.show({
+          type: "error",
+          text1: "Favorite failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setBookmarkingWorkerIds((current) =>
+          current.filter((id) => id !== workerId)
+        );
+      });
+  };
+
+  const openSendOfferModal = (worker: Worker) => {
+    if (!isAuthenticated) {
+      router.push({
+        pathname: "/auth",
+        params: {
+          step: "login",
+          role: "employer",
+          returnTo: "/tabs/(employer-tabs)/workers",
+        },
+      } as any);
+      return;
+    }
+
+    setSelectedOfferWorker(worker);
+  };
+
+  const sendOffer = (jobId: string) => {
+    if (!selectedOfferWorker || isSendingOffer) return;
+
+    const workerAuthId = getWorkerId(selectedOfferWorker);
+
+    void createJobOffer({ jobId, workerAuthId })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: "Offer sent",
+          text2: "Your job offer was sent successfully.",
+        });
+        setSelectedOfferWorker(null);
+      })
+      .catch((error) => {
+        Toast.show({
+          type: "error",
+          text1: "Offer failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      });
+  };
 
   return (
     <ScreenWrapper>
@@ -331,43 +629,88 @@ export default function EmployerWorkersScreenWeb() {
                   </TouchableOpacity>
                 </View>
               ) : null}
+
+              <View className="mt-5 flex-row gap-2.5">
+                {workerTabs.map((tab) => {
+                  const isActive = activeTab === tab.key;
+
+                  return (
+                    <TouchableOpacity
+                      key={tab.key}
+                      onPress={() => setActiveTab(tab.key)}
+                      activeOpacity={0.9}
+                      style={
+                        isActive
+                          ? { backgroundColor: Colors.common.GRAY_DARK }
+                          : { backgroundColor: "#FFFFFF" }
+                      }
+                      className={`rounded-lg px-4 py-2.5 ${
+                        isActive ? "" : "border border-neutral-200/80"
+                      }`}
+                    >
+                      <Text
+                        className={`min-w-18 text-center text-xs font-bold ${
+                          isActive ? "text-white" : "text-neutral-600"
+                        }`}
+                      >
+                        {tab.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             <View className="rounded-[28px] border border-neutral-200/80 bg-white p-5 shadow-sm md:p-6">
               <View className="mb-5 flex-row items-center justify-between gap-4">
                 <Text className="text-lg font-bold tracking-tight text-neutral-900">
-                  Search Result
+                  {activeTab === "all" ? "Search Result" : "Favorite Workers"}
                 </Text>
                 <View className="rounded-md bg-orange-50 px-2.5 py-1.5">
                   <Text
                     style={{ color: Colors.common.BRAND }}
                     className="text-xs font-medium"
                   >
-                    {totalWorkers} Results
+                    {activeTab === "all" ? totalWorkers : favoriteWorkers.length} Results
                   </Text>
                 </View>
               </View>
 
               <View className="gap-4">
-                {workersQuery.isLoading ? (
-                  <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-10">
+                {activeTab === "favorite" && !isAuthenticated ? (
+                  <View className="rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-10">
                     <Text className="text-center text-sm font-semibold text-neutral-500">
-                      Loading workers...
+                      Login to view your favorite workers.
                     </Text>
                   </View>
-                ) : workersQuery.isError ? (
+                ) : isListLoading ? (
+                  <View className="rounded-2xl border border-neutral-200 bg-white px-5 py-10">
+                    <Text className="text-center text-sm font-semibold text-neutral-500">
+                      {activeTab === "all"
+                        ? "Loading workers..."
+                        : "Loading favorite workers..."}
+                    </Text>
+                  </View>
+                ) : isListError ? (
                   <View className="rounded-2xl border border-red-100 bg-red-50 px-5 py-10">
                     <Text className="text-center text-sm font-semibold text-red-700">
-                      Unable to load workers. Please try again.
+                      {activeTab === "all"
+                        ? "Unable to load workers. Please try again."
+                        : "Unable to load favorite workers. Please try again."}
                     </Text>
                   </View>
                 ) : null}
 
-                {!workersQuery.isLoading &&
-                  !workersQuery.isError &&
-                  filteredWorkers.map((worker) => (
+                {!isListLoading &&
+                  !isListError &&
+                  !(activeTab === "favorite" && !isAuthenticated) &&
+                  filteredWorkers.map((worker) => {
+                    const workerId = getWorkerId(worker);
+                    const isFavorite = favoriteWorkerIds.includes(workerId);
+
+                    return (
                   <View
-                    key={worker.id}
+                    key={workerId}
                     className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white"
                   >
                     <View className="px-5 pt-5 pb-4">
@@ -389,8 +732,17 @@ export default function EmployerWorkersScreenWeb() {
                           </View>
                         </View>
 
-                        <TouchableOpacity className="p-1.5" activeOpacity={0.85}>
-                          <Bookmark size={20} color="#737373" />
+                        <TouchableOpacity
+                          disabled={bookmarkingWorkerIds.includes(workerId)}
+                          onPress={() => toggleFavoriteWorker(worker)}
+                          className="p-1.5 disabled:opacity-60"
+                          activeOpacity={0.85}
+                        >
+                          <Bookmark
+                            size={20}
+                            color={isFavorite ? Colors.common.BRAND : "#737373"}
+                            fill={isFavorite ? Colors.common.BRAND : "transparent"}
+                          />
                         </TouchableOpacity>
                       </View>
 
@@ -398,7 +750,7 @@ export default function EmployerWorkersScreenWeb() {
                         <View className="flex-row items-center gap-2">
                           <MapPin size={14} color="#C81E1E" />
                           <Text className="text-xs text-neutral-500">
-                            {addressByWorkerId[worker.id] ??
+                            {addressByWorkerId[workerId] ??
                               getCoordinateLabel(worker.location?.coordinates)}
                             {worker.distance
                               ? ` - ${getDistanceLabel(worker.distance)}`
@@ -426,7 +778,7 @@ export default function EmployerWorkersScreenWeb() {
 
                       <View className="flex-row items-center gap-3">
                         <TouchableOpacity
-                          onPress={() => openWorkerDetails(worker.id)}
+                          onPress={() => openWorkerDetails(workerId)}
                           activeOpacity={0.9}
                         >
                           <Text className="text-xs font-medium text-neutral-700">
@@ -435,24 +787,30 @@ export default function EmployerWorkersScreenWeb() {
                         </TouchableOpacity>
                         <TouchableOpacity
                           activeOpacity={0.9}
+                          onPress={() => openSendOfferModal(worker)}
+                          disabled={isSendingOffer}
                           className="rounded-md bg-slate-900 px-4 py-2"
                           style={{ minWidth: 92, flexShrink: 0 }}
                         >
                           <Text className="text-center text-xs font-medium text-white">
-                            Send Offer
+                            {isSendingOffer ? "Sending..." : "Send Offer"}
                           </Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   </View>
-                  ))}
+                    );
+                  })}
 
-                {!workersQuery.isLoading &&
-                !workersQuery.isError &&
+                {!isListLoading &&
+                !isListError &&
+                !(activeTab === "favorite" && !isAuthenticated) &&
                 filteredWorkers.length === 0 ? (
                   <View className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
                     <Text className="text-base font-bold text-neutral-900">
-                      No matching workers found
+                      {activeTab === "all"
+                        ? "No matching workers found"
+                        : "No favorite workers found"}
                     </Text>
                     <Text className="mt-2 text-sm leading-6 text-neutral-600">
                       Try a different search term or reset the current filters to
@@ -480,6 +838,15 @@ export default function EmployerWorkersScreenWeb() {
           </View>
         </View>
       </ScrollView>
+      <SendOfferModal
+        visible={Boolean(selectedOfferWorker)}
+        worker={selectedOfferWorker}
+        jobs={myJobs}
+        isLoadingJobs={myJobsQuery.isFetching}
+        isSending={isSendingOffer}
+        onClose={() => setSelectedOfferWorker(null)}
+        onSendOffer={sendOffer}
+      />
     </ScreenWrapper>
   );
 }
