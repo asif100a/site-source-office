@@ -4,13 +4,17 @@ import { Colors } from "@/constants/Colors";
 import {
   AppliedJobApplication,
   formatAppliedJobDate,
+  ReceivedJobOffer,
 } from "@/utils/jobApplications";
 
 type AppliedJobsListProps = {
   applications: AppliedJobApplication[];
+  offers?: ReceivedJobOffer[];
   activeTab: string;
   searchQuery: string;
   onOpenJobDetails: (id: string, status: string) => void;
+  onAcceptOffer?: (offerId: string) => void;
+  acceptingOfferIds?: string[];
   isLoading: boolean;
   isError: boolean;
   isFetching: boolean;
@@ -36,9 +40,12 @@ function matchesTab(application: AppliedJobApplication, activeTab: string) {
 
 export default function AppliedJobsList({
   applications,
+  offers = [],
   activeTab,
   searchQuery,
   onOpenJobDetails,
+  onAcceptOffer,
+  acceptingOfferIds = [],
   isLoading,
   isError,
   isFetching,
@@ -46,6 +53,22 @@ export default function AppliedJobsList({
   onLoadMore,
 }: AppliedJobsListProps) {
   const query = searchQuery.trim().toLowerCase();
+  const visibleOffers = offers.filter((offer) => {
+    if (activeTab !== "My Offers") return false;
+    if (!query) return true;
+
+    const job = offer.job;
+    return [
+      job?.title,
+      job?.trades?.join(" "),
+      job?.employerAuth?.profile?.name,
+      offer.status,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
   const visibleApplications = applications.filter((application) => {
     if (!matchesTab(application, activeTab)) return false;
     if (!query) return true;
@@ -83,64 +106,198 @@ export default function AppliedJobsList({
     );
   }
 
-  const renderApplication = ({ item: application }: { item: AppliedJobApplication }) => {
-        const job = application.job;
-        const jobId = job?.id ?? application.jobId;
-        const applicationStatus = application.status?.toUpperCase() ?? "PENDING";
-        const isCompleted = job?.status?.toUpperCase() === "COMPLETED";
+  if (activeTab === "My Offers") {
+    return (
+      <FlatList
+        data={visibleOffers}
+        keyExtractor={(offer) => offer.id}
+        scrollEnabled={false}
+        ItemSeparatorComponent={() => <View className="h-4" />}
+        renderItem={({ item: offer }) => {
+          const job = offer.job;
+          const status = offer.status?.toUpperCase() ?? "PENDING";
+          const isPending = status === "PENDING";
+          const isAccepting = acceptingOfferIds.includes(offer.id);
 
-        return (
-          <TouchableOpacity
-            onPress={() => onOpenJobDetails(jobId, isCompleted ? "completed" : applicationStatus.toLowerCase())}
-            activeOpacity={0.9}
-            className="rounded-xl border border-neutral-100/80 bg-white p-5"
-          >
-            <View className="mb-4 flex-row items-start justify-between gap-3">
-              <View className="flex-1 flex-row items-center gap-3">
-                <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
-                  <Briefcase size={22} color="#FFFFFF" />
+          return (
+            <TouchableOpacity
+              onPress={() => onOpenJobDetails(job?.id ?? offer.jobId, "offer")}
+              activeOpacity={0.9}
+              className="rounded-xl border border-neutral-100/80 bg-white p-5"
+            >
+              <View className="mb-4 flex-row items-start justify-between gap-3">
+                <View className="flex-1 flex-row items-center gap-3">
+                  <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
+                    <Briefcase size={22} color="#FFFFFF" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-base font-extrabold text-neutral-950">
+                      {job?.title ?? "Job offer"}
+                    </Text>
+                    <Text className="text-xs font-semibold text-neutral-500">
+                      {job?.employerAuth?.profile?.name ?? "Employer"}
+                    </Text>
+                  </View>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-base font-extrabold text-neutral-950">
-                    {job?.title ?? "Applied job"}
+
+                <View
+                  className="rounded-full px-2.5 py-1"
+                  style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
+                >
+                  <Text
+                    className="text-[10px] font-extrabold"
+                    style={{ color: Colors.common.BRAND }}
+                  >
+                    {status}
                   </Text>
+                </View>
+              </View>
+
+              <View className="gap-2.5 border-t border-neutral-50 pt-3">
+                <View className="flex-row items-center gap-2">
+                  <MapPin size={15} color="#858585" />
                   <Text className="text-xs font-semibold text-neutral-500">
-                    {job?.employerAuth?.profile?.name ?? "Employer"}
+                    {job?.location?.coordinates?.length === 2
+                      ? `${job.location.coordinates[1].toFixed(4)}, ${job.location.coordinates[0].toFixed(4)}`
+                      : "Location not available"}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Users size={15} color="#858585" />
+                  <Text className="text-xs font-semibold text-neutral-500">
+                    {job?.workersNeeded ?? "No"} workers needed
+                    {job?.hourlyRate != null
+                      ? ` - GBP ${job.hourlyRate}/hour`
+                      : ""}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Calendar size={15} color="#858585" />
+                  <Text className="text-xs font-semibold text-neutral-500">
+                    {formatAppliedJobDate(job?.startDate)} -{" "}
+                    {formatAppliedJobDate(job?.endDate)}
                   </Text>
                 </View>
               </View>
 
-              <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: Colors.common.BRAND_LIGHT }}>
-                <Text className="text-[10px] font-extrabold" style={{ color: Colors.common.BRAND }}>
-                  {applicationStatus}
-                </Text>
-              </View>
-            </View>
+              {isPending ? (
+                <View className="mt-0 flex-row justify-end">
+                  <TouchableOpacity
+                    disabled={isAccepting}
+                    onPress={() => onAcceptOffer?.(offer.id)}
+                    className="mt-4 items-center rounded-md bg-slate-900 px-4 py-2.5 disabled:opacity-60"
+                  >
+                    <Text className="text-xs font-bold text-white">
+                      {isAccepting ? "Accepting..." : "Accept Offer"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={
+          <View className="items-center rounded-2xl border border-neutral-100 bg-white px-5 py-8">
+            <Text className="text-base font-bold text-neutral-900">
+              No offers found
+            </Text>
+            <Text className="mt-2 text-center text-sm text-neutral-500">
+              New job offers will appear here.
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          hasNextPage ? (
+            <TouchableOpacity
+              disabled={isFetching}
+              onPress={onLoadMore}
+              className="mt-4 items-center rounded-xl bg-white px-4 py-3"
+            >
+              <Text className="text-xs font-bold text-neutral-900">
+                {isFetching ? "Loading..." : "Load more offers"}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
+        contentContainerStyle={{ paddingBottom: 4 }}
+      />
+    );
+  }
 
-            <View className="gap-2.5 border-t border-neutral-50 pt-3">
-              <View className="flex-row items-center gap-2">
-                <MapPin size={15} color="#858585" />
-                <Text className="text-xs font-semibold text-neutral-500">
-                  {job?.location?.coordinates?.length === 2
-                    ? `${job.location.coordinates[1].toFixed(4)}, ${job.location.coordinates[0].toFixed(4)}`
-                    : "Location not available"}
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <Users size={15} color="#858585" />
-                <Text className="text-xs font-semibold text-neutral-500">
-                  {job?.workersNeeded ?? "No"} workers needed
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <Calendar size={15} color="#858585" />
-                <Text className="text-xs font-semibold text-neutral-500">
-                  {formatAppliedJobDate(job?.startDate)} - {formatAppliedJobDate(job?.endDate)}
-                </Text>
-              </View>
+  const renderApplication = ({
+    item: application,
+  }: {
+    item: AppliedJobApplication;
+  }) => {
+    const job = application.job;
+    const jobId = job?.id ?? application.jobId;
+    const applicationStatus = application.status?.toUpperCase() ?? "PENDING";
+    const isCompleted = job?.status?.toUpperCase() === "COMPLETED";
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          onOpenJobDetails(
+            jobId,
+            isCompleted ? "completed" : applicationStatus.toLowerCase(),
+          )
+        }
+        activeOpacity={0.9}
+        className="rounded-xl border border-neutral-100/80 bg-white p-5"
+      >
+        <View className="mb-4 flex-row items-start justify-between gap-3">
+          <View className="flex-1 flex-row items-center gap-3">
+            <View className="h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
+              <Briefcase size={22} color="#FFFFFF" />
             </View>
-          </TouchableOpacity>
-        );
+            <View className="flex-1">
+              <Text className="text-base font-extrabold text-neutral-950">
+                {job?.title ?? "Applied job"}
+              </Text>
+              <Text className="text-xs font-semibold text-neutral-500">
+                {job?.employerAuth?.profile?.name ?? "Employer"}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            className="rounded-full px-2.5 py-1"
+            style={{ backgroundColor: Colors.common.BRAND_LIGHT }}
+          >
+            <Text
+              className="text-[10px] font-extrabold"
+              style={{ color: Colors.common.BRAND }}
+            >
+              {applicationStatus}
+            </Text>
+          </View>
+        </View>
+
+        <View className="gap-2.5 border-t border-neutral-50 pt-3">
+          <View className="flex-row items-center gap-2">
+            <MapPin size={15} color="#858585" />
+            <Text className="text-xs font-semibold text-neutral-500">
+              {job?.location?.coordinates?.length === 2
+                ? `${job.location.coordinates[1].toFixed(4)}, ${job.location.coordinates[0].toFixed(4)}`
+                : "Location not available"}
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Users size={15} color="#858585" />
+            <Text className="text-xs font-semibold text-neutral-500">
+              {job?.workersNeeded ?? "No"} workers needed
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Calendar size={15} color="#858585" />
+            <Text className="text-xs font-semibold text-neutral-500">
+              {formatAppliedJobDate(job?.startDate)} -{" "}
+              {formatAppliedJobDate(job?.endDate)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (

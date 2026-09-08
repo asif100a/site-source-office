@@ -23,6 +23,22 @@ export type AppliedJobApplication = {
   };
 };
 
+export type ReceivedJobOffer = {
+  id: string;
+  jobId: string;
+  workerAuthId?: string;
+  status?: string;
+  offeredAt?: string;
+  job?: AppliedJobApplication["job"] & {
+    employerAuth?: {
+      profile?: {
+        name?: string;
+        image?: string | null;
+      };
+    };
+  };
+};
+
 export type JobApplication = {
   id: string;
   appliedAt?: string;
@@ -47,6 +63,18 @@ export function getAppliedJobApplications(response: any): AppliedJobApplication[
 
   if (Array.isArray(response?.applications)) {
     return response.applications;
+  }
+
+  return [];
+}
+
+export function getReceivedJobOffers(response: any): ReceivedJobOffer[] {
+  if (Array.isArray(response?.data?.offers)) {
+    return response.data.offers;
+  }
+
+  if (Array.isArray(response?.offers)) {
+    return response.offers;
   }
 
   return [];

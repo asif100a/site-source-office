@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/Colors";
@@ -11,6 +11,7 @@ import WorkerDetailsDocuments from "@/components/modules/worker/worker-details/W
 import WorkerDetailsWorkHistory from "@/components/modules/worker/worker-details/WorkerDetailsWorkHistory";
 import WorkerDetailsReviews from "@/components/modules/worker/worker-details/WorkerDetailsReviews";
 import WorkerRatingStars from "@/components/modules/worker/worker-details/_ui/WorkerRatingStars";
+import { useGetSingleWorkerQuery } from "@/store/api/workerProfileApi";
 
 const STATIC_WORKER = {
   name: "James Mitchell",
@@ -66,6 +67,11 @@ const STATIC_WORKER = {
 };
 
 function StaticRatingCard() {
+  const { id } = useLocalSearchParams();
+
+  const workerQuery = useGetSingleWorkerQuery({ id: id as string });
+  console.log("Worker query data: ", workerQuery.data);
+
   return (
     <View className="mt-6">
       <Text className="mb-3 text-base font-extrabold text-neutral-900">

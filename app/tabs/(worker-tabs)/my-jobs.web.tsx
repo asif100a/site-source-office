@@ -12,7 +12,14 @@ import {
   AppliedJobApplication,
   getAppliedJobApplications,
   getAppliedJobsHasNextPage,
+  getReceivedJobOffers,
+  ReceivedJobOffer,
 } from "@/utils/jobApplications";
+import {
+  useGetReceivedJobOffersQuery,
+  useUpdateJobOfferStatusMutation,
+} from "@/store/api/jobOfferApi";
+import Toast from "react-native-toast-message";
 
 const tabOptions = ["My Offers", "My Applications", "Active Jobs", "Completed"];
 const tabByQueryParam: Record<string, string> = {
@@ -32,9 +39,18 @@ export default function MyJobsWebScreen() {
   const [activeTab, setActiveTab] = useState<string>(tabOptions[0]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [offersPage, setOffersPage] = useState(1);
   const [applications, setApplications] = useState<AppliedJobApplication[]>([]);
+  const [offers, setOffers] = useState<ReceivedJobOffer[]>([]);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [offersHasNextPage, setOffersHasNextPage] = useState(false);
+  const [acceptingOfferIds, setAcceptingOfferIds] = useState<string[]>([]);
   const appliedJobsQuery = useGetAppliedJobsQuery({ page, limit: 10 });
+  const myOffersQuery = useGetReceivedJobOffersQuery({
+    page: offersPage,
+    limit: 10,
+  });
+  const [updateJobOfferStatus] = useUpdateJobOfferStatusMutation();
 
   useEffect(() => {
     if (!appliedJobsQuery.data || (page > 1 && appliedJobsQuery.isFetching)) {
@@ -53,6 +69,26 @@ export default function MyJobsWebScreen() {
     });
     setHasNextPage(getAppliedJobsHasNextPage(appliedJobsQuery.data, nextApplications.length, 10));
   }, [appliedJobsQuery.data, appliedJobsQuery.isFetching, page]);
+
+  useEffect(() => {
+    if (!myOffersQuery.data || (offersPage > 1 && myOffersQuery.isFetching)) {
+      return;
+    }
+
+    const nextOffers = getReceivedJobOffers(myOffersQuery.data);
+    setOffers((current) => {
+      if (offersPage === 1) return nextOffers;
+
+      const existingIds = new Set(current.map((offer) => offer.id));
+      return [
+        ...current,
+        ...nextOffers.filter((offer) => !existingIds.has(offer.id)),
+      ];
+    });
+    setOffersHasNextPage(
+      getAppliedJobsHasNextPage(myOffersQuery.data, nextOffers.length, 10)
+    );
+  }, [myOffersQuery.data, myOffersQuery.isFetching, offersPage]);
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
@@ -77,12 +113,56 @@ export default function MyJobsWebScreen() {
   };
 
   const refreshAppliedJobs = async () => {
+    if (activeTab === "My Offers") {
+      if (offersPage !== 1) {
+        setOffersPage(1);
+        return;
+      }
+
+      await myOffersQuery.refetch();
+      return;
+    }
+
     if (page !== 1) {
       setPage(1);
       return;
     }
 
     await appliedJobsQuery.refetch();
+  };
+
+  const handleAcceptOffer = (offerId: string) => {
+    if (acceptingOfferIds.includes(offerId)) return;
+
+    setAcceptingOfferIds((current) => [...current, offerId]);
+
+    void updateJobOfferStatus({ id: offerId, status: "ACCEPTED" })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: "Offer accepted",
+        });
+        setOffers((current) =>
+          current.map((offer) =>
+            offer.id === offerId ? { ...offer, status: "ACCEPTED" } : offer
+          )
+        );
+        myOffersQuery.refetch();
+        appliedJobsQuery.refetch();
+      })
+      .catch((error) => {
+        Toast.show({
+          type: "error",
+          text1: "Accept failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setAcceptingOfferIds((current) =>
+          current.filter((id) => id !== offerId)
+        );
+      });
   };
 
   const browseJobs = () => {
@@ -109,7 +189,11 @@ export default function MyJobsWebScreen() {
         contentContainerStyle={{ paddingBottom: 108 }}
         refreshControl={
           <RefreshControl
-            refreshing={appliedJobsQuery.isFetching}
+            refreshing={
+              activeTab === "My Offers"
+                ? myOffersQuery.isFetching
+                : appliedJobsQuery.isFetching
+            }
             onRefresh={() => void refreshAppliedJobs()}
           />
         }
@@ -194,14 +278,37 @@ export default function MyJobsWebScreen() {
 
               <AppliedJobsList
                 applications={applications}
+                offers={offers}
                 activeTab={activeTab}
                 searchQuery={searchQuery}
                 onOpenJobDetails={handleOpenJobDetails}
-                isLoading={appliedJobsQuery.isLoading || (appliedJobsQuery.isFetching && applications.length === 0)}
-                isError={appliedJobsQuery.isError}
-                isFetching={appliedJobsQuery.isFetching}
-                hasNextPage={hasNextPage}
-                onLoadMore={() => setPage((current) => current + 1)}
+                onAcceptOffer={handleAcceptOffer}
+                acceptingOfferIds={acceptingOfferIds}
+                isLoading={
+                  activeTab === "My Offers"
+                    ? myOffersQuery.isLoading ||
+                      (myOffersQuery.isFetching && offers.length === 0)
+                    : appliedJobsQuery.isLoading ||
+                      (appliedJobsQuery.isFetching && applications.length === 0)
+                }
+                isError={
+                  activeTab === "My Offers"
+                    ? myOffersQuery.isError
+                    : appliedJobsQuery.isError
+                }
+                isFetching={
+                  activeTab === "My Offers"
+                    ? myOffersQuery.isFetching
+                    : appliedJobsQuery.isFetching
+                }
+                hasNextPage={
+                  activeTab === "My Offers" ? offersHasNextPage : hasNextPage
+                }
+                onLoadMore={() =>
+                  activeTab === "My Offers"
+                    ? setOffersPage((current) => current + 1)
+                    : setPage((current) => current + 1)
+                }
               />
             </View>
           </View>

@@ -55,6 +55,13 @@ export const workerProfileApi = baseApi.injectEndpoints({
       }),
       providesTags: [tagTypes.user],
     }),
+    getSingleWorker: builder.query<any, { id: string }>({
+      query: (params) => ({
+        url: `${BASE_POINT}/details/${params.id}`,
+        method: "GET",
+      }),
+      providesTags: [tagTypes.user],
+    }),
   }),
   overrideExisting: true,
 });
@@ -64,4 +71,5 @@ export const {
   useUpdateWorkerProfileMutation,
   useDeleteWorkerProfileMutation,
   useGetAllWorkersQuery,
+  useGetSingleWorkerQuery,
 } = workerProfileApi;
