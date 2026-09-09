@@ -43,8 +43,7 @@ export default function ReviewModal({
 }) {
   const [selectedJobId, setSelectedJobId] = useState("");
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
-  const [createReview, { isLoading: isSubmitting }] =
-    useCreateReviewMutation();
+  const [createReview, { isLoading: isSubmitting }] = useCreateReviewMutation();
   const shouldShowJobPicker = !jobId;
   const selectedJob = jobOptions.find((job) => job.id === selectedJobId);
   const effectiveJobId = jobId ?? selectedJobId;
@@ -98,12 +97,15 @@ export default function ReviewModal({
       setIsJobDropdownOpen(false);
       await onReviewCreated?.();
       closeReviewModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error("error creating review: ", error);
       Toast.show({
         type: "error",
         text1: "Review failed",
-        text2: "Unable to submit your review. Please try again.",
+        text2:
+          error?.message ??
+          error?.data?.message ??
+          "Unable to submit your review. Please try again.",
       });
     }
   };
@@ -149,9 +151,7 @@ export default function ReviewModal({
                 </Text>
                 <View className="relative z-20 mb-5">
                   <TouchableOpacity
-                    onPress={() =>
-                      setIsJobDropdownOpen((current) => !current)
-                    }
+                    onPress={() => setIsJobDropdownOpen((current) => !current)}
                     disabled={isSubmitting}
                     className="flex-row items-center justify-between rounded-2xl border border-neutral-200/80 bg-white px-4 py-3.5 active:opacity-85"
                   >

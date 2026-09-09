@@ -58,7 +58,7 @@ export default function CompletedWorkSummary({ jobDetails }: { jobDetails?: any 
           </View>
         ) : null}
 
-        {rows.map((item, idx) => (
+        {rows.map((item: any, idx: number) => (
           <View key={idx} className="flex-row justify-between items-center p-4">
             <View>
               <Text className="text-neutral-800 font-extrabold text-sm">

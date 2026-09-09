@@ -37,6 +37,7 @@ const getItems = (response: any) => {
   if (Array.isArray(data?.data)) return data.data;
   if (Array.isArray(data?.items)) return data.items;
   if (Array.isArray(data?.reviews)) return data.reviews;
+  if (Array.isArray(data?.jobs)) return data.jobs;
   return [];
 };
 
