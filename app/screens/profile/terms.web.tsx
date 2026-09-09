@@ -1,22 +1,84 @@
 import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { FileText, Sparkles } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
-import { Card, ScreenShell, VersionBanner } from "./_components";
+import RenderHTML from "react-native-render-html";
+import { useGetLegalsQuery } from "@/store/api/legalApi";
+import { ScreenShell, VersionBanner } from "./_components";
 
-const sections = Array.from({ length: 4 }, (_, index) => ({
-  id: index,
-  title: "About Sitesource",
-  body:
-    "Lorem ipsum dolor sit amet consectetur. In faucibus ante sit nisl justo. Vehicula urna urna vitae magnis. Pellentesque et felis eget mattis enim vel mauris fermentum. Aenean morbi sit vitae commodo nunc mattis quis bibendum.",
-}));
+const legalTagsStyles = {
+  h1: {
+    color: "#0A0A0A",
+    fontSize: 30,
+    fontWeight: "800",
+    lineHeight: 38,
+    marginBottom: 14,
+  },
+  h2: {
+    color: "#0A0A0A",
+    fontSize: 20,
+    fontWeight: "800",
+    lineHeight: 28,
+    marginBottom: 10,
+    marginTop: 18,
+  },
+  p: {
+    color: "#475569",
+    fontSize: 15,
+    lineHeight: 25,
+    marginBottom: 12,
+  },
+  li: {
+    color: "#475569",
+    fontSize: 15,
+    lineHeight: 25,
+    marginBottom: 8,
+  },
+  a: {
+    color: Colors.common.BRAND,
+  },
+};
+
+function formatLegalDate(date?: string) {
+  if (!date) return "Not available";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsedDate);
+}
 
 export default function TermsScreenWeb() {
+  const { width } = useWindowDimensions();
+  const legalQuery = useGetLegalsQuery({});
+  const legalData = legalQuery.data?.data ?? legalQuery.data;
+  const updatedAt = formatLegalDate(legalData?.updatedAt);
+  const html = legalData?.termsCondition || "<p>No Content Found</p>";
+  const contentWidth = Math.min(width - 96, 760);
+
   return (
     <ScreenShell title="Terms & Conditions">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={legalQuery.isFetching}
+            onRefresh={() => void legalQuery.refetch()}
+            tintColor="#000000"
+            colors={["#000000"]}
+          />
+        }
       >
         <View className="px-6 pt-6 md:px-10 xl:px-12 md:pt-8">
           <View className="mx-auto w-full max-w-7xl gap-6">
@@ -54,7 +116,7 @@ export default function TermsScreenWeb() {
                     Effective
                   </Text>
                   <Text className="mt-1 text-lg font-semibold tracking-tight text-white">
-                    1 Jan 2026
+                    {updatedAt}
                   </Text>
                 </View>
               </View>
@@ -66,17 +128,16 @@ export default function TermsScreenWeb() {
                 <Text className="text-xl font-semibold text-neutral-950">
                   Contents
                 </Text>
-                <View className="gap-4">
-                  {sections.map((section) => (
-                    <Card key={section.id} className="p-5">
-                      <Text className="text-base font-semibold text-slate-700 mb-3">
-                        {section.title}
-                      </Text>
-                      <Text className="text-sm leading-6 text-slate-600">
-                        {section.body}
-                      </Text>
-                    </Card>
-                  ))}
+                <View className="rounded-xl border border-neutral-200/80 bg-white p-5">
+                  {legalQuery.isLoading ? (
+                    <ActivityIndicator color="#000000" />
+                  ) : (
+                    <RenderHTML
+                      contentWidth={contentWidth}
+                      tagsStyles={legalTagsStyles as any}
+                      source={{ html }}
+                    />
+                  )}
                 </View>
               </View>
 

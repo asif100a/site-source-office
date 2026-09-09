@@ -18,6 +18,7 @@ import {
   useMarkAllAsDoneNotificationsMutation,
 } from "@/store/api/notificationApi";
 import Toast from "react-native-toast-message";
+import { router } from "expo-router";
 
 type Notification = {
   id?: string;
