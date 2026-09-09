@@ -1,70 +1,80 @@
 import React from "react";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Bell } from "lucide-react-native";
+import { ArrowLeft, Bell, Trash2 } from "lucide-react-native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import {
+  useDeleteAllNotificationMutation,
+  useDeleteSingleNotificationMutation,
+  useGetNotificationsQuery,
+  useMarkAllAsDoneNotificationsMutation,
+} from "@/store/api/notificationApi";
+import Toast from "react-native-toast-message";
 
-const NOTIFICATIONS = [
-  {
-    id: "1",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "2",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "3",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "4",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "5",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "6",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-  {
-    id: "7",
-    title: "New Job Nearby",
-    description: "A plumbing job is available within your selected radius.",
-    time: "5 hours ago",
-  },
-];
+type Notification = {
+  id?: string;
+  _id?: string;
+  title?: string;
+  message?: string;
+  description?: string;
+  body?: string;
+  createdAt?: string;
+  time?: string;
+  isRead?: boolean;
+  read?: boolean;
+};
+
+const getNotificationId = (notification: Notification) =>
+  String(notification.id ?? notification._id ?? "");
+
+const getResponseData = (response: any) => response?.data?.data ?? response?.data;
+
+const getNotifications = (response: any): Notification[] => {
+  const data = getResponseData(response);
+
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.notifications)) return data.notifications;
+
+  return [];
+};
+
+const formatNotificationTime = (value?: string) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 function NotificationItem({
   title,
   description,
   time,
+  isRead,
+  onDelete,
+  isDeleting,
 }: {
   title: string;
   description: string;
   time: string;
+  isRead: boolean;
+  onDelete: () => void;
+  isDeleting: boolean;
 }) {
   return (
     <View className="rounded-[22px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm">
       <View className="flex-row items-start gap-4">
         <View
           className="h-10 w-10 items-center justify-center rounded-full"
-          style={{ backgroundColor: Colors.common.BRAND }}
+          style={{ backgroundColor: isRead ? "#CBD5E1" : Colors.common.BRAND }}
         >
           <Bell size={16} color="#FFFFFF" />
         </View>
@@ -81,6 +91,14 @@ function NotificationItem({
             {description}
           </Text>
         </View>
+
+        <TouchableOpacity
+          disabled={isDeleting}
+          onPress={onDelete}
+          className="h-9 w-9 items-center justify-center rounded-full bg-neutral-50 active:opacity-70 disabled:opacity-50"
+        >
+          <Trash2 size={16} color="#737373" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -88,6 +106,53 @@ function NotificationItem({
 
 export default function NotificationsWeb() {
   const router = useRouter();
+  const notificationsQuery = useGetNotificationsQuery({ page: 1, limit: 50 });
+  const [markAllAsDone, { isLoading: isMarkingAll }] =
+    useMarkAllAsDoneNotificationsMutation();
+  const [deleteNotification, { isLoading: isDeleting }] =
+    useDeleteSingleNotificationMutation();
+  const [deleteAllNotifications, { isLoading: isDeletingAll }] =
+    useDeleteAllNotificationMutation();
+  const notifications = getNotifications(notificationsQuery.data);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsDone(null).unwrap();
+      Toast.show({ type: "success", text1: "Notifications marked as read" });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Update failed",
+        text2: (error as any)?.data?.message ?? "Please try again.",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteNotification({ id }).unwrap();
+      Toast.show({ type: "success", text1: "Notification deleted" });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Delete failed",
+        text2: (error as any)?.data?.message ?? "Please try again.",
+      });
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      await deleteAllNotifications(null).unwrap();
+      Toast.show({ type: "success", text1: "Notifications deleted" });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Delete failed",
+        text2: (error as any)?.data?.message ?? "Please try again.",
+      });
+    }
+  };
 
   return (
     <ScreenWrapper>
@@ -126,6 +191,17 @@ export default function NotificationsWeb() {
                   </View>
 
                   <TouchableOpacity
+                    disabled={notificationsQuery.isFetching}
+                    onPress={() => void notificationsQuery.refetch()}
+                    activeOpacity={0.88}
+                    className="flex-row items-center gap-2 self-start rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 lg:self-auto"
+                  >
+                    <Text className="text-sm font-bold text-neutral-900">
+                      {notificationsQuery.isFetching ? "Refreshing..." : "Refresh"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
                     onPress={() => router.back()}
                     activeOpacity={0.88}
                     className="flex-row items-center gap-2 self-start rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 lg:self-auto"
@@ -145,17 +221,66 @@ export default function NotificationsWeb() {
                   Recent notifications
                 </Text>
                 <Text className="text-sm text-neutral-500">
-                  {NOTIFICATIONS.length} items
+                  {notifications.length} items
                 </Text>
               </View>
 
+              <View className="mb-4 flex-row flex-wrap gap-2">
+                <TouchableOpacity
+                  disabled={isMarkingAll || notifications.length === 0}
+                  onPress={() => void handleMarkAllAsRead()}
+                  className="rounded-xl bg-neutral-950 px-4 py-3 disabled:opacity-50"
+                >
+                  <Text className="text-xs font-bold text-white">
+                    {isMarkingAll ? "Updating..." : "Mark all as read"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={isDeletingAll || notifications.length === 0}
+                  onPress={() => void handleDeleteAll()}
+                  className="rounded-xl bg-red-600 px-4 py-3 disabled:opacity-50"
+                >
+                  <Text className="text-xs font-bold text-white">
+                    {isDeletingAll ? "Deleting..." : "Delete all"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {notificationsQuery.isLoading ? (
+                <Text className="rounded-2xl bg-neutral-50 p-5 text-center text-sm font-semibold text-neutral-500">
+                  Loading notifications...
+                </Text>
+              ) : null}
+
+              {notificationsQuery.isError ? (
+                <Text className="rounded-2xl bg-red-50 p-5 text-center text-sm font-semibold text-red-700">
+                  Unable to load notifications. Please try again.
+                </Text>
+              ) : null}
+
+              {!notificationsQuery.isLoading &&
+              !notificationsQuery.isError &&
+              notifications.length === 0 ? (
+                <Text className="rounded-2xl bg-neutral-50 p-5 text-center text-sm font-semibold text-neutral-500">
+                  No notifications yet.
+                </Text>
+              ) : null}
+
               <View className="gap-3">
-                {NOTIFICATIONS.map((notification) => (
+                {notifications.map((notification) => (
                   <NotificationItem
-                    key={notification.id}
-                    title={notification.title}
-                    description={notification.description}
-                    time={notification.time}
+                    key={getNotificationId(notification)}
+                    title={notification.title ?? "Notification"}
+                    description={
+                      notification.description ??
+                      notification.message ??
+                      notification.body ??
+                      ""
+                    }
+                    time={notification.time ?? formatNotificationTime(notification.createdAt)}
+                    isRead={Boolean(notification.isRead ?? notification.read)}
+                    isDeleting={isDeleting}
+                    onDelete={() => void handleDelete(getNotificationId(notification))}
                   />
                 ))}
               </View>
