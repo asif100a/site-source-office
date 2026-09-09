@@ -207,7 +207,7 @@ export default function AuthFlowWeb() {
                 otpFlow === "password_reset"
                   ? "reset_password"
                   : role === "employer"
-                    ? "register_documents"
+                    ? "complete_payroll"
                     : "register_general",
               )
             }
@@ -260,8 +260,8 @@ export default function AuthFlowWeb() {
         return (
           <RegisterPasswordScreen
             role={role}
-            onBackPress={handleBack}
-            onComplete={() => {
+            onComplete={(password) => {
+              console.log("Password complete registration");
               if (role === "employer") {
                 setStep("review");
               } else {
@@ -271,12 +271,7 @@ export default function AuthFlowWeb() {
           />
         );
       case "complete_payroll":
-        return (
-          <CompletePayrollScreen
-            onBackPress={handleBack}
-            onComplete={goToLoginAfterRegistration}
-          />
-        );
+        return <CompletePayrollScreen onComplete={goToLoginAfterRegistration} />;
       case "review":
         return <ReviewScreen onBackToLogin={() => setStep("login")} />;
       default:
