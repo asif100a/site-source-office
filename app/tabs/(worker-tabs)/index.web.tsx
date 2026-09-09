@@ -10,9 +10,10 @@ import {
   ViewStyle,
 } from "react-native";
 import { Modal, Pressable } from "react-native";
-import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
+import { Briefcase, Filter, Navigation } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
+import ScreenLoader from "@/components/ui/screen-loader";
 import { Colors } from "@/constants/Colors";
 import {
   formatDistance,
@@ -42,7 +43,7 @@ import JobLocationPicker from "@/components/modules/employer/home/JobLocationPic
 import type { AddressDetails } from "@/utils/googlePlaces";
 
 const MAP_JOBS_LIMIT = 100;
-const ALL_JOBS_LIMIT = 20;
+const ALL_JOBS_LIMIT = 10;
 
 type WorkerLocation = {
   latitude: number;
@@ -80,7 +81,7 @@ export default function WorkerHomeScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showBestMatchLoginModal, setShowBestMatchLoginModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
-  const [maxDistanceMiles, setMaxDistanceMiles] = useState(5);
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [allJobsPage, setAllJobsPage] = useState(1);
   const [allJobs, setAllJobs] = useState<WorkerHomeJob[]>([]);
@@ -316,6 +317,17 @@ export default function WorkerHomeScreen() {
         });
       });
   };
+
+  if (
+    locationPermission === "checking" ||
+    (mapJobsQuery.isLoading && allJobsQuery.isLoading)
+  ) {
+    return (
+      <ScreenWrapper>
+        <ScreenLoader />
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>

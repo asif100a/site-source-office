@@ -1,8 +1,13 @@
 import { View, Text, Pressable, Image } from "react-native";
 import React, { useState } from "react";
 import { Link, usePathname, useRouter } from "expo-router";
-import { ArrowRight, Menu, X } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch } from "react-redux";
+import { ArrowRight, LogOut, Menu, X } from "lucide-react-native";
 import Logo from "@/assets/images/app-logo.png";
+import { clearUserAuthenticated } from "@/constants/authState";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
+import { logout } from "@/store/slices/authSlice";
 
 const NAV_LINKS = [
   {
@@ -50,11 +55,46 @@ function isActiveNavPath(pathname: string, link: (typeof NAV_LINKS)[number]) {
 export default function EmployerWebNavbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isAuthenticated = useIsAuthenticated();
 
   const handleNavigate = (href: string) => {
     setMenuOpen(false);
     router.push(href as any);
+  };
+
+  const handleLogin = () => {
+    router.push({
+      pathname: "/auth",
+      params: { step: "login", role: "employer" },
+    });
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setMenuOpen(false);
+    setIsLoggingOut(true);
+
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem("token"),
+        AsyncStorage.removeItem("otpToken"),
+        AsyncStorage.removeItem("forgotToken"),
+      ]);
+    } catch (error) {
+      console.error("Failed to clear auth storage during logout.", error);
+    }
+
+    dispatch(logout());
+    clearUserAuthenticated();
+    router.replace({
+      pathname: "/auth",
+      params: { currentStep: "login", role: "employer" },
+    });
+    setIsLoggingOut(false);
   };
 
   return (
@@ -88,18 +128,26 @@ export default function EmployerWebNavbar() {
         </View>
 
         <View className="ml-auto hidden lg:flex">
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/auth",
-                params: { step: "login" },
-              })
-            }
-            className="flex-row items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 active:opacity-90"
-          >
-            <Text className="text-sm font-semibold text-white">Login</Text>
-            <ArrowRight size={16} color="#FFFFFF" />
-          </Pressable>
+          {isAuthenticated ? (
+            <Pressable
+              onPress={() => void handleLogout()}
+              disabled={isLoggingOut}
+              className="flex-row items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 active:opacity-90 disabled:opacity-60"
+            >
+              <Text className="text-sm font-semibold text-white">
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </Text>
+              <LogOut size={16} color="#FFFFFF" />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleLogin}
+              className="flex-row items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 active:opacity-90"
+            >
+              <Text className="text-sm font-semibold text-white">Login</Text>
+              <ArrowRight size={16} color="#FFFFFF" />
+            </Pressable>
+          )}
         </View>
 
         <Pressable
@@ -135,19 +183,29 @@ export default function EmployerWebNavbar() {
               );
             })}
 
-            <Pressable
-              onPress={() => {
-                setMenuOpen(false);
-                router.push({
-                  pathname: "/auth",
-                  params: { step: "login" },
-                });
-              }}
-              className="mt-2 flex-row items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-4 py-3.5 active:opacity-90"
-            >
-              <Text className="text-sm font-bold text-white">Login</Text>
-              <ArrowRight size={16} color="#FFFFFF" />
-            </Pressable>
+            {isAuthenticated ? (
+              <Pressable
+                onPress={() => void handleLogout()}
+                disabled={isLoggingOut}
+                className="mt-2 flex-row items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-4 py-3.5 active:opacity-90 disabled:opacity-60"
+              >
+                <Text className="text-sm font-bold text-white">
+                  {isLoggingOut ? "Logging out..." : "Logout"}
+                </Text>
+                <LogOut size={16} color="#FFFFFF" />
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  handleLogin();
+                }}
+                className="mt-2 flex-row items-center justify-center gap-2 rounded-2xl bg-neutral-950 px-4 py-3.5 active:opacity-90"
+              >
+                <Text className="text-sm font-bold text-white">Login</Text>
+                <ArrowRight size={16} color="#FFFFFF" />
+              </Pressable>
+            )}
           </View>
         </View>
       ) : null}
