@@ -18,7 +18,7 @@ export const reviewApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [tagTypes.review],
+      invalidatesTags: [tagTypes.review, tagTypes.job],
     }),
     getReviews: builder.query<any, {authId: string}>({
       query: ({authId, ...args}) => ({

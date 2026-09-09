@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, ScrollView, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  RefreshControl,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CommonHeader from "@/components/modules/common/CommonHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
@@ -26,6 +32,7 @@ export default function CompletedJobDetailScreen() {
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
     skip: !jobId,
   });
+  console.log("singleJobQuery from the completed job details screen: ", singleJobQuery);
   const rawJob = getSingleJobData(singleJobQuery.data);
   const jobDetails = rawJob ? mapSingleJobToActiveJobDetails(rawJob) : null;
 
@@ -36,6 +43,7 @@ export default function CompletedJobDetailScreen() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewFeedback, setReviewFeedback] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   // Support Modal State
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportModalState, setSupportModalState] = useState<
@@ -50,6 +58,20 @@ export default function CompletedJobDetailScreen() {
     setIsReviewModalOpen(false);
   };
 
+  const handleRefresh = async () => {
+    if (!jobId) {
+      return;
+    }
+
+    setRefreshing(true);
+
+    try {
+      await singleJobQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <ScreenWrapper>
       <CommonHeader
@@ -58,7 +80,16 @@ export default function CompletedJobDetailScreen() {
         onPress={handleNavigateBack}
       />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void handleRefresh()}
+          />
+        }
+      >
         <View className="px-5 pt-4 pb-12">
           {singleJobQuery.isLoading ? (
             <View className="items-center rounded-2xl bg-white px-5 py-8">
