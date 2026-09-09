@@ -1,76 +1,54 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Bell, ArrowRight } from 'lucide-react-native';
-import { Colors } from '@/constants/Colors';
-import CommonHeader from '@/components/modules/common/CommonHeader';
-import ScreenHeader from '@/components/layout/ScreenHeader';
-
-const MOCK_CHATS = [
-  {
-    id: 'sarah',
-    name: 'Sarah Mitchell',
-    lastMessage: 'You: Did you see the proposal? I ma...',
-    time: '4:30 PM',
-    unread: true,
-    initials: 'SM',
-    avatarBg: '#E0F2FE', // Light blue
-    avatarColor: '#0369A1',
-  },
-  {
-    id: 'james-1',
-    name: 'James Thornton',
-    lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
-    unread: false,
-    initials: 'JT',
-    avatarBg: '#FEE2E2', // Light red
-    avatarColor: '#B91C1C',
-  },
-  {
-    id: 'james-2',
-    name: 'James Thornton',
-    lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
-    unread: false,
-    initials: 'JT',
-    avatarBg: '#F3E8FF', // Light purple
-    avatarColor: '#6B21A8',
-  },
-  {
-    id: 'james-3',
-    name: 'James Thornton',
-    lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
-    unread: false,
-    initials: 'JT',
-    avatarBg: '#ECFDF5', // Light green
-    avatarColor: '#047857',
-  },
-  {
-    id: 'james-4',
-    name: 'James Thornton',
-    lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
-    unread: false,
-    initials: 'JT',
-    avatarBg: '#FEF3C7', // Light amber
-    avatarColor: '#B45309',
-  },
-  {
-    id: 'james-5',
-    name: 'James Thornton',
-    lastMessage: "James: Let's grab coffee tomorrow,...",
-    time: '3:15 PM',
-    unread: false,
-    initials: 'JT',
-    avatarBg: '#F1F5F9', // Muted slate
-    avatarColor: '#475569',
-  },
-];
+import React, { useEffect, useMemo } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { Colors } from "@/constants/Colors";
+import ScreenHeader from "@/components/layout/ScreenHeader";
+import { ChatAvatar } from "@/components/modules/common/chat/_ui";
+import { useChatSocket } from "@/hooks/useChatSocket";
+import { useGetChatsQuery } from "@/store/api/chatApi";
+import { RootState } from "@/store/store";
+import { toThread } from "@/utils/chat";
 
 export default function WorkerChatsScreen() {
   const router = useRouter();
+  const token = useSelector((state: RootState) => state.auth.token);
+  const chatsQuery = useGetChatsQuery({ page: 1, limit: 30 });
+  const socketRef = useChatSocket(token);
+
+  const threads = useMemo(
+    () =>
+      (chatsQuery.data ?? []).map((conversation, index) =>
+        toThread(conversation, index)
+      ),
+    [chatsQuery.data]
+  );
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const refreshChats = () => {
+      void chatsQuery.refetch();
+    };
+
+    socket.on("message:received", refreshChats);
+    socket.on("message:sent", refreshChats);
+    socket.on("message:read", refreshChats);
+
+    return () => {
+      socket.off("message:received", refreshChats);
+      socket.off("message:sent", refreshChats);
+      socket.off("message:read", refreshChats);
+    };
+  }, [chatsQuery, socketRef]);
 
   const handleOpenChat = (id: string) => {
     router.push({
@@ -81,55 +59,91 @@ export default function WorkerChatsScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Brand Header */}
       <ScreenHeader />
 
-      {/* Chats List */}
-      <ScrollView 
-        className="flex-1 px-4 mt-4" 
+      <ScrollView
+        className="mt-4 flex-1 px-4"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={chatsQuery.isFetching}
+            onRefresh={() => void chatsQuery.refetch()}
+            tintColor="#000000"
+            colors={["#000000"]}
+          />
+        }
       >
+        {chatsQuery.isLoading ? (
+          <View className="py-12">
+            <ActivityIndicator color={Colors.common.BRAND} />
+          </View>
+        ) : null}
+
+        {!chatsQuery.isLoading && threads.length === 0 ? (
+          <View className="items-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-5 py-10">
+            <Text className="text-sm font-extrabold text-neutral-900">
+              No conversations yet
+            </Text>
+            <Text className="mt-2 text-center text-xs font-semibold leading-5 text-neutral-500">
+              Job conversations will appear here after an accepted application or offer.
+            </Text>
+          </View>
+        ) : null}
+
         <View className="divide-y divide-neutral-100">
-          {MOCK_CHATS.map((chat) => (
-            <TouchableOpacity 
-              key={chat.id}
-              onPress={() => handleOpenChat(chat.id)}
+          {threads.map((thread) => (
+            <TouchableOpacity
+              key={thread.id}
+              onPress={() => handleOpenChat(thread.id)}
               activeOpacity={0.7}
               className="flex-row items-center justify-between py-4"
             >
-              <View className="flex-row items-center flex-1 gap-4.5">
-                {/* Initials Avatar */}
-                <View 
-                  style={{ backgroundColor: chat.avatarBg }} 
-                  className="w-12 h-12 rounded-full items-center justify-center border border-neutral-100"
-                >
-                  <Text style={{ color: chat.avatarColor }} className="font-bold text-sm">
-                    {chat.initials}
-                  </Text>
-                </View>
+              <View className="flex-1 flex-row items-center gap-4">
+                <ChatAvatar thread={thread} />
 
-                {/* Message Snippet & Name */}
                 <View className="flex-1 pr-4">
-                  <View className="flex-row items-center gap-1.5 mb-1">
-                    <Text className="text-neutral-900 font-extrabold text-sm">{chat.name}</Text>
-                    {chat.unread && (
-                      <View className="w-2.5 h-2.5 rounded-full bg-[#FF5500]" />
-                    )}
+                  <View className="mb-1 flex-row items-center gap-1.5">
+                    <Text
+                      className="text-sm font-extrabold text-neutral-900"
+                      numberOfLines={1}
+                    >
+                      {thread.name}
+                    </Text>
+                    {thread.unread ? (
+                      <View className="min-w-[18px] items-center justify-center rounded-full bg-[#FF5500] px-1.5 py-0.5">
+                        <Text className="text-[10px] font-bold text-white">
+                          {thread.unreadCount && thread.unreadCount > 9
+                            ? "9+"
+                            : thread.unreadCount}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                  <Text 
-                    style={chat.unread ? { color: Colors.common.BRAND } : {}}
-                    className={`text-xs font-semibold ${chat.unread ? '' : 'text-neutral-400'}`}
+                  <Text
+                    className="mb-1 text-[11px] font-semibold text-neutral-500"
                     numberOfLines={1}
                   >
-                    {chat.lastMessage}
+                    {thread.job}
+                  </Text>
+                  <Text
+                    style={
+                      thread.unread ? { color: Colors.common.BRAND } : undefined
+                    }
+                    className={`text-xs font-semibold ${
+                      thread.unread ? "" : "text-neutral-400"
+                    }`}
+                    numberOfLines={1}
+                  >
+                    {thread.lastMessage}
                   </Text>
                 </View>
               </View>
 
-              {/* Timestamp */}
               <View className="items-end">
-                <Text className="text-neutral-400 text-xs font-semibold">{chat.time}</Text>
+                <Text className="text-xs font-semibold text-neutral-400">
+                  {thread.time}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}

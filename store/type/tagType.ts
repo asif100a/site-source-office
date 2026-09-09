@@ -18,6 +18,7 @@ export const tagTypes = {
   worker: "Worker",
   review: "Review",
   legal: "Legal",
+  chat: "Chat",
 };
 
 export const tagTypeList = Object.values(tagTypes);

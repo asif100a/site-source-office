@@ -1,8 +1,17 @@
 import { Colors } from "@/constants/Colors";
 import { ChatThread, Message } from "@/types";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export function ChatAvatar({ thread }: { thread: ChatThread }) {
+  if (thread.avatar) {
+    return (
+      <Image
+        source={{ uri: thread.avatar }}
+        className="h-11 w-11 rounded-full border border-neutral-100"
+      />
+    );
+  }
+
   return (
     <View
       style={{ backgroundColor: thread.avatarBg }}
@@ -43,7 +52,13 @@ export function ThreadRow({
                   {thread.name}
                 </Text>
                 {thread.unread ? (
-                  <View className="h-2.5 w-2.5 rounded-full bg-[#FF5500]" />
+                  <View className="min-w-[18px] items-center justify-center rounded-full bg-[#FF5500] px-1.5 py-0.5">
+                    <Text className="text-[10px] font-bold text-white">
+                      {thread.unreadCount && thread.unreadCount > 9
+                        ? "9+"
+                        : thread.unreadCount || ""}
+                    </Text>
+                  </View>
                 ) : null}
               </View>
               <Text numberOfLines={1} className="mt-0.5 text-xs font-medium text-neutral-500">
@@ -85,6 +100,13 @@ export function MessageBubble({ message }: { message: Message }) {
         >
           {message.body}
         </Text>
+        {message.image ? (
+          <Image
+            source={{ uri: message.image }}
+            className="mt-2 h-40 w-56 rounded-xl"
+            resizeMode="cover"
+          />
+        ) : null}
         <Text
           className={`mt-2 text-[11px] font-medium ${
             message.mine ? "text-white/60" : "text-neutral-400"

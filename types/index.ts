@@ -19,8 +19,11 @@ export type ChatOrigin = "worker" | "employer";
 export type Message = {
   id: string;
   body: string;
+  image?: string;
   time: string;
   mine: boolean;
+  hasRead?: boolean;
+  readAt?: string | null;
 };
 
 export interface ChatThread {
@@ -35,6 +38,8 @@ export interface ChatThread {
   initials: string;
   avatarBg: string;
   avatarColor: string;
+  avatar?: string | null;
+  unreadCount?: number;
   messages: Message[];
 }
 
