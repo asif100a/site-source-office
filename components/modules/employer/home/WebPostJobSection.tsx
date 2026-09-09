@@ -25,16 +25,7 @@ import TimePickerField, {
 } from "@/components/modules/common/TimePickerField";
 import Toast from "react-native-toast-message";
 import type { JobPostPayload } from "@/store/api/jobApi";
-
-const TRADE_OPTIONS = [
-  { label: "Groundworker", value: "GROUND_WORKER" },
-  { label: "Carpenter", value: "CARPENTER" },
-  { label: "Electrician", value: "ELECTRICIAN" },
-  { label: "Plumber", value: "PLUMBER" },
-  { label: "Bricklayer", value: "BRICKLAYER" },
-  { label: "Painter", value: "PAINTER" },
-  { label: "Scaffolder", value: "SCAFFOLDER" },
-];
+import { TRADES } from "@/assets/data";
 
 const WORKING_DAY_OPTIONS = [
   { key: "monday", label: "Monday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
@@ -93,18 +84,12 @@ export default function WebPostJobSection({
 }) {
   const [title, setTitle] = useState("");
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([
-    "GROUND_WORKER",
-  ]);
-  const [notes, setNotes] = useState(
-    "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
-  );
-  const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([
-    "CSCS card",
-  ]);
+  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
-    from: new Date(2026, 7, 24),
-    to: new Date(2026, 7, 28),
+    from: new Date(2026, 7, 18),
+    to: new Date(2026, 7, 21),
   });
   const [workingDaySchedule, setWorkingDaySchedule] =
     useState<WorkingDaySchedule>({
@@ -201,14 +186,12 @@ export default function WebPostJobSection({
       setHourlyRate(24);
       setWorkersNeeded(2);
       setTradeMenuOpen(false);
-      setSelectedTrades(["GROUND_WORKER"]);
-      setNotes(
-        "Second-floor strip out, skip on site, 7:30am start. Ask for Danny at the gate.",
-      );
-      setSelectedMustHaves(["CSCS card"]);
+      setSelectedTrades([]);
+      setNotes("");
+      setSelectedMustHaves([]);
       setJobDateRange({
-        from: new Date(2026, 7, 24),
-        to: new Date(2026, 7, 28),
+        from: new Date(2026, 7, 18),
+        to: new Date(2026, 7, 21),
       });
       setWorkingDaySchedule(getInitialWorkingDaySchedule());
     }
@@ -225,13 +208,13 @@ export default function WebPostJobSection({
 
     if (selectedTrades.length <= 2) {
       return selectedTrades
-        .map((trade) => TRADE_OPTIONS.find((option) => option.value === trade)?.label ?? trade)
+        .map((trade) => TRADES.find((option) => option.value === trade)?.label ?? trade)
         .join(", ");
     }
 
     return `${selectedTrades
       .slice(0, 2)
-      .map((trade) => TRADE_OPTIONS.find((option) => option.value === trade)?.label ?? trade)
+      .map((trade) => TRADES.find((option) => option.value === trade)?.label ?? trade)
       .join(", ")} +${selectedTrades.length - 2}`;
   }, [selectedTrades]);
 
@@ -337,7 +320,7 @@ export default function WebPostJobSection({
 
         {tradeMenuOpen ? (
           <View className="mt-2 overflow-hidden rounded-[18px] border border-neutral-200 bg-white">
-            {TRADE_OPTIONS.map((option) => {
+            {TRADES.map((option) => {
               const selected = selectedTrades.includes(option.value);
 
               return (
@@ -418,7 +401,6 @@ export default function WebPostJobSection({
             value={jobDateRange}
             onChange={setJobDateRange}
             onClear={() => setJobDateRange({})}
-            minDate={new Date(2026, 7, 20)}
             summaryEmptyLabel="Select job dates"
             containerHeight={280}
           />

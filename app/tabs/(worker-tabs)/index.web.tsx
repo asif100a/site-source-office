@@ -146,6 +146,8 @@ export default function WorkerHomeScreen() {
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
+  console.log("WorkerHomeScreen: mapJobsQuery = ", mapJobsQuery);
+  console.log("WorkerHomeScreen: allJobsQuery = ", allJobsQuery);
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
     skip: !selectedJobId,
   });
@@ -369,6 +371,7 @@ export default function WorkerHomeScreen() {
                             setLocationCoordinates(null);
                           }
                         }}
+                        onlyField
                       />
                     </View>
 

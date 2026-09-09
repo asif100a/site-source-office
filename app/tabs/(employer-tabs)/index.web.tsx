@@ -1,24 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
-import { useRouter } from "expo-router";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Minus,
-  Plus,
-} from "lucide-react-native";
-import {
-  Pressable,
-  ScrollView,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
-import JobRequests from "@/components/modules/employer/home/JobRequests";
 import { Colors } from "@/constants/Colors";
 import {
   SnapshotCard,
@@ -43,8 +25,8 @@ type MapRegion = {
 const SITE_REGION: MapRegion = {
   latitude: 51.5295,
   longitude: -0.0887,
-  latitudeDelta: 0.018,
-  longitudeDelta: 0.018,
+  latitudeDelta: 0.015,
+  longitudeDelta: 0.015,
 };
 
 const getGoogleMapEmbedUrl = (region: MapRegion, zoom: number) => {
@@ -74,7 +56,6 @@ const getWeekendPayValidationMessage = (payload: JobPostPayload) => {
 };
 
 export default function EmployerHomeScreenWeb() {
-  const router = useRouter();
   const [hourlyRate, setHourlyRate] = useState(24);
   const [workersNeeded, setWorkersNeeded] = useState(2);
   const [siteRegion, setSiteRegion] = useState<MapRegion>(SITE_REGION);
@@ -128,13 +109,6 @@ export default function EmployerHomeScreenWeb() {
       });
       return false;
     }
-  };
-
-  const openWorkerDetails = (workerId: string) => {
-    router.push({
-      pathname: "/screens/worker-details/[id]",
-      params: { id: workerId, origin: "employer" },
-    });
   };
 
   const adjustMapZoom = (direction: "in" | "out") => {
