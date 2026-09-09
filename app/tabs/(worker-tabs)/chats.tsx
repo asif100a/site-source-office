@@ -21,6 +21,7 @@ export default function WorkerChatsScreen() {
   const router = useRouter();
   const token = useSelector((state: RootState) => state.auth.token);
   const chatsQuery = useGetChatsQuery({ page: 1, limit: 30 });
+  console.log("WorkerChatsScreen: chatsQuery = ", chatsQuery);
   const socketRef = useChatSocket(token);
 
   const threads = useMemo(
@@ -33,6 +34,7 @@ export default function WorkerChatsScreen() {
 
   useEffect(() => {
     const socket = socketRef.current;
+    console.log("WorkerChatsScreen: socketRef.current = ", socket);
     if (!socket) return;
 
     const refreshChats = () => {

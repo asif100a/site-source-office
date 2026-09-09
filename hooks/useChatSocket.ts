@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { BACKEND_URL } from "@/constants/env.config";
 import { getAuthorizationHeader } from "@/store/api/_base/baseApi";
 
