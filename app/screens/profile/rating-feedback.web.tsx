@@ -1,44 +1,53 @@
 import { useMemo, useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { ArrowRight, MessageSquareQuote, Star, Sparkles } from "lucide-react-native";
-import { RatingStars, ScreenShell } from "./_components";
+import { useLocalSearchParams } from "expo-router";
+import { useSelector } from "react-redux";
+import { MessageSquareQuote, Star, Sparkles } from "lucide-react-native";
+import { ScreenShell } from "./_components";
 import ReviewModal from "@/components/modules/common/ReviewModal";
 import { Colors } from "@/constants/Colors";
+import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import {
+  useGetReviewSummaryQuery,
+  useGetReviewsQuery,
+} from "@/store/api/reviewApi";
+import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
+import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
+import type { RootState } from "@/store/store";
+import { getRoleFromToken } from "@/utils/authToken";
+import type { UserRole } from "@/constants/Routes";
 
-const reviewers = [
-  {
-    name: "Jane Cooper",
-    date: "20 Apr 2026",
-    rating: 5,
-    feedback: "Very professional and always arrived on time",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop",
-  },
-  {
-    name: "Esther Howard",
-    date: "20 Apr 2026",
-    rating: 5,
-    feedback: "Very professional and always arrived on time",
-    image:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop",
-  },
-  {
-    name: "Brooklyn Simmons",
-    date: "20 Apr 2025",
-    rating: 5,
-    feedback: "Very professional and always arrived on time",
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop",
-  },
-  {
-    name: "Brooklyn Simmons",
-    date: "20 Apr 2025",
-    rating: 5,
-    feedback: "Very professional and always arrived on time",
-    image:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop",
-  },
-];
+type ReviewItem = {
+  id: string;
+  rating: number;
+  feedback: string;
+  givenAt?: string;
+  giverAuth?: { profile?: { name?: string; avatar?: string } };
+  giver?: { profile?: { name?: string; avatar?: string } };
+};
+
+const normalizeRole = (value: unknown): UserRole =>
+  value === "employer" ? "employer" : "worker";
+
+const getResponseData = (response: any) => response?.data?.data ?? response?.data;
+
+const getItems = (response: any) => {
+  const data = getResponseData(response);
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.reviews)) return data.reviews;
+  return [];
+};
+
+const formatDate = (value?: string) =>
+  value
+    ? new Date(value).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "Recently";
 
 function ReviewCard({
   name,
@@ -51,13 +60,21 @@ function ReviewCard({
   date: string;
   rating: number;
   feedback: string;
-  image: string;
+  image?: string;
 }) {
   return (
     <View className="rounded-2xl border border-neutral-200 bg-white p-4">
       <View className="flex-row items-start justify-between gap-4">
         <View className="flex-row items-center gap-3">
-          <Image source={{ uri: image }} className="h-11 w-11 rounded-full" />
+          {image ? (
+            <Image source={{ uri: image }} className="h-11 w-11 rounded-full" />
+          ) : (
+            <View className="h-11 w-11 items-center justify-center rounded-full bg-neutral-100">
+              <Text className="text-sm font-bold text-neutral-500">
+                {name.slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View>
             <Text className="text-sm font-semibold text-neutral-950">
               {name}
@@ -82,39 +99,60 @@ function ReviewCard({
 }
 
 export default function RatingFeedbackScreenWeb() {
-  const bars = [200, 40, 32, 19, 7];
+  const params = useLocalSearchParams<{ origin?: string }>();
+  const token = useSelector((state: RootState) => state.auth.token);
+  const userRole = normalizeRole(params.origin ?? getRoleFromToken(token ?? ""));
+  const isEmployer = userRole === "employer";
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewFeedback, setReviewFeedback] = useState("");
-  const [submittedReviews, setSubmittedReviews] = useState<typeof reviewers>([]);
+  const workerProfileQuery = useGetWorkerProfileQuery(undefined, {
+    skip: isEmployer,
+  });
+  const employerProfileQuery = useGetEmployerProfileQuery(undefined, {
+    skip: !isEmployer,
+  });
+  const activeProfile = getResponseData(
+    isEmployer ? employerProfileQuery.data : workerProfileQuery.data,
+  );
+  const authId = activeProfile?.authId ?? activeProfile?.auth?.id ?? activeProfile?.id;
+  const jobsQuery = useGetMyJobsQuery(
+    { page: 1, limit: 100, status: "COMPLETED" },
+    { skip: !isEmployer },
+  );
+  const reviewsQuery = useGetReviewsQuery(
+    { authId: authId ?? "" },
+    { skip: isEmployer || !authId },
+  );
+  const summaryQuery = useGetReviewSummaryQuery(
+    { authId: authId ?? "" },
+    { skip: isEmployer || !authId },
+  );
+  const jobs = getItems(jobsQuery.data);
+  const visibleReviews = getItems(reviewsQuery.data) as ReviewItem[];
+  const summary = getResponseData(summaryQuery.data);
+  const ratingGroups = summary?.ratingGroups ?? {};
+  const totalReviews = Number(summary?.totalReviews ?? visibleReviews.length ?? 0);
+  const avgRating = Number(summary?.avgRating ?? 0);
+  const ratingRows = [5, 4, 3, 2, 1].map((rating) => ({
+    rating,
+    count: Number(ratingGroups[String(rating)] ?? 0),
+  }));
+  const jobOptions = useMemo(
+    () =>
+      jobs
+        .filter((job: any) => job?.id ?? job?._id)
+        .map((job: any) => ({
+          id: String(job.id ?? job._id),
+          label: job.title ?? "Completed job",
+          description: `${formatDate(job.startDate)} - ${formatDate(job.endDate)}`,
+        })),
+    [jobs],
+  );
 
   const closeReviewModal = () => {
     setIsReviewModalOpen(false);
   };
-
-  const submitReview = () => {
-    if (!reviewRating || !reviewFeedback.trim()) return;
-
-    setSubmittedReviews((currentReviews) => [
-      {
-        name: "You",
-        date: "Just now",
-        rating: reviewRating,
-        feedback: reviewFeedback.trim(),
-        image:
-          "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop",
-      },
-      ...currentReviews,
-    ]);
-    setReviewRating(0);
-    setReviewFeedback("");
-    setIsReviewModalOpen(false);
-  };
-
-  const visibleReviews = useMemo(
-    () => [...submittedReviews, ...reviewers],
-    [submittedReviews],
-  );
 
   return (
     <ScreenShell title="Rating & Feedback">
@@ -137,33 +175,37 @@ export default function RatingFeedbackScreenWeb() {
                     <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
                       <View className="h-2 w-2 rounded-full bg-emerald-500" />
                       <Text className="text-xs font-semibold text-neutral-600">
-                        300 total reviews
+                        {totalReviews} total reviews
                       </Text>
                     </View>
                   </View>
 
                   <View className="gap-2">
                     <Text className="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-950">
-                      Track your worker reputation.
+                      {isEmployer
+                        ? "Share feedback for completed jobs."
+                        : "Track your worker reputation."}
                     </Text>
                     <Text className="max-w-2xl text-sm md:text-base leading-6 text-neutral-600">
-                      See the overall rating, inspect individual feedback, and
-                      write a new review from the web layout while leaving mobile
-                      unchanged.
+                      {isEmployer
+                        ? "Choose a completed job and submit feedback for the worker."
+                        : "See your overall rating, rating groups, and recent feedback."}
                     </Text>
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  onPress={() => setIsReviewModalOpen(true)}
-                  activeOpacity={0.9}
-                  className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
-                >
-                  <MessageSquareQuote size={18} color="#FFFFFF" />
-                  <Text className="text-sm font-semibold text-white">
-                    Write review
-                  </Text>
-                </TouchableOpacity>
+                {isEmployer ? (
+                  <TouchableOpacity
+                    onPress={() => setIsReviewModalOpen(true)}
+                    activeOpacity={0.9}
+                    className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3.5"
+                  >
+                    <MessageSquareQuote size={18} color="#FFFFFF" />
+                    <Text className="text-sm font-semibold text-white">
+                      Write review
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
 
@@ -174,23 +216,40 @@ export default function RatingFeedbackScreenWeb() {
                     <View className="w-28 items-center">
                       <View className="flex-row items-end">
                         <Text className="text-4xl font-semibold text-slate-900">
-                          4.1
+                          {avgRating.toFixed(1)}
                         </Text>
                         <Text className="mb-1 text-sm font-semibold text-neutral-400">
                           /5
                         </Text>
                       </View>
-                      <RatingStars size={12} />
+                      <View className="flex-row">
+                        {[1, 2, 3, 4, 5].map((rating) => (
+                          <Star
+                            key={rating}
+                            size={12}
+                            color={
+                              rating <= Math.round(avgRating)
+                                ? "#FBC02D"
+                                : "#D1D5DB"
+                            }
+                            fill={
+                              rating <= Math.round(avgRating)
+                                ? "#FBC02D"
+                                : "transparent"
+                            }
+                          />
+                        ))}
+                      </View>
                       <Text className="mt-1 text-xs text-neutral-400">
-                        300 Reviews
+                        {totalReviews} Reviews
                       </Text>
                     </View>
 
                     <View className="flex-1 gap-2">
-                      {bars.map((value, index) => (
-                        <View key={value} className="flex-row items-center gap-3">
+                      {ratingRows.map(({ rating, count }) => (
+                        <View key={rating} className="flex-row items-center gap-3">
                           <View className="w-16 flex-row">
-                            {Array.from({ length: 5 - index }).map((_, starIndex) => (
+                            {Array.from({ length: rating }).map((_, starIndex) => (
                               <Star
                                 key={starIndex}
                                 size={8}
@@ -202,11 +261,17 @@ export default function RatingFeedbackScreenWeb() {
                           <View className="h-1 flex-1 rounded-full bg-neutral-200">
                             <View
                               className="h-1 rounded-full bg-slate-400"
-                              style={{ width: `${Math.max(8, 80 - index * 13)}%` }}
+                              style={{
+                                width: `${
+                                  totalReviews
+                                    ? Math.max(5, (count / totalReviews) * 100)
+                                    : 0
+                                }%`,
+                              }}
                             />
                           </View>
                           <Text className="w-8 text-right text-xs text-neutral-500">
-                            {String(value).padStart(2, "0")}
+                            {String(count).padStart(2, "0")}
                           </Text>
                         </View>
                       ))}
@@ -214,15 +279,17 @@ export default function RatingFeedbackScreenWeb() {
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  onPress={() => setIsReviewModalOpen(true)}
-                  style={{ backgroundColor: Colors.common.GRAY_DARK }}
-                  className="h-12 items-center justify-center rounded-xl"
-                >
-                  <Text className="min-w-28 text-base font-semibold text-white">
-                    Write Review
-                  </Text>
-                </TouchableOpacity>
+                {isEmployer ? (
+                  <TouchableOpacity
+                    onPress={() => setIsReviewModalOpen(true)}
+                    style={{ backgroundColor: Colors.common.GRAY_DARK }}
+                    className="h-12 items-center justify-center rounded-xl"
+                  >
+                    <Text className="min-w-28 text-base font-semibold text-white">
+                      Write Review
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
 
               <View className="flex-1 gap-4">
@@ -242,14 +309,28 @@ export default function RatingFeedbackScreenWeb() {
                 <View className="gap-4">
                   {visibleReviews.map((review) => (
                     <ReviewCard
-                      key={`${review.name}-${review.date}-${review.feedback}`}
-                      name={review.name}
-                      date={review.date}
-                      rating={review.rating}
+                      key={review.id}
+                      name={
+                        review.giverAuth?.profile?.name ??
+                        review.giver?.profile?.name ??
+                        "Reviewer"
+                      }
+                      date={formatDate(review.givenAt)}
+                      rating={Number(review.rating ?? 0)}
                       feedback={review.feedback}
-                      image={review.image}
+                      image={
+                        review.giverAuth?.profile?.avatar ??
+                        review.giver?.profile?.avatar
+                      }
                     />
                   ))}
+                  {!reviewsQuery.isLoading && visibleReviews.length === 0 ? (
+                    <View className="rounded-2xl border border-neutral-200 bg-white p-6">
+                      <Text className="text-center text-sm font-semibold text-neutral-500">
+                        No reviews yet.
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             </View>
@@ -260,11 +341,14 @@ export default function RatingFeedbackScreenWeb() {
       <ReviewModal
         isReviewModalOpen={isReviewModalOpen}
         closeReviewModal={closeReviewModal}
+        jobOptions={jobOptions}
         reviewRating={reviewRating}
         setReviewRating={setReviewRating}
         reviewFeedback={reviewFeedback}
         setReviewFeedback={setReviewFeedback}
-        submitReview={submitReview}
+        onReviewCreated={() => {
+          jobsQuery.refetch();
+        }}
       />
     </ScreenShell>
   );

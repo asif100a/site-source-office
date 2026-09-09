@@ -49,7 +49,7 @@ export default function LoginScreen({
         email: data.email,
         password: data.password,
       }).unwrap();
-      console.log("Login response: ", response);
+      // console.log("Login response: ", response);
 
       if (response.success || (response?.data as any)?.success) {
         const token =

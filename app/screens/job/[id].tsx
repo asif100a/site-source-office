@@ -21,6 +21,7 @@ export default function JobDetailsScreen() {
   const isAuthenticated = useIsAuthenticated();
   const [createJobApplication, { isLoading: isApplying }] =
     useCreateJobApplicationMutation();
+    // console.log("jobId from the job details screen: ", jobId);
 
   const handleApply = () => {
     if (!jobId) return;

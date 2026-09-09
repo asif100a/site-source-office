@@ -39,4 +39,8 @@ export const reviewApi = baseApi.injectEndpoints({
   overrideExisting: true,
 });
 
-export const { useCreateReviewMutation } = reviewApi;
+export const {
+  useCreateReviewMutation,
+  useGetReviewsQuery,
+  useGetReviewSummaryQuery,
+} = reviewApi;

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Star } from "lucide-react-native";
 import { useGetSingleJobQuery } from "@/store/api/jobApi";
 import {
   useGetJobApplicationQuery,
@@ -30,6 +31,16 @@ const formatDate = (value?: string) =>
         year: "numeric",
       })
     : "Not set";
+
+type JobReview = {
+  id: string;
+  rating: number;
+  feedback: string;
+  givenAt?: string;
+};
+
+const getJobReviews = (reviews: unknown): JobReview[] =>
+  Array.isArray(reviews) ? reviews : [];
 
 export default function NewJobDetails({
   jobId,
@@ -63,6 +74,7 @@ export default function NewJobDetails({
     { skip: !showApplications },
   );
   const job = data?.data?.data ?? data?.data;
+  const reviews = getJobReviews(job?.reviews);
   const applications = showApplications
     ? getJobApplications(applicationsQuery.data)
     : [];
@@ -376,6 +388,56 @@ export default function NewJobDetails({
               )}
             </TouchableOpacity>
           ) : null}
+        </View>
+      ) : null}
+
+      {reviews.length > 0 ? (
+        <View className="mt-5 rounded-3xl bg-white p-5">
+          <View className="flex-row items-center justify-between gap-3">
+            <Text className="text-lg font-extrabold text-neutral-950">
+              Reviews
+            </Text>
+            <Text className="text-xs font-bold text-neutral-400">
+              {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+            </Text>
+          </View>
+
+          <View className="mt-4 gap-3">
+            {reviews.map((review) => (
+              <View
+                key={review.id}
+                className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4"
+              >
+                <View className="flex-row items-center justify-between gap-3">
+                  <View className="flex-row items-center gap-1.5">
+                    {[1, 2, 3, 4, 5].map((rating) => {
+                      const isActive = rating <= Number(review.rating ?? 0);
+
+                      return (
+                        <Star
+                          key={rating}
+                          size={15}
+                          color={isActive ? "#FBBF24" : "#D1D5DB"}
+                          fill={isActive ? "#FBBF24" : "transparent"}
+                        />
+                      );
+                    })}
+                    <Text className="ml-1 text-xs font-bold text-neutral-900">
+                      {Number(review.rating ?? 0).toFixed(1)}
+                    </Text>
+                  </View>
+
+                  <Text className="text-xs text-neutral-400">
+                    {formatDate(review.givenAt)}
+                  </Text>
+                </View>
+
+                <Text className="mt-3 text-sm leading-6 text-neutral-700">
+                  {review.feedback}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       ) : null}
     </ScrollView>

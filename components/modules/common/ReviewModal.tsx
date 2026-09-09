@@ -7,51 +7,81 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  ScrollView,
 } from "react-native";
-import React from "react";
-import { Star, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ChevronDown, Star, X } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import { useCreateReviewMutation } from "@/store/api/reviewApi";
+
+export type ReviewJobOption = {
+  id: string;
+  label: string;
+  description?: string;
+};
 
 export default function ReviewModal({
   isReviewModalOpen,
   closeReviewModal,
   jobId,
+  jobOptions = [],
   reviewRating,
   setReviewRating,
   reviewFeedback,
   setReviewFeedback,
+  onReviewCreated,
 }: {
   isReviewModalOpen: boolean;
   closeReviewModal: () => void;
   jobId?: string;
+  jobOptions?: ReviewJobOption[];
   reviewRating: number;
   setReviewRating: React.Dispatch<React.SetStateAction<number>>;
   reviewFeedback: string;
   setReviewFeedback: React.Dispatch<React.SetStateAction<string>>;
+  onReviewCreated?: () => void | Promise<void>;
 }) {
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const [createReview, { isLoading: isSubmitting }] =
     useCreateReviewMutation();
+  const shouldShowJobPicker = !jobId;
+  const selectedJob = jobOptions.find((job) => job.id === selectedJobId);
+  const effectiveJobId = jobId ?? selectedJobId;
+
+  useEffect(() => {
+    if (!isReviewModalOpen) {
+      setIsJobDropdownOpen(false);
+      setSelectedJobId("");
+    }
+  }, [isReviewModalOpen]);
 
   const handleClose = () => {
     if (isSubmitting) {
       return;
     }
 
+    setIsJobDropdownOpen(false);
     closeReviewModal();
   };
 
   const canSubmit =
-    Boolean(jobId && reviewRating && reviewFeedback.trim()) && !isSubmitting;
+    Boolean(effectiveJobId && reviewRating && reviewFeedback.trim()) &&
+    !isSubmitting;
 
   const handleSubmit = async () => {
-    if (!jobId || !reviewRating || !reviewFeedback.trim() || isSubmitting) {
+    if (
+      !effectiveJobId ||
+      !reviewRating ||
+      !reviewFeedback.trim() ||
+      isSubmitting
+    ) {
       return;
     }
 
     try {
       await createReview({
-        jobId,
+        jobId: effectiveJobId,
         rating: reviewRating,
         feedback: reviewFeedback.trim(),
       }).unwrap();
@@ -64,6 +94,9 @@ export default function ReviewModal({
 
       setReviewRating(0);
       setReviewFeedback("");
+      setSelectedJobId("");
+      setIsJobDropdownOpen(false);
+      await onReviewCreated?.();
       closeReviewModal();
     } catch (error) {
       console.error("error creating review: ", error);
@@ -109,26 +142,103 @@ export default function ReviewModal({
               </TouchableOpacity>
             </View>
 
+            {shouldShowJobPicker ? (
+              <>
+                <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Completed Job
+                </Text>
+                <View className="relative z-20 mb-5">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setIsJobDropdownOpen((current) => !current)
+                    }
+                    disabled={isSubmitting}
+                    className="flex-row items-center justify-between rounded-2xl border border-neutral-200/80 bg-white px-4 py-3.5 active:opacity-85"
+                  >
+                    <View className="flex-1 pr-3">
+                      <Text
+                        className={`text-sm font-semibold ${
+                          selectedJob ? "text-neutral-900" : "text-neutral-400"
+                        }`}
+                      >
+                        {selectedJob?.label ?? "Select a completed job"}
+                      </Text>
+                      {selectedJob?.description ? (
+                        <Text className="mt-1 text-[11px] font-medium text-neutral-500">
+                          {selectedJob.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <ChevronDown size={18} color="#737373" />
+                  </TouchableOpacity>
+
+                  {isJobDropdownOpen ? (
+                    <View className="mt-2 max-h-56 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl">
+                      <ScrollView showsVerticalScrollIndicator={false}>
+                        {jobOptions.length === 0 ? (
+                          <View className="px-4 py-3.5">
+                            <Text className="text-sm font-semibold text-neutral-400">
+                              No jobs found
+                            </Text>
+                          </View>
+                        ) : null}
+
+                        {jobOptions.map((job) => {
+                          const isSelected = selectedJobId === job.id;
+
+                          return (
+                            <TouchableOpacity
+                              key={job.id}
+                              onPress={() => {
+                                setSelectedJobId(job.id);
+                                setIsJobDropdownOpen(false);
+                              }}
+                              className={`px-4 py-3.5 active:bg-neutral-50 ${
+                                isSelected ? "bg-neutral-100" : "bg-white"
+                              }`}
+                            >
+                              <Text className="text-sm font-semibold text-neutral-900">
+                                {job.label}
+                              </Text>
+                              {job.description ? (
+                                <Text className="mt-1 text-xs font-medium text-neutral-500">
+                                  {job.description}
+                                </Text>
+                              ) : null}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  ) : null}
+                </View>
+              </>
+            ) : null}
+
             <Text className="text-neutral-500 text-xs font-bold uppercase mb-2 tracking-wider">
               Your Rating
             </Text>
-            {!jobId ? (
+            {!effectiveJobId ? (
               <Text className="text-neutral-400 text-xs font-medium mb-3">
-                Unable to find this completed job.
+                {shouldShowJobPicker
+                  ? "Pick a completed job first, then choose your stars."
+                  : "Unable to find this completed job."}
               </Text>
             ) : null}
 
             <View className="flex-row items-center justify-center gap-2 mb-5">
               {[1, 2, 3, 4, 5].map((rating) => {
-                const isActive = jobId ? rating <= reviewRating : false;
+                const isActive = effectiveJobId
+                  ? rating <= reviewRating
+                  : false;
 
                 return (
                   <TouchableOpacity
                     key={rating}
-                    disabled={!jobId || isSubmitting}
+                    disabled={!effectiveJobId || isSubmitting}
                     onPress={() => setReviewRating(rating)}
                     className={`p-1 ${
-                      jobId && !isSubmitting
+                      effectiveJobId && !isSubmitting
                         ? "active:opacity-75"
                         : "opacity-40"
                     }`}
@@ -154,9 +264,9 @@ export default function ReviewModal({
                 placeholderTextColor="#A3A3A3"
                 multiline
                 textAlignVertical="top"
-                editable={Boolean(jobId) && !isSubmitting}
+                editable={Boolean(effectiveJobId) && !isSubmitting}
                 className={`flex-1 text-neutral-900 text-sm leading-5 ${
-                  jobId && !isSubmitting ? "" : "opacity-40"
+                  effectiveJobId && !isSubmitting ? "" : "opacity-40"
                 }`}
               />
             </View>
