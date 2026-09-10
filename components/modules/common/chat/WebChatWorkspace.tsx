@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 import {
@@ -46,6 +46,7 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
   const [selectedThreadId, setSelectedThreadId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [draft, setDraft] = useState("");
+  const messagesScrollRef = useRef<ScrollView | null>(null);
   const socketRef = useChatSocket(token);
   const [sendMessage, { isLoading: isSending }] = useSendChatMessageMutation();
   const [markChatRead] = useMarkChatReadMutation();
@@ -110,7 +111,7 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
     const refreshChats = (message?: ChatMessage) => {
       void chatsQuery.refetch();
 
-      if (!message?.id || message.conversationId === selectedThread?.id) {
+      if (!message?.conversationId || message.conversationId === selectedThread?.id) {
         void messagesQuery.refetch();
       }
     };
@@ -125,6 +126,14 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
       socket.off("message:read", refreshChats);
     };
   }, [chatsQuery, messagesQuery, selectedThread?.id, socketRef]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+
+    requestAnimationFrame(() => {
+      messagesScrollRef.current?.scrollToEnd({ animated: true });
+    });
+  }, [messages.length]);
 
   const openDetailRoute = () => {
     if (!selectedThread?.id) return;
@@ -318,6 +327,7 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
                     </View>
 
                     <ScrollView
+                      ref={messagesScrollRef}
                       className="flex-1 bg-white px-5 py-5"
                       showsVerticalScrollIndicator={false}
                       contentContainerStyle={{ gap: 14, paddingBottom: 24 }}
