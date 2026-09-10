@@ -124,7 +124,7 @@ export default function PrivacyPolicyWeb() {
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-[1.55] gap-4">
-                <VersionBanner />
+                {/* <VersionBanner /> */}
                 <Text className="text-xl font-semibold text-neutral-950">
                   Contents
                 </Text>
@@ -180,7 +180,7 @@ export default function PrivacyPolicyWeb() {
                   </View>
                 </View>
 
-                <View className="rounded-[24px] bg-neutral-950 px-5 py-5">
+                {/* <View className="rounded-[24px] bg-neutral-950 px-5 py-5">
                   <View className="flex-row items-center gap-3">
                     <Sparkles size={18} color="#FFFFFF" />
                     <View className="flex-1">
@@ -192,7 +192,7 @@ export default function PrivacyPolicyWeb() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </View> */}
               </View>
             </View>
           </View>

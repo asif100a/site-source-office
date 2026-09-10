@@ -124,7 +124,7 @@ export default function TermsScreenWeb() {
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-[1.55] gap-4">
-                <VersionBanner />
+                {/* <VersionBanner /> */}
                 <Text className="text-xl font-semibold text-neutral-950">
                   Contents
                 </Text>

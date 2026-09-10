@@ -274,12 +274,12 @@ export default function WebChatWorkspace({
                       {filteredThreads.length} conversations
                     </Text>
                   </View>
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     activeOpacity={0.85}
                     className="h-10 w-10 items-center justify-center rounded-full bg-white"
                   >
                     <MoreHorizontal size={18} color="#525252" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
 
                 <View className="mt-4 flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">

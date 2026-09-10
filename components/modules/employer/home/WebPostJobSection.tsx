@@ -555,7 +555,7 @@ export default function WebPostJobSection({
         multiline
         textAlignVertical="top"
         placeholder="Add site notes, access details, or start instructions"
-        className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222]"
+        className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222] placeholder:text-[#999999]"
       />
 
       <TouchableOpacity

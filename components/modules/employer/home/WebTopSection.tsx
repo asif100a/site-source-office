@@ -40,14 +40,14 @@ export default function WebTopSection({
             </View>
           </View>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             activeOpacity={0.9}
             onPress={handleCreateJobPost}
             className="self-start rounded-2xl px-5 py-4 xl:self-auto"
             style={{ backgroundColor: Colors.common.BRAND }}
           >
             <Text className="text-sm font-bold text-white">Post Job</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     </View>

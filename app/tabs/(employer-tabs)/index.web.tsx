@@ -190,7 +190,7 @@ export default function EmployerHomeScreenWeb() {
                 />
               </View>
 
-              <View className="w-full gap-6 xl:w-[360px] 2xl:w-[390px]">
+              {/* <View className="w-full gap-6 xl:w-[360px] 2xl:w-[390px]">
                 <View className="rounded-[30px] border border-neutral-200/80 bg-white p-6 shadow-sm">
                   <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#222222]">
                     Estimated total
@@ -253,7 +253,7 @@ export default function EmployerHomeScreenWeb() {
                     />
                   </View>
                 </View>
-              </View>
+              </View> */}
             </View>
           </View>
         </View>
