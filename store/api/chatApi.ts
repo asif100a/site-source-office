@@ -22,6 +22,7 @@ export type ChatJob = {
 
 export type ChatMessage = {
   id: string;
+  conversationId?: string;
   content?: string | null;
   image?: string | null;
   senderAuthId?: string;

@@ -1,15 +1,16 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
 import {
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
-  MoreHorizontal,
   Paperclip,
   Search,
   Send,
 } from "lucide-react-native";
 import {
+  ActivityIndicator,
   ScrollView,
   Text,
   TextInput,
@@ -18,193 +19,54 @@ import {
 } from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
+import { useChatSocket } from "@/hooks/useChatSocket";
+import {
+  useGetChatMessagesQuery,
+  useGetChatsQuery,
+  useMarkChatReadMutation,
+  useSendChatMessageMutation,
+} from "@/store/api/chatApi";
+import type { ChatMessage } from "@/store/api/chatApi";
+import type { RootState } from "@/store/store";
+import type { ChatOrigin } from "@/types";
+import { getAuthIdFromToken, toBubbleMessage, toThread } from "@/utils/chat";
 import { ChatAvatar, MessageBubble, ThreadRow } from "./_ui";
-import { ChatOrigin, ChatThread } from "@/types";
 
-const WORKER_THREADS: ChatThread[] = [
-  {
-    id: "sarah",
-    name: "Sarah Mitchell",
-    role: "Hiring manager",
-    job: "Carpenter - Brixton Builders",
-    status: "Online",
-    lastMessage: "Can you confirm your availability for tomorrow morning?",
-    time: "4:30 PM",
-    unread: true,
-    initials: "SM",
-    avatarBg: "#E0F2FE",
-    avatarColor: "#0369A1",
-    messages: [
-      {
-        id: "1",
-        body: "Hi, thanks for applying for the carpenter role in Brixton.",
-        time: "4:08 PM",
-        mine: false,
-      },
-      {
-        id: "2",
-        body: "Thanks Sarah. I am available and can start this week.",
-        time: "4:16 PM",
-        mine: true,
-      },
-      {
-        id: "3",
-        body: "Can you confirm your availability for tomorrow morning?",
-        time: "4:30 PM",
-        mine: false,
-      },
-    ],
-  },
-  {
-    id: "james-1",
-    name: "James Thornton",
-    role: "Site supervisor",
-    job: "Labourer - Shoreditch Site Services",
-    status: "Last seen 12 min ago",
-    lastMessage: "Please bring your right-to-work documents to site.",
-    time: "3:15 PM",
-    unread: false,
-    initials: "JT",
-    avatarBg: "#FEE2E2",
-    avatarColor: "#B91C1C",
-    messages: [
-      {
-        id: "1",
-        body: "Your shift is confirmed for 8:00 AM at the Shoreditch site.",
-        time: "2:40 PM",
-        mine: false,
-      },
-      {
-        id: "2",
-        body: "Confirmed. I will arrive 15 minutes early.",
-        time: "2:44 PM",
-        mine: true,
-      },
-      {
-        id: "3",
-        body: "Please bring your right-to-work documents to site.",
-        time: "3:15 PM",
-        mine: false,
-      },
-    ],
-  },
-  {
-    id: "james-2",
-    name: "James Thornton",
-    role: "Project coordinator",
-    job: "Painter - Camden Fitout",
-    status: "Offline",
-    lastMessage: "The client has approved the revised start time.",
-    time: "1:10 PM",
-    unread: false,
-    initials: "JT",
-    avatarBg: "#F3E8FF",
-    avatarColor: "#6B21A8",
-    messages: [
-      {
-        id: "1",
-        body: "The client has approved the revised start time.",
-        time: "1:10 PM",
-        mine: false,
-      },
-    ],
-  },
-];
+type SocketAck = {
+  success?: boolean;
+  data?: ChatMessage;
+  message?: string;
+};
 
-const EMPLOYER_THREADS: ChatThread[] = [
-  {
-    id: "sarah",
-    name: "Sarah Mitchell",
-    role: "Labourer",
-    job: "Warehouse shift - Shoreditch",
-    status: "Online",
-    lastMessage: "I can start tomorrow and have the required documents ready.",
-    time: "4:30 PM",
-    unread: true,
-    initials: "SM",
-    avatarBg: "#E0F2FE",
-    avatarColor: "#0369A1",
-    messages: [
-      {
-        id: "1",
-        body: "Hi Sarah, are you available for the Shoreditch shift tomorrow?",
-        time: "4:05 PM",
-        mine: true,
-      },
-      {
-        id: "2",
-        body: "Yes, I can start tomorrow and have the required documents ready.",
-        time: "4:30 PM",
-        mine: false,
-      },
-    ],
-  },
-  {
-    id: "james-1",
-    name: "James Thornton",
-    role: "Electrician",
-    job: "Site maintenance - Waterloo",
-    status: "Last seen 8 min ago",
-    lastMessage: "I have reviewed the job notes and can cover the full shift.",
-    time: "3:15 PM",
-    unread: false,
-    initials: "JT",
-    avatarBg: "#FEE2E2",
-    avatarColor: "#B91C1C",
-    messages: [
-      {
-        id: "1",
-        body: "Can you cover the full maintenance shift on Friday?",
-        time: "2:55 PM",
-        mine: true,
-      },
-      {
-        id: "2",
-        body: "I have reviewed the job notes and can cover the full shift.",
-        time: "3:15 PM",
-        mine: false,
-      },
-    ],
-  },
-  {
-    id: "james-2",
-    name: "James Thornton",
-    role: "Painter",
-    job: "Interior finish - Camden",
-    status: "Offline",
-    lastMessage: "Please send the site address when it is confirmed.",
-    time: "12:40 PM",
-    unread: false,
-    initials: "JT",
-    avatarBg: "#F3E8FF",
-    avatarColor: "#6B21A8",
-    messages: [
-      {
-        id: "1",
-        body: "Please send the site address when it is confirmed.",
-        time: "12:40 PM",
-        mine: false,
-      },
-    ],
-  },
-];
-
-export default function WebChatWorkspace({
-  origin,
-}: {
-  origin: ChatOrigin;
-}) {
+export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
   const router = useRouter();
-  const threads = origin === "worker" ? WORKER_THREADS : EMPLOYER_THREADS;
-  const [selectedThreadId, setSelectedThreadId] = useState(threads[0].id);
+  const token = useSelector((state: RootState) => state.auth.token);
+  const currentAuthId = useMemo(() => getAuthIdFromToken(token), [token]);
+  const chatsQuery = useGetChatsQuery({ page: 1, limit: 30 });
+  const [selectedThreadId, setSelectedThreadId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [draft, setDraft] = useState("");
+  const socketRef = useChatSocket(token);
+  const [sendMessage, { isLoading: isSending }] = useSendChatMessageMutation();
+  const [markChatRead] = useMarkChatReadMutation();
+
+  const threads = useMemo(
+    () =>
+      (chatsQuery.data ?? []).map((conversation, index) =>
+        toThread(conversation, index),
+      ),
+    [chatsQuery.data],
+  );
+
+  useEffect(() => {
+    if (!selectedThreadId && threads[0]?.id) {
+      setSelectedThreadId(threads[0].id);
+    }
+  }, [selectedThreadId, threads]);
 
   const filteredThreads = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return threads;
-    }
+    if (!query) return threads;
 
     return threads.filter((thread) =>
       [thread.name, thread.role, thread.job, thread.lastMessage]
@@ -215,15 +77,118 @@ export default function WebChatWorkspace({
   }, [searchQuery, threads]);
 
   const selectedThread =
-    filteredThreads.find((thread) => thread.id === selectedThreadId) ??
+    threads.find((thread) => thread.id === selectedThreadId) ??
     filteredThreads[0] ??
     threads[0];
 
+  const messagesQuery = useGetChatMessagesQuery(
+    { conversationId: selectedThread?.id ?? "", page: 1, limit: 50 },
+    { skip: !selectedThread?.id },
+  );
+
+  const messages = useMemo(
+    () =>
+      (messagesQuery.data ?? []).map((message) =>
+        toBubbleMessage(message, currentAuthId),
+      ),
+    [currentAuthId, messagesQuery.data],
+  );
+
+  useEffect(() => {
+    if (!selectedThread?.id) return;
+
+    void markChatRead(selectedThread.id);
+    socketRef.current?.emit("message:read", {
+      conversationId: selectedThread.id,
+    });
+  }, [markChatRead, selectedThread?.id, socketRef]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) return;
+
+    const refreshChats = (message?: ChatMessage) => {
+      void chatsQuery.refetch();
+
+      if (!message?.id || message.conversationId === selectedThread?.id) {
+        void messagesQuery.refetch();
+      }
+    };
+
+    socket.on("message:received", refreshChats);
+    socket.on("message:sent", refreshChats);
+    socket.on("message:read", refreshChats);
+
+    return () => {
+      socket.off("message:received", refreshChats);
+      socket.off("message:sent", refreshChats);
+      socket.off("message:read", refreshChats);
+    };
+  }, [chatsQuery, messagesQuery, selectedThread?.id, socketRef]);
+
   const openDetailRoute = () => {
+    if (!selectedThread?.id) return;
+
     router.push({
       pathname: "/screens/chats/[id]",
       params: { id: selectedThread.id, origin },
     });
+  };
+
+  const sendWithSocket = (conversationId: string, content: string) =>
+    new Promise<void>((resolve, reject) => {
+      const socket = socketRef.current;
+
+      if (!socket?.connected) {
+        reject(new Error("Socket is not connected."));
+        return;
+      }
+
+      socket.emit(
+        "message:send",
+        { conversationId, content },
+        (response?: SocketAck) => {
+          if (response?.success) {
+            resolve();
+            return;
+          }
+
+          reject(new Error(response?.message ?? "Unable to send message."));
+        },
+      );
+    });
+
+  const handleSend = async () => {
+    const content = draft.trim();
+    if (!selectedThread?.id || !content || isSending) return;
+
+    setDraft("");
+
+    try {
+      if (socketRef.current?.connected) {
+        await sendWithSocket(selectedThread.id, content);
+      } else {
+        await sendMessage({
+          conversationId: selectedThread.id,
+          content,
+        }).unwrap();
+      }
+
+      void messagesQuery.refetch();
+      void chatsQuery.refetch();
+    } catch (socketError) {
+      try {
+        await sendMessage({
+          conversationId: selectedThread.id,
+          content,
+        }).unwrap();
+        void messagesQuery.refetch();
+        void chatsQuery.refetch();
+      } catch (restError) {
+        setDraft(content);
+        console.error("Unable to send chat message:", restError || socketError);
+      }
+    }
   };
 
   const browseRoute = origin === "worker" ? "/tabs/jobs" : "/tabs/workers";
@@ -257,7 +222,9 @@ export default function WebChatWorkspace({
               activeOpacity={0.88}
               className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3"
             >
-              <Text className="text-sm font-semibold text-white">{browseLabel}</Text>
+              <Text className="text-sm font-semibold text-white">
+                {browseLabel}
+              </Text>
               <ArrowRight size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
@@ -265,21 +232,13 @@ export default function WebChatWorkspace({
           <View className="min-h-[680px] flex-1 overflow-hidden rounded-[28px] border border-neutral-200 bg-white">
             <View className="flex-1 flex-col lg:flex-row">
               <View className="w-full border-b border-neutral-200 bg-neutral-50 p-4 lg:w-[390px] lg:border-b-0 lg:border-r">
-                <View className="flex-row items-center justify-between gap-3">
-                  <View>
-                    <Text className="text-lg font-semibold tracking-tight text-neutral-950">
-                      Inbox
-                    </Text>
-                    <Text className="mt-0.5 text-xs font-medium text-neutral-500">
-                      {filteredThreads.length} conversations
-                    </Text>
-                  </View>
-                  {/* <TouchableOpacity
-                    activeOpacity={0.85}
-                    className="h-10 w-10 items-center justify-center rounded-full bg-white"
-                  >
-                    <MoreHorizontal size={18} color="#525252" />
-                  </TouchableOpacity> */}
+                <View>
+                  <Text className="text-lg font-semibold tracking-tight text-neutral-950">
+                    Inbox
+                  </Text>
+                  <Text className="mt-0.5 text-xs font-medium text-neutral-500">
+                    {filteredThreads.length} conversations
+                  </Text>
                 </View>
 
                 <View className="mt-4 flex-row items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
@@ -298,16 +257,22 @@ export default function WebChatWorkspace({
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
                 >
+                  {chatsQuery.isLoading ? (
+                    <View className="items-center py-10">
+                      <ActivityIndicator color={Colors.common.BRAND} />
+                    </View>
+                  ) : null}
+
                   {filteredThreads.map((thread) => (
                     <ThreadRow
                       key={thread.id}
                       thread={thread}
-                      active={thread.id === selectedThread.id}
+                      active={thread.id === selectedThread?.id}
                       onPress={() => setSelectedThreadId(thread.id)}
                     />
                   ))}
 
-                  {filteredThreads.length === 0 ? (
+                  {!chatsQuery.isLoading && filteredThreads.length === 0 ? (
                     <View className="items-center rounded-2xl border border-dashed border-neutral-300 bg-white p-6">
                       <Text className="text-sm font-semibold text-neutral-900">
                         No conversations found
@@ -321,71 +286,111 @@ export default function WebChatWorkspace({
               </View>
 
               <View className="flex-1 bg-white">
-                <View className="flex-row items-center justify-between gap-4 border-b border-neutral-200 px-5 py-4">
-                  <View className="flex-row min-w-0 flex-1 items-center gap-3">
-                    <ChatAvatar thread={selectedThread} />
-                    <View className="min-w-0 flex-1">
-                      <Text numberOfLines={1} className="text-base font-semibold text-neutral-950">
-                        {selectedThread.name}
-                      </Text>
-                      <Text numberOfLines={1} className="mt-0.5 text-xs font-medium text-neutral-500">
-                        {selectedThread.role} - {selectedThread.status}
-                      </Text>
+                {selectedThread ? (
+                  <>
+                    <View className="flex-row items-center justify-between gap-4 border-b border-neutral-200 px-5 py-4">
+                      <View className="min-w-0 flex-1 flex-row items-center gap-3">
+                        <ChatAvatar thread={selectedThread} />
+                        <View className="min-w-0 flex-1">
+                          <Text
+                            numberOfLines={1}
+                            className="text-base font-semibold text-neutral-950"
+                          >
+                            {selectedThread.name}
+                          </Text>
+                          <Text
+                            numberOfLines={1}
+                            className="mt-0.5 text-xs font-medium text-neutral-500"
+                          >
+                            {selectedThread.job}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={openDetailRoute}
+                        className="rounded-xl bg-neutral-100 px-3 py-2"
+                      >
+                        <Text className="text-xs font-bold text-neutral-700">
+                          Open
+                        </Text>
+                      </TouchableOpacity>
                     </View>
-                  </View>
-                </View>
 
-                <ScrollView
-                  className="flex-1 bg-white px-5 py-5"
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 14, paddingBottom: 24 }}
-                >
-                  <View className="self-center rounded-full bg-neutral-100 px-3 py-1.5">
-                    <Text className="text-xs font-semibold text-neutral-500">
-                      {selectedThread.job}
+                    <ScrollView
+                      className="flex-1 bg-white px-5 py-5"
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 14, paddingBottom: 24 }}
+                    >
+                      <View className="self-center rounded-full bg-neutral-100 px-3 py-1.5">
+                        <Text className="text-xs font-semibold text-neutral-500">
+                          {selectedThread.job}
+                        </Text>
+                      </View>
+
+                      {messagesQuery.isLoading ? (
+                        <ActivityIndicator color={Colors.common.BRAND} />
+                      ) : null}
+
+                      {!messagesQuery.isLoading && messages.length === 0 ? (
+                        <Text className="text-center text-sm font-medium text-neutral-500">
+                          No messages yet.
+                        </Text>
+                      ) : null}
+
+                      {messages.map((message) => (
+                        <MessageBubble key={message.id} message={message} />
+                      ))}
+                    </ScrollView>
+
+                    <View className="border-t border-neutral-200 bg-white p-4">
+                      <View className="flex-row items-center gap-3 rounded-[24px] border border-neutral-200 bg-neutral-50 px-4 py-3">
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          className="h-10 w-10 items-center justify-center rounded-full bg-white"
+                        >
+                          <Paperclip size={18} color="#525252" />
+                        </TouchableOpacity>
+
+                        <TextInput
+                          value={draft}
+                          onChangeText={setDraft}
+                          placeholder="Type a message"
+                          placeholderTextColor="#A3A3A3"
+                          multiline
+                          className="max-h-28 min-h-[40px] flex-1 py-2 text-sm text-neutral-900 outline-none"
+                        />
+
+                        <TouchableOpacity
+                          onPress={handleSend}
+                          disabled={isSending || !draft.trim()}
+                          activeOpacity={0.9}
+                          style={{ backgroundColor: Colors.common.BRAND }}
+                          className="h-10 w-10 items-center justify-center rounded-full disabled:opacity-50"
+                        >
+                          {isSending ? (
+                            <ActivityIndicator color="#FFFFFF" />
+                          ) : (
+                            <Send size={17} color="#FFFFFF" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+
+                      <View className="mt-3 flex-row items-center gap-2">
+                        <CheckCircle2 size={14} color="#16A34A" />
+                        <Text className="text-xs font-medium text-neutral-500">
+                          Messages are linked to the selected job conversation.
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <View className="flex-1 items-center justify-center px-6">
+                    <Text className="text-sm font-semibold text-neutral-500">
+                      Select a conversation to start chatting.
                     </Text>
                   </View>
-
-                  {selectedThread.messages.map((message) => (
-                    <MessageBubble key={message.id} message={message} />
-                  ))}
-                </ScrollView>
-
-                <View className="border-t border-neutral-200 bg-white p-4">
-                  <View className="flex-row items-center gap-3 rounded-[24px] border border-neutral-200 bg-neutral-50 px-4 py-3">
-                    <TouchableOpacity
-                      activeOpacity={0.85}
-                      className="h-10 w-10 items-center justify-center rounded-full bg-white"
-                    >
-                      <Paperclip size={18} color="#525252" />
-                    </TouchableOpacity>
-
-                    <TextInput
-                      value={draft}
-                      onChangeText={setDraft}
-                      placeholder="Type a message"
-                      placeholderTextColor="#A3A3A3"
-                      multiline
-                      className="max-h-28 min-h-[40px] flex-1 py-2 text-sm text-neutral-900 outline-none"
-                    />
-
-                    <TouchableOpacity
-                      onPress={() => setDraft("")}
-                      activeOpacity={0.9}
-                      style={{ backgroundColor: Colors.common.BRAND }}
-                      className="h-10 w-10 items-center justify-center rounded-full"
-                    >
-                      <Send size={17} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View className="mt-3 flex-row items-center gap-2">
-                    <CheckCircle2 size={14} color="#16A34A" />
-                    <Text className="text-xs font-medium text-neutral-500">
-                      Messages are linked to the selected job conversation.
-                    </Text>
-                  </View>
-                </View>
+                )}
               </View>
             </View>
           </View>
