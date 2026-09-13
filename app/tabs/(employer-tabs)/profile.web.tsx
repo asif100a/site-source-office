@@ -138,15 +138,15 @@ export default function EmployerProfileWebScreen() {
             params: { origin: "employer" },
           }),
       },
-      {
-        icon: Star,
-        label: "Rating & Feedback",
-        onPress: () =>
-          router.push({
-            pathname: "/screens/profile/rating-feedback",
-            params: { origin: "employer" },
-          }),
-      },
+      // {
+      //   icon: Star,
+      //   label: "Rating & Feedback",
+      //   onPress: () =>
+      //     router.push({
+      //       pathname: "/screens/profile/rating-feedback",
+      //       params: { origin: "employer" },
+      //     }),
+      // },
       {
         icon: Copy,
         label: "Saved Workers",
