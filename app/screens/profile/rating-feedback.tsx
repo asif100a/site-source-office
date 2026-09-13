@@ -94,6 +94,8 @@ export default function RatingFeedbackScreen() {
   const jobs = getItems(jobsQuery.data);
   const reviews = getItems(reviewsQuery.data) as ReviewItem[];
   const summary = getResponseData(summaryQuery.data);
+  // console.log("reviews from the rating feedback screen: ", reviews);
+  // console.log("summary from the rating feedback screen: ", summary);
   const ratingGroups = summary?.ratingGroups ?? {};
   const totalReviews = Number(summary?.totalReviews ?? reviews.length ?? 0);
   const avgRating = Number(summary?.avgRating ?? 0);
@@ -166,7 +168,7 @@ export default function RatingFeedbackScreen() {
                   <View
                     className="h-1 bg-slate-400 rounded-full"
                     style={{
-                      width: `${totalReviews ? Math.max(5, (count / totalReviews) * 100) : 0}%`,
+                      width: `${totalReviews ? (count / totalReviews) * 100 : 0}%`,
                     }}
                   />
                 </View>

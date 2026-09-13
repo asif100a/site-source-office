@@ -35,6 +35,7 @@ export default function CompletedJobDetailScreen() {
   console.log("singleJobQuery from the completed job details screen: ", singleJobQuery);
   const rawJob = getSingleJobData(singleJobQuery.data);
   const jobDetails = rawJob ? mapSingleJobToActiveJobDetails(rawJob) : null;
+  console.log("jobDetails from the completed job details screen: ", jobDetails);
 
   const [activeSubTab, setActiveSubTab] = useState<"schedule" | "summary">(
     "schedule",
@@ -126,7 +127,7 @@ export default function CompletedJobDetailScreen() {
               )}
 
               <StandardButton
-                text="Write review"
+                text={jobDetails.isReviewed ? "Review written" : "Write review"}
                 style={{
                   backgroundColor: "#000000",
                   marginTop: 20,
@@ -135,6 +136,7 @@ export default function CompletedJobDetailScreen() {
                   minWidth: 120,
                 }}
                 onPress={() => setIsReviewModalOpen(true)}
+                disabled={jobDetails.isReviewed}
               />
             </>
           )}

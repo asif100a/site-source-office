@@ -265,7 +265,7 @@ export default function RatingFeedbackScreenWeb() {
                               style={{
                                 width: `${
                                   totalReviews
-                                    ? Math.max(5, (count / totalReviews) * 100)
+                                    ? (count / totalReviews) * 100
                                     : 0
                                 }%`,
                               }}
