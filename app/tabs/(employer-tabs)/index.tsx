@@ -222,11 +222,11 @@ export default function EmployerHomeScreen() {
             </View>
 
             <View className="pointer-events-none absolute inset-x-0 top-16 items-center pt-3">
-              <View className="rounded-full bg-[#2E2E2E] px-5 py-2">
+              {/* <View className="rounded-full bg-[#2E2E2E] px-5 py-2">
                 <Text className="text-xs font-bold text-white">
                   Drag the map to place your site
                 </Text>
-              </View>
+              </View> */}
             </View>
 
             <View className="absolute inset-x-4 bottom-4 rounded-[24px] bg-white px-4 py-4 shadow-sm">

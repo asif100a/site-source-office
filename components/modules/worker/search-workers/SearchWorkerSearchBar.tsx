@@ -8,7 +8,7 @@ export default function SearchWorkerSearchBar({
   setShowFilters,
 }: {
   searchQuery: string;
-  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  setSearchQuery: (value: string) => void;
   setShowFilters: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
