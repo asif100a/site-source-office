@@ -355,12 +355,12 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
 
                     <View className="border-t border-neutral-200 bg-white p-4">
                       <View className="flex-row items-center gap-3 rounded-[24px] border border-neutral-200 bg-neutral-50 px-4 py-3">
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                           activeOpacity={0.85}
                           className="h-10 w-10 items-center justify-center rounded-full bg-white"
                         >
                           <Paperclip size={18} color="#525252" />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
                         <TextInput
                           value={draft}

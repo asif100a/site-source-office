@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -20,10 +20,12 @@ import {
   Users,
   X,
 } from "lucide-react-native";
+import { useSelector } from "react-redux";
 import JobLocationLabel from "@/components/modules/employer/my-jobs/JobLocationLabel";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { Colors } from "@/constants/Colors";
-import { getWorkerLoginRoute } from "@/constants/authState";
+import { getActiveRole, getWorkerLoginRoute } from "@/constants/authState";
+import type { UserRole } from "@/constants/Routes";
 import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import { useGetSingleJobQuery } from "@/store/api/jobApi";
 import {
@@ -31,6 +33,8 @@ import {
   useGetJobApplicationQuery,
   useUpdatedJobApplicationStatusMutation,
 } from "@/store/api/jobApplicationApi";
+import type { RootState } from "@/store/store";
+import { getRoleFromToken } from "@/utils/authToken";
 import {
   formatAppliedJobDate,
   getJobApplications,
@@ -116,12 +120,21 @@ export default function NewJobDetailsWebScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const jobId = Array.isArray(id) ? id[0] : id;
   const isAuthenticated = useIsAuthenticated();
+  const token = useSelector((state: RootState) => state.auth.token);
+  const tokenRole = useMemo(
+    () => (token ? getRoleFromToken(token) : null),
+    [token],
+  );
+  const [storedRole, setStoredRole] = useState<UserRole | null>(null);
   const [applicationPage, setApplicationPage] = useState(1);
   const [activeActionId, setActiveActionId] = useState("");
+  const activeRole = tokenRole ?? storedRole;
+  const showApplicationSection = activeRole === "worker";
+  const showJobRequestsSection = activeRole === "employer";
   const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !jobId });
   const applicationsQuery = useGetJobApplicationQuery(
     { id: jobId ?? "", page: applicationPage, limit: APPLICATION_LIMIT },
-    { skip: !jobId },
+    { skip: !jobId || !showJobRequestsSection },
   );
   const [createJobApplication, { isLoading: isApplying }] =
     useCreateJobApplicationMutation();
@@ -137,7 +150,9 @@ export default function NewJobDetailsWebScreen() {
     APPLICATION_LIMIT,
   );
   const reviews = getJobReviews(job?.reviews);
-  const refreshing = jobQuery.isFetching || applicationsQuery.isFetching;
+  const refreshing =
+    jobQuery.isFetching ||
+    (showJobRequestsSection && applicationsQuery.isFetching);
   const coordinates = Array.isArray(job?.location?.coordinates)
     ? ([
         Number(job.location.coordinates[0]),
@@ -145,10 +160,24 @@ export default function NewJobDetailsWebScreen() {
       ] as [number, number])
     : undefined;
 
+  useEffect(() => {
+    let mounted = true;
+
+    void getActiveRole().then((role) => {
+      if (mounted) setStoredRole(role);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const refreshJob = async () => {
     await Promise.all([
       jobQuery.refetch(),
-      jobId ? applicationsQuery.refetch() : Promise.resolve(),
+      jobId && showJobRequestsSection
+        ? applicationsQuery.refetch()
+        : Promise.resolve(),
     ]);
   };
 
@@ -193,6 +222,7 @@ export default function NewJobDetailsWebScreen() {
         type: "success",
         text1: `Application ${status === "ACCEPTED" ? "accepted" : "rejected"}`,
       });
+      router.back();
     } catch (error) {
       Toast.show({
         type: "error",
@@ -298,22 +328,30 @@ export default function NewJobDetailsWebScreen() {
               </View>
             </View>
 
-            <View className="w-full rounded-2xl bg-white p-6 lg:w-[360px]">
-              <Text className="text-lg font-bold text-neutral-950">Application</Text>
-              <Text className="mt-2 text-sm leading-6 text-neutral-500">
-                Apply to this job or review worker requests for this posting.
-              </Text>
-              <TouchableOpacity
-                disabled={isApplying || isApplied}
-                onPress={handleApply}
-                className="mt-6 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-4 disabled:bg-neutral-400"
-              >
-                {isApplying ? <ActivityIndicator color="#FFFFFF" /> : null}
-                <Text className="text-sm font-bold text-white">
-                  {isApplying ? "Applying..." : isApplied ? "Applied" : "Apply for this job"}
+            {showApplicationSection ? (
+              <View className="w-full rounded-2xl bg-white p-6 lg:w-[360px]">
+                <Text className="text-lg font-bold text-neutral-950">
+                  Application
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <Text className="mt-2 text-sm leading-6 text-neutral-500">
+                  Apply to this job and send your profile to the employer.
+                </Text>
+                <TouchableOpacity
+                  disabled={isApplying || isApplied}
+                  onPress={handleApply}
+                  className="mt-6 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-4 disabled:bg-neutral-400"
+                >
+                  {isApplying ? <ActivityIndicator color="#FFFFFF" /> : null}
+                  <Text className="text-sm font-bold text-white">
+                    {isApplying
+                      ? "Applying..."
+                      : isApplied
+                        ? "Applied"
+                        : "Apply for this job"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
 
           <View className="mt-6 flex-col gap-6 lg:flex-row">
@@ -371,17 +409,19 @@ export default function NewJobDetailsWebScreen() {
             </View>
           </View>
 
-          <Applications
-            applications={applications}
-            isLoading={applicationsQuery.isLoading}
-            isError={applicationsQuery.isError}
-            isFetching={applicationsQuery.isFetching}
-            isUpdating={isUpdating}
-            activeActionId={activeActionId}
-            hasMore={hasMoreApplications}
-            onLoadMore={() => setApplicationPage((current) => current + 1)}
-            onStatusChange={handleApplicationStatus}
-          />
+          {showJobRequestsSection ? (
+            <Applications
+              applications={applications}
+              isLoading={applicationsQuery.isLoading}
+              isError={applicationsQuery.isError}
+              isFetching={applicationsQuery.isFetching}
+              isUpdating={isUpdating}
+              activeActionId={activeActionId}
+              hasMore={hasMoreApplications}
+              onLoadMore={() => setApplicationPage((current) => current + 1)}
+              onStatusChange={handleApplicationStatus}
+            />
+          ) : null}
 
           {reviews.length ? (
             <View className="mt-6 rounded-2xl bg-white p-6">
@@ -504,7 +544,7 @@ function Applications({
   hasMore: boolean;
   onLoadMore: () => void;
   onStatusChange: (id: string, status: "ACCEPTED" | "REJECTED") => void;
-}) {
+}) {  
   return (
     <View className="mt-6 rounded-2xl bg-white p-6">
       <View className="flex-row items-center justify-between gap-4">

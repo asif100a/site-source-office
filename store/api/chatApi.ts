@@ -42,21 +42,28 @@ export type ChatConversation = {
   updatedAt?: string;
 };
 
-type PaginatedResponse<T> = {
-  success?: boolean;
-  message?: string;
-  data?: T[] | { docs?: T[]; items?: T[]; results?: T[]; data?: T[] };
+type ChatMeta = {
+  page?: number;
+  limit?: number;
+  total?: number;
 };
 
-const unwrapList = <T>(response: PaginatedResponse<T> | T[] | undefined) => {
-  if (Array.isArray(response)) return response;
-  const data = response?.data;
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.docs)) return data.docs;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.results)) return data.results;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
+type ChatListResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    meta?: ChatMeta;
+    chats?: ChatConversation[];
+  };
+};
+
+type ChatMessagesResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    meta?: ChatMeta;
+    messages?: ChatMessage[];
+  };
 };
 
 export const chatApi = baseApi.injectEndpoints({
@@ -70,8 +77,8 @@ export const chatApi = baseApi.injectEndpoints({
           limit: args?.limit ?? 20,
         },
       }),
-      transformResponse: (response: PaginatedResponse<ChatConversation>) =>
-        unwrapList(response),
+      transformResponse: (response: ChatListResponse) =>
+        response.data?.chats ?? [],
       providesTags: [tagTypes.chat],
     }),
     getChatMessages: builder.query<
@@ -83,8 +90,8 @@ export const chatApi = baseApi.injectEndpoints({
         method: "GET",
         params: { page, limit },
       }),
-      transformResponse: (response: PaginatedResponse<ChatMessage>) =>
-        unwrapList(response).slice().reverse(),
+      transformResponse: (response: ChatMessagesResponse) =>
+        (response.data?.messages ?? []).slice().reverse(),
       providesTags: (_result, _error, arg) => [
         { type: tagTypes.chat, id: arg.conversationId },
       ],
