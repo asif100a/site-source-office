@@ -14,6 +14,7 @@ import Toast from "react-native-toast-message";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/store";
+import PushNotificationRegistrar from "@/components/modules/common/PushNotificationRegistrar";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -65,6 +66,7 @@ function RootLayoutNav() {
               <Stack.Screen name="index" />
               <Stack.Screen name="auth" />
             </Stack>
+            <PushNotificationRegistrar />
             <Toast />
           </GluestackUIProvider>
           {/*

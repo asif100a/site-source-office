@@ -4,6 +4,13 @@ import { baseApi } from "./_base/baseApi";
 
 const BASE_POINT = "/notifications";
 
+export type RegisterPushTokenPayload = {
+  token: string;
+  provider: "expo";
+  platform: "ios" | "android" | "web" | "windows" | "macos";
+  installationId: string;
+};
+
 export const notificationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getNotifications: builder.query<
@@ -50,7 +57,7 @@ export const notificationApi = baseApi.injectEndpoints({
     }),
     registerPushToken: builder.mutation<
       any,
-      any
+      RegisterPushTokenPayload
     >({
       query: (body) => ({
         url: PUSH_TOKEN_REGISTRATION_PATH || '/push-token',

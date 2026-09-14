@@ -67,6 +67,7 @@ function withReactNativeMapsPlugin(plugins, googleMapsApiKey) {
 const googleMapsApiKey =
   getEnvValue("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ||
   getEnvValue("GOOGLE_MAPS_API_KEY");
+const easProjectId = getEnvValue("EXPO_PUBLIC_EAS_PROJECT_ID");
 
 module.exports = ({ config }) => ({
   ...config,
@@ -74,6 +75,15 @@ module.exports = ({ config }) => ({
   extra: {
     ...config.extra,
     ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
+    ...(easProjectId
+      ? {
+          projectId: easProjectId,
+          eas: {
+            ...config.extra?.eas,
+            projectId: easProjectId,
+          },
+        }
+      : {}),
   },
   ios: {
     ...config.ios,
