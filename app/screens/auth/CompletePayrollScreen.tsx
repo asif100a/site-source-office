@@ -112,13 +112,16 @@ export default function CompletePayrollScreen({
           dateTo: today,
         }),
       });
+      // console.log("response of startPayment: ", response);
       const body = (await response.json()) as PaymentResponse & { detail?: string };
+      console.log("body of startPayment: ", body);
       if (!response.ok) throw new Error(body.detail ?? 'Unable to start payment.');
 
       setStatusText('Payroll request submitted. Connecting to the payment provider…');
       pollTimer.current = setInterval(() => void checkPaymentStatus(), 5_000);
       void checkPaymentStatus();
     } catch (error) {
+      console.error('error starting payment: ', error);
       setErrorMessage(error instanceof Error ? error.message : 'Unable to start payment.');
       setSubStep('failed');
     }

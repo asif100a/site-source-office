@@ -35,6 +35,8 @@ export interface GoogleLoginRequest {
   isLegalTermsAccepted: boolean;
 }
 
+export interface AppleLoginRequest extends GoogleLoginRequest {}
+
 export interface RegisterData {
   name?: string;
   email?: string;

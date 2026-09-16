@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole } from "@/constants/Routes";
-import { useRegisterMutation } from "@/store/api/authApi";
+import { useGoogleLoginMutation, useRegisterMutation } from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
 import AuthWebShell from "./_web-shell";
 
@@ -20,6 +22,14 @@ interface RegisterSsoScreenProps {
   onBackPress?: () => void;
 }
 
+WebBrowser.maybeCompleteAuthSession();
+
+const googleClientIds = {
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+};
+
 export default function RegisterSsoScreenWeb({
   onContinue,
   onLoginPress,
@@ -29,6 +39,12 @@ export default function RegisterSsoScreenWeb({
   const params = useLocalSearchParams();
   const activeRole = normalizeUserRole(params.role);
   const [register, { isLoading }] = useRegisterMutation();
+  const [googleLogin] = useGoogleLoginMutation();
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
+    ...googleClientIds,
+    scopes: ["openid", "profile", "email"],
+  });
   const { control, handleSubmit } = useForm({
     defaultValues: {
       name: "",
@@ -38,8 +54,60 @@ export default function RegisterSsoScreenWeb({
     },
   });
 
-  const handleProviderContinue = (provider: "google" | "apple") => {
-    onContinue?.({ provider });
+  const getIdentityFromToken = (token: string) => {
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return {};
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
+        email?: string;
+        name?: string;
+      };
+    } catch {
+      return {};
+    }
+  };
+
+  const handleGoogleContinue = async () => {
+    if (!googleClientIds.webClientId) {
+      Toast.show({ type: "error", text1: "Google sign-in is not configured", text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env." });
+      return;
+    }
+    if (!googleRequest) return;
+
+    setSsoLoading(true);
+    try {
+      const result = await promptGoogle();
+      if (result.type !== "success") return;
+      const token = result.params.id_token;
+      if (!token) throw new Error("Google did not return an identity token.");
+      const identity = getIdentityFromToken(token);
+      if (!identity.email) throw new Error("Google did not return an email address.");
+      const response = await googleLogin({
+        name: identity.name || identity.email.split("@")[0],
+        email: identity.email,
+        token,
+        isLegalTermsAccepted: true,
+      }).unwrap();
+      const user = response.data?.user;
+      onContinue?.({
+        provider: "google",
+        email: user?.email ?? identity.email,
+        name: user?.name ?? identity.name,
+      });
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
+    } finally {
+      setSsoLoading(false);
+    }
+  };
+
+  const handleAppleContinue = () => {
+    Toast.show({
+      type: "error",
+      text1: "Apple web sign-in needs server setup",
+      text2: "Configure an Apple web OAuth callback on the backend before enabling this button.",
+    });
   };
 
   const handleManualContinue = async (data: {
@@ -165,18 +233,20 @@ export default function RegisterSsoScreenWeb({
 
       <View className="grid gap-3 md:grid-cols-2">
         <TouchableOpacity
-          onPress={() => handleProviderContinue("google")}
+          onPress={() => void handleGoogleContinue()}
           activeOpacity={0.9}
+          disabled={isLoading || ssoLoading || !googleRequest}
           className="items-center justify-center rounded-2xl border border-neutral-200 bg-white py-4"
         >
           <Text className="text-base font-semibold text-[#1B2530]">
-            Continue with Google
+            {ssoLoading ? "Connecting to Google..." : "Continue with Google"}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => handleProviderContinue("apple")}
+          onPress={handleAppleContinue}
           activeOpacity={0.9}
+          disabled={isLoading || ssoLoading}
           className="items-center justify-center rounded-2xl bg-[#1B2530] py-4"
         >
           <Text className="text-base font-semibold text-white">

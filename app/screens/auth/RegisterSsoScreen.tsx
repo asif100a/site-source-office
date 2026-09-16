@@ -1,5 +1,8 @@
-import React from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import { Platform, ScrollView, TouchableOpacity, View } from "react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
@@ -7,7 +10,11 @@ import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import Toast from "react-native-toast-message";
 import { normalizeUserRole } from "@/constants/Routes";
-import { useRegisterMutation } from "@/store/api/authApi";
+import {
+  useAppleLoginMutation,
+  useGoogleLoginMutation,
+  useRegisterMutation,
+} from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
 
 interface RegisterSsoScreenProps {
@@ -20,6 +27,14 @@ interface RegisterSsoScreenProps {
   onBackPress?: () => void;
 }
 
+WebBrowser.maybeCompleteAuthSession();
+
+const googleClientIds = {
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+};
+
 export default function RegisterSsoScreen({
   onContinue,
   onLoginPress,
@@ -28,6 +43,13 @@ export default function RegisterSsoScreen({
   const params = useLocalSearchParams();
   const activeRole = normalizeUserRole(params.role);
   const [register, { isLoading }] = useRegisterMutation();
+  const [googleLogin] = useGoogleLoginMutation();
+  const [appleLogin] = useAppleLoginMutation();
+  const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
+  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
+    ...googleClientIds,
+    scopes: ["openid", "profile", "email"],
+  });
   const { control, handleSubmit } = useForm({
     defaultValues: {
       name: "",
@@ -37,8 +59,97 @@ export default function RegisterSsoScreen({
     },
   });
 
-  const handleContinue = (provider: "google" | "apple") => {
-    onContinue?.({ provider });
+  const getIdentityFromToken = (token: string) => {
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return {};
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
+        email?: string;
+        name?: string;
+      };
+    } catch {
+      return {};
+    }
+  };
+
+  const completeSsoRegistration = async (
+    provider: "google" | "apple",
+    token: string,
+    identity: { email?: string; name?: string },
+  ) => {
+    if (!identity.email) {
+      throw new Error("Your provider did not return an email address. Please use a different sign-in method.");
+    }
+
+    const payload = {
+      name: identity.name || identity.email.split("@")[0],
+      email: identity.email,
+      token,
+      isLegalTermsAccepted: true,
+    };
+    const response = provider === "google"
+      ? await googleLogin(payload).unwrap()
+      : await appleLogin(payload).unwrap();
+    const user = response.data?.user;
+    onContinue?.({
+      provider,
+      email: user?.email ?? identity.email,
+      name: user?.name ?? identity.name,
+    });
+  };
+
+  const handleGoogleContinue = async () => {
+    if (!googleClientIds.androidClientId && !googleClientIds.iosClientId && !googleClientIds.webClientId) {
+      Toast.show({ type: "error", text1: "Google sign-in is not configured", text2: "Add the Google OAuth client IDs to .env." });
+      return;
+    }
+    if (!googleRequest) return;
+
+    setSsoLoading("google");
+    try {
+      const result = await promptGoogle();
+      if (result.type !== "success") return;
+      const token = result.params.id_token;
+      if (!token) throw new Error("Google did not return an identity token.");
+      await completeSsoRegistration("google", token, getIdentityFromToken(token));
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
+    } finally {
+      setSsoLoading(null);
+    }
+  };
+
+  const handleAppleContinue = async () => {
+    if (Platform.OS !== "ios" || !(await AppleAuthentication.isAvailableAsync())) {
+      Toast.show({ type: "error", text1: "Apple sign-in is unavailable", text2: "Apple sign-in is available in the iOS app." });
+      return;
+    }
+
+    setSsoLoading("apple");
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error("Apple did not return an identity token.");
+      const tokenIdentity = getIdentityFromToken(credential.identityToken);
+      const name = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(" ");
+      await completeSsoRegistration("apple", credential.identityToken, {
+        email: credential.email ?? tokenIdentity.email,
+        name: name || tokenIdentity.name,
+      });
+    } catch (error: any) {
+      if (error?.code !== "ERR_REQUEST_CANCELED") {
+        Toast.show({ type: "error", text1: "Apple sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
+      }
+    } finally {
+      setSsoLoading(null);
+    }
   };
 
   const handleManualContinue = async (data: {
@@ -171,24 +282,24 @@ export default function RegisterSsoScreen({
 
           <View className="gap-4">
             <TouchableOpacity
-              onPress={() => handleContinue("google")}
+              onPress={() => void handleGoogleContinue()}
               activeOpacity={0.9}
-              disabled={isLoading}
+              disabled={isLoading || ssoLoading !== null || !googleRequest}
               className="w-full border border-neutral-200 bg-white py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-[#1B2530] text-base font-semibold">
-                Continue with Google
+                {ssoLoading === "google" ? "Connecting to Google..." : "Continue with Google"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => handleContinue("apple")}
+              onPress={() => void handleAppleContinue()}
               activeOpacity={0.9}
-              disabled={isLoading}
+              disabled={isLoading || ssoLoading !== null}
               className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-white text-base font-semibold">
-                Continue with Apple
+                {ssoLoading === "apple" ? "Connecting to Apple..." : "Continue with Apple"}
               </Text>
             </TouchableOpacity>
           </View>

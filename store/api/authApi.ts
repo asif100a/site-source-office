@@ -1,5 +1,6 @@
 import {
   AuthResponse,
+  AppleLoginRequest,
   GoogleLoginRequest,
   LoginRequest,
   RegisterData,
@@ -31,6 +32,14 @@ export const authApi = baseApi.injectEndpoints({
     googleLogin: builder.mutation<AuthResponse, GoogleLoginRequest>({
       query: (credentials) => ({
         url: BASE_POINT + "/google",
+        method: "POST",
+        body: credentials,
+      }),
+      invalidatesTags: [tagTypes.auth, tagTypes.user, tagTypes.profile],
+    }),
+    appleLogin: builder.mutation<AuthResponse, AppleLoginRequest>({
+      query: (credentials) => ({
+        url: BASE_POINT + "/apple",
         method: "POST",
         body: credentials,
       }),
@@ -180,6 +189,7 @@ export const authApi = baseApi.injectEndpoints({
 export const {
   useLoginMutation,
   useGoogleLoginMutation,
+  useAppleLoginMutation,
   useRegisterMutation,
   useVerifyOTPMutation,
   useResendOTPMutation,
