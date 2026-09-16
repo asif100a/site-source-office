@@ -271,7 +271,12 @@ export default function AuthFlowWeb() {
           />
         );
       case "complete_payroll":
-        return <CompletePayrollScreen onComplete={goToLoginAfterRegistration} />;
+        return (
+          <CompletePayrollScreen
+            onComplete={goToLoginAfterRegistration}
+            paymentUserId={registrationEmail}
+          />
+        );
       case "review":
         return <ReviewScreen onBackToLogin={() => setStep("login")} />;
       default:

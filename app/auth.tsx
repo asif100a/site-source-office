@@ -269,7 +269,12 @@ export default function AuthFlow() {
           />
         );
       case "complete_payroll":
-        return <CompletePayrollScreen onComplete={goToLoginAfterRegistration} />;
+        return (
+          <CompletePayrollScreen
+            onComplete={goToLoginAfterRegistration}
+            paymentUserId={registrationEmail}
+          />
+        );
       case "review":
         return (
           <ReviewScreen
