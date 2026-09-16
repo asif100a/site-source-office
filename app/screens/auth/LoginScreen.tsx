@@ -1,5 +1,8 @@
-import React from "react";
-import { View, TouchableOpacity, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { Platform, View, TouchableOpacity, ScrollView } from "react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
 import Toast from "react-native-toast-message";
@@ -8,7 +11,11 @@ import { Text } from "@/components/ui/text";
 import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
-import { useLoginMutation } from "@/store/api/authApi";
+import {
+  useAppleLoginMutation,
+  useGoogleLoginMutation,
+  useLoginMutation,
+} from "@/store/api/authApi";
 import { logout, setToken } from "@/store/slices/authSlice";
 import {
   getDashboardRouteForRole,
@@ -25,6 +32,14 @@ interface LoginScreenProps {
   onLoginPress?: (email: string) => void;
 }
 
+WebBrowser.maybeCompleteAuthSession();
+
+const googleClientIds = {
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+};
+
 export default function LoginScreen({
   role,
   onRegisterPress,
@@ -35,6 +50,13 @@ export default function LoginScreen({
   const dispatch = useDispatch();
   const activeRole = normalizeUserRole(role);
   const [login, { isLoading }] = useLoginMutation();
+  const [googleLogin] = useGoogleLoginMutation();
+  const [appleLogin] = useAppleLoginMutation();
+  const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
+  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
+    ...googleClientIds,
+    scopes: ["openid", "profile", "email"],
+  });
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -97,11 +119,152 @@ export default function LoginScreen({
     }
   };
 
-  const handleSsoLogin = () => {
+  const getIdentityFromToken = (token: string) => {
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return {};
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
+        email?: string;
+        name?: string;
+      };
+    } catch {
+      return {};
+    }
+  };
+
+  const completeSsoLogin = async (
+    provider: "google" | "apple",
+    token: string,
+    identity: { email?: string; name?: string },
+  ) => {
+    if (!identity.email) {
+      throw new Error(
+        "Your provider did not return an email address. Please use a different sign-in method.",
+      );
+    }
+
+    const payload = {
+      name: identity.name || identity.email.split("@")[0],
+      email: identity.email,
+      token,
+      isLegalTermsAccepted: true,
+    };
+    const response =
+      provider === "google"
+        ? await googleLogin(payload).unwrap()
+        : await appleLogin(payload).unwrap();
+
+    const appToken =
+      response.accessToken ??
+      response.data?.accessToken ??
+      (response.data as any)?.token;
+    const tokenRole = appToken ? getRoleFromToken(appToken) : null;
+
+    if (!appToken || !tokenRole || tokenRole !== activeRole) {
+      dispatch(logout());
+      await AsyncStorage.removeItem("token");
+      Toast.show({
+        type: "error",
+        text1: "Wrong account type",
+        text2: `This account is not registered as a ${activeRole}.`,
+      });
+      return;
+    }
+
+    dispatch(setToken(appToken));
+    await AsyncStorage.setItem("token", appToken);
+
+    Toast.show({
+      type: "success",
+      text1: "Login successful",
+      text2: response.message ?? "Welcome back.",
+    });
+
     if (onLoginPress) {
-      onLoginPress("");
+      onLoginPress(identity.email);
     } else {
       router.replace(getDashboardRouteForRole(activeRole));
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (
+      !googleClientIds.androidClientId &&
+      !googleClientIds.iosClientId &&
+      !googleClientIds.webClientId
+    ) {
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in is not configured",
+        text2: "Add the Google OAuth client IDs to .env.",
+      });
+      return;
+    }
+    if (!googleRequest) return;
+
+    setSsoLoading("google");
+    try {
+      const result = await promptGoogle();
+      if (result.type !== "success") return;
+      const token = result.params.id_token;
+      if (!token) throw new Error("Google did not return an identity token.");
+      await completeSsoLogin("google", token, getIdentityFromToken(token));
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in failed",
+        text2:
+          error?.data?.message ?? error?.message ?? "Please try again.",
+      });
+    } finally {
+      setSsoLoading(null);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    if (Platform.OS !== "ios" || !(await AppleAuthentication.isAvailableAsync())) {
+      Toast.show({
+        type: "error",
+        text1: "Apple sign-in is unavailable",
+        text2: "Apple sign-in is available in the iOS app.",
+      });
+      return;
+    }
+
+    setSsoLoading("apple");
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        throw new Error("Apple did not return an identity token.");
+      }
+      const tokenIdentity = getIdentityFromToken(credential.identityToken);
+      const name = [
+        credential.fullName?.givenName,
+        credential.fullName?.familyName,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      await completeSsoLogin("apple", credential.identityToken, {
+        email: credential.email ?? tokenIdentity.email,
+        name: name || tokenIdentity.name,
+      });
+    } catch (error: any) {
+      if (error?.code !== "ERR_REQUEST_CANCELED") {
+        Toast.show({
+          type: "error",
+          text1: "Apple sign-in failed",
+          text2:
+            error?.data?.message ?? error?.message ?? "Please try again.",
+        });
+      }
+    } finally {
+      setSsoLoading(null);
     }
   };
 
@@ -210,22 +373,24 @@ export default function LoginScreen({
             </View>
 
             <TouchableOpacity
-              onPress={handleSsoLogin}
+              onPress={() => void handleGoogleLogin()}
               activeOpacity={0.9}
+              disabled={isLoading || ssoLoading !== null || !googleRequest}
               className="w-full border border-neutral-200 bg-white py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-[#1B2530] text-base font-semibold">
-                Sign in with Google
+                {ssoLoading === "google" ? "Connecting to Google..." : "Sign in with Google"}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={handleSsoLogin}
+              onPress={() => void handleAppleLogin()}
               activeOpacity={0.9}
+              disabled={isLoading || ssoLoading !== null}
               className="w-full bg-[#1B2530] py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-white text-base font-semibold">
-                Sign in with Apple
+                {ssoLoading === "apple" ? "Connecting to Apple..." : "Sign in with Apple"}
               </Text>
             </TouchableOpacity>
           </View>

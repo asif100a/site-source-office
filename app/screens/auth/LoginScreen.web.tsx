@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import { useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
@@ -8,7 +10,10 @@ import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text as UiText } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
-import { useLoginMutation } from "@/store/api/authApi";
+import {
+  useGoogleLoginMutation,
+  useLoginMutation,
+} from "@/store/api/authApi";
 import { logout, setToken } from "@/store/slices/authSlice";
 import {
   getDashboardRouteForRole,
@@ -26,6 +31,14 @@ interface LoginScreenProps {
   onLoginPress?: (email: string) => void;
 }
 
+WebBrowser.maybeCompleteAuthSession();
+
+const googleClientIds = {
+  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+};
+
 export default function LoginScreenWeb({
   role,
   onRegisterPress,
@@ -36,6 +49,12 @@ export default function LoginScreenWeb({
   const dispatch = useDispatch();
   const activeRole = normalizeUserRole(role);
   const [login, { isLoading }] = useLoginMutation();
+  const [googleLogin] = useGoogleLoginMutation();
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
+    ...googleClientIds,
+    scopes: ["openid", "profile", "email"],
+  });
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -96,12 +115,99 @@ export default function LoginScreenWeb({
     }
   };
 
-  const handleSsoLogin = () => {
-    if (onLoginPress) {
-      onLoginPress("");
-    } else {
-      router.replace(getDashboardRouteForRole(activeRole));
+  const getIdentityFromToken = (token: string) => {
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return {};
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
+        email?: string;
+        name?: string;
+      };
+    } catch {
+      return {};
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!googleClientIds.webClientId) {
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in is not configured",
+        text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env.",
+      });
+      return;
+    }
+    if (!googleRequest) return;
+
+    setSsoLoading(true);
+    try {
+      const result = await promptGoogle();
+      if (result.type !== "success") return;
+      const providerToken = result.params.id_token;
+      if (!providerToken) {
+        throw new Error("Google did not return an identity token.");
+      }
+      const identity = getIdentityFromToken(providerToken);
+      if (!identity.email) {
+        throw new Error("Google did not return an email address.");
+      }
+
+      const response = await googleLogin({
+        name: identity.name || identity.email.split("@")[0],
+        email: identity.email,
+        token: providerToken,
+        isLegalTermsAccepted: true,
+      }).unwrap();
+      const appToken =
+        response.accessToken ??
+        response.data?.accessToken ??
+        (response.data as any)?.token;
+      const tokenRole = appToken ? getRoleFromToken(appToken) : null;
+
+      if (!appToken || !tokenRole || tokenRole !== activeRole) {
+        dispatch(logout());
+        await AsyncStorage.removeItem("token");
+        Toast.show({
+          type: "error",
+          text1: "Wrong account type",
+          text2: `This account is not registered as a ${activeRole}.`,
+        });
+        return;
+      }
+
+      dispatch(setToken(appToken));
+      await AsyncStorage.setItem("token", appToken);
+
+      Toast.show({
+        type: "success",
+        text1: "Login successful",
+        text2: response.message ?? "Welcome back.",
+      });
+
+      if (onLoginPress) {
+        onLoginPress(identity.email);
+      } else {
+        router.replace(getDashboardRouteForRole(activeRole));
+      }
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in failed",
+        text2:
+          error?.data?.message ?? error?.message ?? "Please try again.",
+      });
+    } finally {
+      setSsoLoading(false);
+    }
+  };
+
+  const handleAppleLogin = () => {
+    Toast.show({
+      type: "error",
+      text1: "Apple web sign-in needs server setup",
+      text2: "Configure an Apple web OAuth callback on the backend before enabling this button.",
+    });
   };
 
   const handleRegister = () => {
@@ -177,7 +283,7 @@ export default function LoginScreenWeb({
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
           activeOpacity={0.9}
-          disabled={isLoading}
+          disabled={isLoading || ssoLoading}
           className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#1B2530] py-4"
         >
           <UiText className="text-base font-semibold text-white">
@@ -196,18 +302,20 @@ export default function LoginScreenWeb({
 
         <View className="grid gap-3 md:grid-cols-2">
           <TouchableOpacity
-            onPress={handleSsoLogin}
+            onPress={() => void handleGoogleLogin()}
             activeOpacity={0.9}
+            disabled={isLoading || ssoLoading || !googleRequest}
             className="items-center justify-center rounded-2xl border border-neutral-200 bg-white py-4"
           >
             <UiText className="text-base font-semibold text-[#1B2530]">
-              Sign in with Google
+              {ssoLoading ? "Connecting to Google..." : "Sign in with Google"}
             </UiText>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={handleSsoLogin}
+            onPress={handleAppleLogin}
             activeOpacity={0.9}
+            disabled={isLoading || ssoLoading}
             className="items-center justify-center rounded-2xl bg-[#1B2530] py-4"
           >
             <UiText className="text-base font-semibold text-white">
