@@ -14,15 +14,28 @@ const formatDate = (value: unknown) => {
 
 const getWorkingHoursLabel = (workingHours: any[]) => {
   if (!Array.isArray(workingHours) || !workingHours.length) {
-    return "Not set";
+    return ["Not set"];
   }
 
-  const firstSchedule = workingHours[0];
-  if (!firstSchedule?.startTime || !firstSchedule?.endTime) {
-    return "Not set";
-  }
+  const groupedSchedules = workingHours.reduce<Record<string, string[]>>(
+    (groups, schedule) => {
+      if (!schedule?.day || !schedule?.startTime || !schedule?.endTime) {
+        return groups;
+      }
 
-  return `${firstSchedule.startTime} - ${firstSchedule.endTime}`;
+      const timeLabel = `${schedule.startTime} - ${schedule.endTime}`;
+      groups[timeLabel] = [...(groups[timeLabel] ?? []), schedule.day];
+
+      return groups;
+    },
+    {},
+  );
+
+  const labels = Object.entries(groupedSchedules).map(
+    ([timeLabel, days]) => `${days.join(", ")} · ${timeLabel}`,
+  );
+
+  return labels.length ? labels : ["Not set"];
 };
 
 const getDaysPerWeekLabel = (workingHours: any[]) => {
@@ -34,6 +47,8 @@ const getDaysPerWeekLabel = (workingHours: any[]) => {
 };
 
 export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
+  const workingHoursLabels = getWorkingHoursLabel(jobDetails?.workingHours);
+
   return (
     <View>
       <Text className="text-neutral-900 font-extrabold text-base mb-3.5">
@@ -58,9 +73,16 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
         </View>
         <View className="flex-row justify-between items-center p-4 border-b border-neutral-50">
           <Text className="text-neutral-400 text-sm font-semibold">Hours</Text>
-          <Text className="text-neutral-800 text-sm font-extrabold">
-            {getWorkingHoursLabel(jobDetails?.workingHours)}
-          </Text>
+          <View className="ml-4 flex-1 items-end gap-1">
+            {workingHoursLabels.map((label) => (
+              <Text
+                key={label}
+                className="text-right text-sm font-extrabold text-neutral-800"
+              >
+                {label}
+              </Text>
+            ))}
+          </View>
         </View>
         <View className="flex-row justify-between items-center p-4 border-b border-neutral-50">
           <Text className="text-neutral-400 text-sm font-semibold">
@@ -70,14 +92,14 @@ export default function WorkerProjectSchedule({jobDetails}: {jobDetails: any}) {
             {getDaysPerWeekLabel(jobDetails?.workingHours)}
           </Text>
         </View>
-        <View className="flex-row justify-between items-center p-4">
+        {/* <View className="flex-row justify-between items-center p-4">
           <Text className="text-neutral-400 text-sm font-semibold">
             Next invoice
           </Text>
           <Text className="text-neutral-800 text-sm font-extrabold">
             Not set
           </Text>
-        </View>
+        </View> */}
       </View>
     </View>
   );

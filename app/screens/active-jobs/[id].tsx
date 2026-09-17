@@ -148,7 +148,7 @@ export default function ActiveJobDetailScreen() {
   >("form");
 
   const jobDetails = getSingleJobData(singleJobQuery.data);
-  // console.log("jobDetails from the active job details screen: ", jobDetails);
+  console.log("jobDetails from the active job details screen: ", jobDetails);
 
   const openWorkerDetails = (workerId: string) => {
     router.push({

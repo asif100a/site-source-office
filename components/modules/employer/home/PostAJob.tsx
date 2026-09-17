@@ -217,8 +217,12 @@ export default function PostAJob({
       Toast.show({ type: "error", text1: "Job title is required" });
       return;
     }
-    if (!selectedTrades.length || !jobDateRange.from || !jobDateRange.to) {
-      Toast.show({ type: "error", text1: "Complete the job details first" });
+    if(!selectedTrades.length) {
+      Toast.show({ type: "error", text1: "Select at least one trade" });
+      return;
+    }
+    if (!jobDateRange.from || !jobDateRange.to) {
+      Toast.show({ type: "error", text1: "Select a valid date range" });
       return;
     }
     if (!locationValid || !locationCoordinates) {
