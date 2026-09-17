@@ -208,7 +208,7 @@ export default function PostAJob({
   }, [selectedTrades]);
 
   const totalEstimate = useMemo(
-    () => hourlyRate * 9 * Math.max(workingDays, 1) * workersNeeded,
+    () => hourlyRate * 9 * workingDays * workersNeeded,
     [hourlyRate, workersNeeded, workingDays],
   );
 
@@ -225,8 +225,12 @@ export default function PostAJob({
       Toast.show({ type: "error", text1: "Select a valid site location" });
       return;
     }
-    if (jobDateRange.from > jobDateRange.to) {
+    if (startOfLocalDay(jobDateRange.from) > startOfLocalDay(jobDateRange.to)) {
       Toast.show({ type: "error", text1: "Finish date must be after start date" });
+      return;
+    }
+    if (!notes.trim()) {
+      Toast.show({ type: "error", text1: "Job notes are required" });
       return;
     }
     const workingHours = WORKING_DAY_OPTIONS.filter(
@@ -236,6 +240,13 @@ export default function PostAJob({
       Toast.show({ type: "error", text1: "Enter valid job rate, workers, and hours" });
       return;
     }
+    if (workingDays <= 0) {
+      Toast.show({
+        type: "error",
+        text1: "Select working days inside the date range",
+      });
+      return;
+    }
 
     const created = await onCreateJobPost({
       title: title.trim(),
@@ -243,8 +254,8 @@ export default function PostAJob({
       hourlyRate,
       workersNeeded,
       location: { type: "Point", coordinates: locationCoordinates },
-      startDate: jobDateRange.from.toISOString(),
-      endDate: jobDateRange.to.toISOString(),
+      startDate: formatDateForPayload(jobDateRange.from),
+      endDate: formatDateForPayload(jobDateRange.to),
       workingHours: workingHours.map((day) => ({
         day: day.label,
         startTime: formatTime(workingDaySchedule[day.key].startTime),
@@ -612,8 +623,8 @@ export default function PostAJob({
             </Text>
           </View>
 
-          <Text className="max-w-[150px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
-            {workersNeeded} x labourer · {workingDays || 0} days · 9 hr shifts
+          <Text className="max-w-[170px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
+            {workersNeeded} x labourer · {workingDays || 0} working days · 9 hr shifts
           </Text>
         </View>
       </View>
@@ -697,6 +708,14 @@ const countSelectedDatesInRange = (range: JobDateRange) => {
   const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
   return Math.round((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
+};
+
+const formatDateForPayload = (value: Date) => {
+  const date = startOfLocalDay(value);
+
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  ).toISOString();
 };
 
 const formatTime = (value: Date) =>

@@ -150,8 +150,12 @@ export default function WebPostJobSection({
       Toast.show({ type: "error", text1: "Select a valid site location" });
       return;
     }
-    if (jobDateRange.from > jobDateRange.to) {
+    if (startOfLocalDay(jobDateRange.from) > startOfLocalDay(jobDateRange.to)) {
       Toast.show({ type: "error", text1: "Finish date must be after start date" });
+      return;
+    }
+    if (!notes.trim()) {
+      Toast.show({ type: "error", text1: "Job notes are required" });
       return;
     }
     const workingHours = WORKING_DAY_OPTIONS.filter(
@@ -161,6 +165,13 @@ export default function WebPostJobSection({
       Toast.show({ type: "error", text1: "Enter valid job rate, workers, and hours" });
       return;
     }
+    if (workingDays <= 0) {
+      Toast.show({
+        type: "error",
+        text1: "Select working days inside the date range",
+      });
+      return;
+    }
 
     const created = await onCreateJobPost({
       title: title.trim(),
@@ -168,8 +179,8 @@ export default function WebPostJobSection({
       hourlyRate,
       workersNeeded,
       location: { type: "Point", coordinates: locationCoordinates },
-      startDate: jobDateRange.from.toISOString(),
-      endDate: jobDateRange.to.toISOString(),
+      startDate: formatDateForPayload(jobDateRange.from),
+      endDate: formatDateForPayload(jobDateRange.to),
       workingHours: workingHours.map((day) => ({
         day: day.label,
         startTime: formatTime(workingDaySchedule[day.key].startTime),
@@ -641,4 +652,12 @@ const countSelectedDatesInRange = (range: JobDateRange) => {
   const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
   return Math.round((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
+};
+
+const formatDateForPayload = (value: Date) => {
+  const date = startOfLocalDay(value);
+
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  ).toISOString();
 };
