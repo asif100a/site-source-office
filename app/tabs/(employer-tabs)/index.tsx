@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import type { Region } from "react-native-maps";
@@ -37,6 +37,7 @@ export const SITE_REGION: Region = {
 };
 
 const WEEKEND_DAYS = new Set(["saturday", "sunday"]);
+const REGION_CHANGE_EPSILON = 0.000001;
 
 const getWeekendPayValidationMessage = (payload: JobPostPayload) => {
   const weekendWithoutPremiumPay = payload.workingHours.find((schedule) => {
@@ -76,6 +77,7 @@ export default function EmployerHomeScreen() {
   const NativeMapView = nativeMapComponents?.MapView;
   const NativeMarker = nativeMapComponents?.Marker;
   const NativeProviderGoogle = nativeMapComponents?.ProviderGoogle;
+  const mapRef = useRef<import("react-native-maps").default | null>(null);
   const [siteRegion, setSiteRegion] = useState<Region>(SITE_REGION);
   const [siteAddress, setSiteAddress] = useState("");
   const [siteCoordinates, setSiteCoordinates] = useState<
@@ -136,14 +138,36 @@ export default function EmployerHomeScreen() {
     });
   };
 
+  const updateSiteRegion = (nextRegion: Region) => {
+    setSiteRegion((current) => {
+      const hasMeaningfulChange =
+        Math.abs(current.latitude - nextRegion.latitude) >
+          REGION_CHANGE_EPSILON ||
+        Math.abs(current.longitude - nextRegion.longitude) >
+          REGION_CHANGE_EPSILON ||
+        Math.abs(current.latitudeDelta - nextRegion.latitudeDelta) >
+          REGION_CHANGE_EPSILON ||
+        Math.abs(current.longitudeDelta - nextRegion.longitudeDelta) >
+          REGION_CHANGE_EPSILON;
+
+      return hasMeaningfulChange ? nextRegion : current;
+    });
+  };
+
   const handleLocationChange = (details: AddressDetails) => {
     setSiteAddress(details.description);
     setSiteCoordinates(details.coordinates);
-    setSiteRegion((current) => ({
-      ...current,
-      longitude: details.coordinates[0],
-      latitude: details.coordinates[1],
-    }));
+    setSiteRegion((current) => {
+      const nextRegion = {
+        ...current,
+        longitude: details.coordinates[0],
+        latitude: details.coordinates[1],
+      };
+
+      mapRef.current?.animateToRegion(nextRegion, 350);
+
+      return nextRegion;
+    });
   };
 
   const handleWorkerDetails = (id: string) => {
@@ -167,10 +191,11 @@ export default function EmployerHomeScreen() {
             <View className="h-[320px]">
               {NativeMapView && NativeMarker ? (
                 <NativeMapView
+                  ref={mapRef}
                   style={{ flex: 1 }}
                   provider={NativeProviderGoogle}
                   region={siteRegion}
-                  onRegionChangeComplete={setSiteRegion}
+                  onRegionChangeComplete={updateSiteRegion}
                   mapType="standard"
                   loadingEnabled
                   showsCompass={false}

@@ -183,7 +183,11 @@ export default function PostAJob({
     });
 
   const workingDays = useMemo(
-    () => countWeekdaysInRange(jobDateRange),
+    () => countWorkingDaysInRange(jobDateRange, workingDaySchedule),
+    [jobDateRange, workingDaySchedule],
+  );
+  const selectedDateCount = useMemo(
+    () => countSelectedDatesInRange(jobDateRange),
     [jobDateRange],
   );
   const selectedTradesLabel = useMemo(() => {
@@ -448,7 +452,7 @@ export default function PostAJob({
 
         <View className="mt-4 flex-row items-center justify-between">
           <Text className="text-[12px] font-medium text-[#555555]">
-            {workingDays || 0} working days on site
+            {selectedDateCount || 0} selected dates
           </Text>
           <TouchableOpacity
             activeOpacity={0.85}
@@ -634,34 +638,65 @@ export default function PostAJob({
   );
 }
 
-const countWeekdaysInRange = (range: JobDateRange) => {
+const countWorkingDaysInRange = (
+  range: JobDateRange,
+  schedule: WorkingDaySchedule,
+) => {
   if (!range.from || !range.to) {
     return 0;
   }
 
-  const start = new Date(range.from);
-  const end = new Date(range.to);
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+  const start = startOfLocalDay(range.from);
+  const end = startOfLocalDay(range.to);
 
   if (start > end) {
     return 0;
   }
 
   let count = 0;
-  const cursor = new Date(start);
+  const cursor = startOfLocalDay(start);
+  const dayKeys: WorkingDayKey[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
 
   while (cursor <= end) {
-    const day = cursor.getDay();
+    const dayKey = dayKeys[cursor.getDay()];
 
-    if (day !== 0 && day !== 6) {
+    if (schedule[dayKey].enabled) {
       count += 1;
     }
 
     cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
   }
 
   return count;
+};
+
+const startOfLocalDay = (value: Date) =>
+  new Date(value.getFullYear(), value.getMonth(), value.getDate());
+
+const countSelectedDatesInRange = (range: JobDateRange) => {
+  if (!range.from || !range.to) {
+    return 0;
+  }
+
+  const start = startOfLocalDay(range.from);
+  const end = startOfLocalDay(range.to);
+
+  if (start > end) {
+    return 0;
+  }
+
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+  return Math.round((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
 };
 
 const formatTime = (value: Date) =>

@@ -22,6 +22,7 @@ import {
   getJobApplicationsHasNextPage,
   formatAppliedJobDate,
 } from "@/utils/jobApplications";
+import getFormattedWord from "@/utils";
 
 const formatDate = (value?: string) =>
   value
@@ -174,7 +175,7 @@ export default function NewJobDetails({
           {job.title}
         </Text>
         <Text className="mt-2 text-sm font-semibold text-neutral-500">
-          {job.status}
+          {getFormattedWord(job.status, '_')}
         </Text>
 
         <View className="mt-6 gap-4">
@@ -448,8 +449,8 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between gap-4">
       <Text className="text-sm text-neutral-500">{label}</Text>
-      <Text className="text-right text-sm font-bold text-neutral-900">
-        {value}
+      <Text className="text-right text-sm font-bold text-neutral-900 text-wrap">
+        {getFormattedWord(value, '_')}
       </Text>
     </View>
   );
