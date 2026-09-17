@@ -87,10 +87,7 @@ export default function WebPostJobSection({
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
-  const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
-    from: new Date(2026, 7, 18),
-    to: new Date(2026, 7, 21),
-  });
+  const [jobDateRange, setJobDateRange] = useState<JobDateRange>({});
   const [workingDaySchedule, setWorkingDaySchedule] =
     useState<WorkingDaySchedule>({
       monday: {
@@ -200,10 +197,7 @@ export default function WebPostJobSection({
       setSelectedTrades([]);
       setNotes("");
       setSelectedMustHaves([]);
-      setJobDateRange({
-        from: new Date(2026, 7, 18),
-        to: new Date(2026, 7, 21),
-      });
+      setJobDateRange({});
       setWorkingDaySchedule(getInitialWorkingDaySchedule());
     }
   };

@@ -132,10 +132,7 @@ export default function PostAJob({
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
-  const [jobDateRange, setJobDateRange] = useState<JobDateRange>({
-    from: new Date(2026, 7, 18),
-    to: new Date(2026, 7, 21),
-  });
+  const [jobDateRange, setJobDateRange] = useState<JobDateRange>({});
   const [workingDaySchedule, setWorkingDaySchedule] =
     useState<WorkingDaySchedule>({
       monday: {
@@ -279,10 +276,7 @@ export default function PostAJob({
       setSelectedTrades([]);
       setNotes("");
       setSelectedMustHaves([]);
-      setJobDateRange({
-        from: new Date(2026, 7, 18),
-        to: new Date(2026, 7, 21),
-      });
+      setJobDateRange({});
       setWorkingDaySchedule(getInitialWorkingDaySchedule());
     }
   };
@@ -628,7 +622,7 @@ export default function PostAJob({
           </View>
 
           <Text className="max-w-[170px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
-            {workersNeeded} x labourer · {workingDays || 0} working days · 9 hr shifts
+            {workersNeeded} x labourer · {workingDays || 0} working days
           </Text>
         </View>
       </View>
