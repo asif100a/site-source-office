@@ -454,7 +454,6 @@ export default function WebPostJobSection({
                           value={enabled}
                           onValueChange={() => toggleWorkingDay(day.key)}
                           trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
-                          activeThumbColor={Colors.common.BRAND}
                           thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
                           ios_backgroundColor="#E6E6E6"
                           style={WEB_SWITCH_STYLE as any}
