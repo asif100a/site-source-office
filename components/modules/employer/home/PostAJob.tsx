@@ -610,7 +610,7 @@ export default function PostAJob({
         multiline
         textAlignVertical="top"
         placeholder="Add site notes, access details, or start instructions"
-        className="mt-3 min-h-[110px] rounded-[20px] bg-white py-4 text-[13px] leading-5 text-[#222222] border border-neutral-200/80"
+        className="mt-3 min-h-[110px] rounded-[20px] bg-white py-4 text-[13px] leading-5 text-[#222222] border border-neutral-200/80 placeholder:text-[#A3A3A3]"
         style={{
           paddingHorizontal: 16,
         }}
