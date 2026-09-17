@@ -55,6 +55,7 @@ export default function AuthFlow() {
   );
 
   const currentStep = params?.currentStep as AuthStep;
+  const hideBackButton = params?.hideBackButton === "true";
 
   useEffect(() => {
     if (currentStep) {
@@ -200,7 +201,9 @@ export default function AuthFlow() {
             onBackPress={() =>
               otpFlow === "password_reset"
                 ? goToForgotPassword()
-                : setStep(role === "employer" ? "register_employer" : "register_sso")
+                : setStep(
+                    role === "employer" ? "register_employer" : "register_sso",
+                  )
             }
             onComplete={() =>
               setStep(
@@ -308,13 +311,15 @@ export default function AuthFlow() {
           className="px-4 pt-16"
           style={{ backgroundColor: Colors.common.BRAND }}
         >
-          <BackButton
-            onPress={handleBack}
-            textStyle={{
-              color: Colors.common.WHITE,
-            }}
-            iconColor={Colors.common.WHITE}
-          />
+          {!hideBackButton && (
+            <BackButton
+              onPress={handleBack}
+              textStyle={{
+                color: Colors.common.WHITE,
+              }}
+              iconColor={Colors.common.WHITE}
+            />
+          )}
         </View>
 
         {/* Render Current Active Screen */}

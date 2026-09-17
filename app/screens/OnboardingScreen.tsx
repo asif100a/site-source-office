@@ -31,13 +31,13 @@ export default function OnboardingScreen() {
   const navigateToWorker = () => {
     clearUserAuthenticated();
     setActiveRole("worker");
-    router.replace('/tabs/(worker-tabs)' as any);
+    router.push('/tabs/(worker-tabs)' as any);
   };
 
   const navigateToEmployer = () => {
     clearUserAuthenticated();
     setActiveRole("employer");
-    router.replace({
+    router.push({
       pathname: '/auth',
       params: { role: 'employer', step: 'login' },
     });

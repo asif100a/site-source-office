@@ -56,7 +56,7 @@ export default function ProfileScreen() {
     clearUserAuthenticated();
     router.replace({
       pathname: "/auth",
-      params: { currentStep: "login", role: "employer" },
+      params: { currentStep: "login", role: "employer", hideBackButton: 'true' },
     });
   };
 
