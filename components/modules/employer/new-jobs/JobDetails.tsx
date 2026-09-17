@@ -181,7 +181,7 @@ export default function NewJobDetails({
         <View className="mt-6 gap-4">
           <Detail
             label="Trade"
-            value={(job.trades ?? []).join(", ") || "Not set"}
+            value={(job.trades ?? []).map((trade: string) => getFormattedWord(trade, '_') ).join(", ") || "Not set"}
           />
           <Detail
             label="Hourly rate"
@@ -450,7 +450,7 @@ function Detail({ label, value }: { label: string; value: string }) {
     <View className="flex-row items-center justify-between gap-4">
       <Text className="text-sm text-neutral-500">{label}</Text>
       <Text className="text-right text-sm font-bold text-neutral-900 text-wrap">
-        {getFormattedWord(value, '_')}
+        {value}
       </Text>
     </View>
   );

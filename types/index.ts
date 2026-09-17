@@ -177,9 +177,12 @@ export interface JobCard {
   status: JobStatus;
   rate?: string;
   applications?: string;
+  applicationsCount?: number;
   applicants?: Array<{
     id: string;
     name: string;
+    image?: string | null;
+    initial?: string;
     role: string;
     location: string;
     availability: string;

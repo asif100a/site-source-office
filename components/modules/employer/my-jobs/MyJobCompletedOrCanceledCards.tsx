@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
-import AvatarStack from "./_ui/AvatarStack";
 import { Colors } from "@/constants/Colors";
 import JobLocationLabel from "./JobLocationLabel";
 

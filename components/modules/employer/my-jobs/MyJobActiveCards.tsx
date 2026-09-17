@@ -59,9 +59,9 @@ export default function MyJobActiveCards({
 
       <View className="flex-row items-center justify-between px-4 pb-4">
         <View className="flex-row items-center gap-2">
-          <AvatarStack />
+          <AvatarStack applicants={job.applicants} />
           <Text className="text-neutral-500 text-xs font-medium">
-            {job.applications}
+            {job.applications ?? "0 Applications"}
           </Text>
         </View>
 

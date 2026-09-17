@@ -1,18 +1,49 @@
-import { View, Text } from "react-native";
 import React from "react";
+import { Text, View } from "react-native";
+import { Image } from "expo-image";
 
-export default function AvatarStack() {
+type AvatarStackApplicant = {
+  id: string;
+  name?: string;
+  image?: string | null;
+  initial?: string;
+};
+
+const getInitial = (applicant: AvatarStackApplicant) =>
+  applicant.initial ?? applicant.name?.trim().charAt(0).toUpperCase() ?? "W";
+
+export default function AvatarStack({
+  applicants = [],
+}: {
+  applicants?: AvatarStackApplicant[];
+}) {
+  const visibleApplicants = applicants.slice(0, 3);
+
+  if (!visibleApplicants.length) {
+    return null;
+  }
+
   return (
     <View className="flex-row items-center">
-      <View className="w-6 h-6 rounded-full border-2 border-white bg-slate-300 items-center justify-center">
-        <Text className="text-[10px] font-extrabold text-slate-700">K</Text>
-      </View>
-      <View className="-ml-2 w-6 h-6 rounded-full border-2 border-white bg-slate-600 items-center justify-center">
-        <Text className="text-[10px] font-extrabold text-white">K</Text>
-      </View>
-      <View className="-ml-2 w-6 h-6 rounded-full border-2 border-white bg-slate-800 items-center justify-center">
-        <Text className="text-[10px] font-extrabold text-white">K</Text>
-      </View>
+      {visibleApplicants.map((applicant, index) => (
+        <View
+          key={applicant.id}
+          className={`h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-slate-700 ${
+            index > 0 ? "-ml-2" : ""
+          }`}
+        >
+          {applicant.image ? (
+            <Image
+              source={{ uri: applicant.image }}
+              className="h-full w-full rounded-full"
+            />
+          ) : (
+            <Text className="text-[10px] font-extrabold text-white">
+              {getInitial(applicant)}
+            </Text>
+          )}
+        </View>
+      ))}
     </View>
   );
 }

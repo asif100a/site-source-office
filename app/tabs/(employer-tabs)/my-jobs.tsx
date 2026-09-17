@@ -88,8 +88,6 @@ export default function EmployerMyJobsScreen() {
     status: requestedStatus,
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
-  // console.log("requestedStatus from the my jobs screen: ", requestedStatus);
-  // console.log("jobsQuery from the my jobs screen: ", jobsQuery);
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
