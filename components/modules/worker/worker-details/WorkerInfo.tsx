@@ -11,7 +11,7 @@ export default function WorkerInfo({worker}: {worker: any}) {
       <View className="items-center p-4">
         <View className="relative">
           <Image
-            source={PLACEHOLDER_USER}
+            source={worker.image ? { uri: worker.image } : PLACEHOLDER_USER}
             style={{ width: 96, height: 96 }}
             className="w-24 h-24 rounded-full"
           />

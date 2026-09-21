@@ -269,6 +269,7 @@ export default function EmployerWorkersScreen() {
   const [createJobOffer, { isLoading: isSendingOffer }] =
     useCreateJobOfferMutation();
   const workersQuery = useGetAllWorkersQuery({ page, limit: 10 });
+  console.log("workersQuery: ", workersQuery);
   const bookmarkedWorkersQuery = useGetBookmarkWorkersQuery(
     { page: 1, limit: 100 },
     { skip: !isAuthenticated }

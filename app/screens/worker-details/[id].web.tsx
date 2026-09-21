@@ -1,5 +1,5 @@
 import React from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Image } from "expo-image";
 import {
@@ -10,68 +10,170 @@ import {
   Sparkles,
   Star,
 } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Colors } from "@/constants/Colors";
 import WorkerRatingStars from "@/components/modules/worker/worker-details/_ui/WorkerRatingStars";
 import PLACEHOLDER_USER from "@/assets/images/placeholder/placeholder-user.png";
+import { useGetSingleWorkerQuery } from "@/store/api/workerProfileApi";
+import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 
-const STATIC_WORKER = {
-  name: "James Mitchell",
-  role: "Groundworker",
-  status: "Available Now",
-  rating: "4.8",
-  reviews: "142 reviews",
-  location: "Shoreditch - 2.4 mi away",
-  stats: [
-    { label: "Jobs Completed", value: "87" },
-    { label: "Reliability", value: "98%" },
-    { label: "Repeat Hires", value: "34" },
-  ],
-  about:
-    "Highly experienced groundworker with over 8 years in the industry. Specialized in site preparation, drainage systems, and structural foundations. Known for punctuality and a strong focus on safety standards.",
-  documents: [
-    { id: "doc-1", name: "CSCS Gold Card", size: "1.1 MB" },
-    { id: "doc-2", name: "Public Liability", size: "860 KB" },
-    { id: "doc-3", name: "Right to Work", size: "540 KB" },
-  ],
-  workHistory: [
-    {
-      id: "wh-1",
-      title: "Lead Groundworker",
-      company: "BuildRight Group",
-      duration: "3 months",
-      rating: "5.0",
-    },
-    {
-      id: "wh-2",
-      title: "Groundworker",
-      company: "Northline Builders",
-      duration: "1 year",
-      rating: "4.9",
-    },
-  ],
-  feedback: [
-    {
-      id: "fb-1",
-      name: "Jane Cooper",
-      date: "20 Apr 2026",
-      text: "Very professional and always arrived on time.",
-      rating: "5.00",
-    },
-    {
-      id: "fb-2",
-      name: "Esther Howard",
-      date: "28 May 2026",
-      text: "Worked safely, communicated well, and kept the site moving.",
-      rating: "4.90",
-    },
-  ],
-  weeks: [
-    { id: "week-1", title: "Week 1", range: "12 Jul - 16 Jul" },
-    { id: "week-2", title: "Week 2", range: "19 Jul - 23 Jul" },
-    { id: "week-3", title: "Week 3", range: "26 Jul - 30 Jul" },
-    { id: "week-4", title: "Week 4", range: "2 Aug - 6 Aug" },
-  ],
+const getWorkerData = (response: any) => response?.data?.data ?? response?.data ?? response;
+
+const getImageUrl = (value?: string | null) => {
+  if (!value) return null;
+  return value.match(/\]\((https?:\/\/[^)]+)\)/)?.[1] ?? value;
+};
+
+const formatTrade = (value?: string | null) => {
+  if (!value) return "Worker";
+
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return "Not available";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return date.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getDistanceLabel = (distance?: number | null) => {
+  const value = Number(distance);
+  if (!Number.isFinite(value)) return "";
+
+  return `${(value / 1000).toFixed(1)} km away`;
+};
+
+const getCoordinateLabel = (coordinates?: [number, number]) => {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    return "Location not available";
+  }
+
+  return `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`;
+};
+
+const getLocationCoordinates = (value: any): [number, number] | undefined => {
+  const coordinates = value?.coordinates ?? value;
+
+  if (
+    Array.isArray(coordinates) &&
+    coordinates.length === 2 &&
+    Number.isFinite(Number(coordinates[0])) &&
+    Number.isFinite(Number(coordinates[1]))
+  ) {
+    return [Number(coordinates[0]), Number(coordinates[1])];
+  }
+
+  return undefined;
+};
+
+const formatLocation = (value: any) => {
+  if (!value) return "Location not available";
+  if (typeof value === "string") return value;
+
+  if (typeof value === "object") {
+    if (typeof value.address === "string") return value.address;
+    if (typeof value.label === "string") return value.label;
+    if (typeof value.name === "string") return value.name;
+    if (typeof value.formattedAddress === "string") return value.formattedAddress;
+  }
+
+  return getCoordinateLabel(getLocationCoordinates(value));
+};
+
+const mapCertificate = (certificate: any, index: number) => {
+  if (typeof certificate === "string") {
+    return {
+      id: certificate || `certificate-${index}`,
+      name: certificate.split("/").pop() || `Certificate ${index + 1}`,
+      size: "Uploaded",
+    };
+  }
+
+  return {
+    id: certificate?.id ?? certificate?.url ?? `certificate-${index}`,
+    name:
+      certificate?.name ??
+      certificate?.title ??
+      certificate?.url?.split("/").pop() ??
+      `Certificate ${index + 1}`,
+    size: certificate?.size ?? "Uploaded",
+  };
+};
+
+const mapServerWorkerToDetails = (response: any) => {
+  const worker = getWorkerData(response);
+  const profile = worker?.profile ?? {};
+  const workerProfile = worker?.workerProfile ?? {};
+  const trades = Array.isArray(workerProfile?.trades) ? workerProfile.trades : [];
+  const role = trades.length > 0 ? trades.map(formatTrade).join(", ") : "Worker";
+  const certificates = Array.isArray(workerProfile?.certificates)
+    ? workerProfile.certificates
+    : [];
+
+  return {
+    name: profile?.name ?? worker?.name ?? worker?.email ?? "Worker",
+    role,
+    status: worker?.status === "ACTIVE" ? "Available" : worker?.status ?? "Worker",
+    rating: String(worker?.rating ?? workerProfile?.rating ?? "0.0"),
+    reviews: `${worker?.totalReviews ?? worker?.reviewsCount ?? 0} reviews`,
+    location: formatLocation(
+      workerProfile?.address ?? workerProfile?.location ?? worker?.location,
+    ),
+    locationCoordinates: getLocationCoordinates(
+      workerProfile?.address ?? workerProfile?.location ?? worker?.location,
+    ),
+    distance: worker?.distance ?? workerProfile?.distance,
+    image: getImageUrl(profile?.image),
+    stats: [
+      {
+        label: "Jobs Completed",
+        value: String(workerProfile?.jobsCompleted ?? worker?.jobsCompleted ?? 0),
+      },
+      {
+        label: "Experience",
+        value:
+          workerProfile?.experience != null
+            ? `${workerProfile.experience}`
+            : "N/A",
+      },
+      {
+        label: "Certificates",
+        value: String(certificates.length),
+      },
+    ],
+    about:
+      workerProfile?.about ??
+      workerProfile?.bio ??
+      `${profile?.name ?? "This worker"} is registered as ${role}.`,
+    documents: certificates.map(mapCertificate),
+    workHistory: Array.isArray(workerProfile?.workHistory)
+      ? workerProfile.workHistory
+      : [],
+    feedback: Array.isArray(workerProfile?.feedback)
+      ? workerProfile.feedback
+      : [],
+    memberSince: formatDate(worker?.createdAt),
+    lastUpdated: formatDate(workerProfile?.updatedAt ?? worker?.updatedAt),
+    email: worker?.email,
+  };
 };
 
 function SectionTitle({
@@ -91,7 +193,7 @@ function SectionTitle({
   );
 }
 
-function HeroCard({ onBack }: { onBack: () => void }) {
+function HeroCard({ worker, onBack }: { worker: any; onBack: () => void }) {
   return (
     <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
       <View className="flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -106,19 +208,18 @@ function HeroCard({ onBack }: { onBack: () => void }) {
             <View className="flex-row items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5">
               <View className="h-2 w-2 rounded-full bg-emerald-500" />
               <Text className="text-xs font-semibold text-neutral-600">
-                {STATIC_WORKER.status}
+                {worker.status}
               </Text>
             </View>
           </View>
 
           <View className="gap-2">
             <Text className="text-3xl font-bold tracking-tight text-neutral-950 md:text-4xl">
-              {STATIC_WORKER.name}
+              {worker.name}
             </Text>
             <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
-              Static worker details page for web. This screen now renders a
-              fixed profile layout without route-based or state-based client
-              logic.
+              {worker.role} profile with verified account details, documents,
+              feedback, and activity from the server.
             </Text>
           </View>
         </View>
@@ -136,42 +237,42 @@ function HeroCard({ onBack }: { onBack: () => void }) {
   );
 }
 
-function ProfileCard() {
+function ProfileCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <View className="items-center">
         <View className="relative">
           <Image
-            source={PLACEHOLDER_USER}
+            source={worker.image ? { uri: worker.image } : PLACEHOLDER_USER}
             style={{ width: 96, height: 96 }}
             className="rounded-full"
           />
           <View className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1">
             <Text className="text-[10px] font-bold text-emerald-700">
-              {STATIC_WORKER.status}
+              {worker.status}
             </Text>
           </View>
         </View>
 
         <Text className="mt-6 text-center text-[28px] font-bold text-neutral-900">
-          {STATIC_WORKER.name}
+          {worker.name}
         </Text>
         <Text className="mt-1 text-base text-neutral-500">
-          {STATIC_WORKER.role}
+          {worker.role}
         </Text>
 
         <View className="mt-3 flex-row items-center gap-2">
-          <WorkerRatingStars rating={STATIC_WORKER.rating} />
+          <WorkerRatingStars rating={worker.rating} />
           <Text className="text-sm font-medium text-neutral-700">
-            <Text className="font-bold">{STATIC_WORKER.rating}</Text> (
-            {STATIC_WORKER.reviews})
+            <Text className="font-bold">{worker.rating}</Text> (
+            {worker.reviews})
           </Text>
         </View>
 
         <View className="mt-4 flex-row items-center gap-2">
           <MapPin size={14} color="#C81E1E" />
           <Text className="text-sm font-medium text-neutral-500">
-            {STATIC_WORKER.location}
+            {worker.location}
           </Text>
         </View>
       </View>
@@ -179,15 +280,15 @@ function ProfileCard() {
   );
 }
 
-function StatsCard() {
+function StatsCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <View className="flex-row">
-        {STATIC_WORKER.stats.map((item, index) => (
+        {worker.stats.map((item: any, index: number) => (
           <View
             key={item.label}
             className={`flex-1 items-center py-2 ${
-              index < STATIC_WORKER.stats.length - 1
+              index < worker.stats.length - 1
                 ? "border-r border-neutral-100"
                 : ""
             }`}
@@ -205,23 +306,26 @@ function StatsCard() {
   );
 }
 
-function AboutCard() {
+function AboutCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="About" />
       <Text className="text-sm leading-6 text-neutral-600">
-        {STATIC_WORKER.about}
+        {worker.about}
+      </Text>
+      <Text className="mt-3 text-xs font-semibold text-neutral-400">
+        Member since {worker.memberSince} - Updated {worker.lastUpdated}
       </Text>
     </View>
   );
 }
 
-function DocumentsCard() {
+function DocumentsCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Documents" />
       <View className="flex-row flex-wrap gap-3">
-        {STATIC_WORKER.documents.map((document) => (
+        {worker.documents.map((document: any) => (
           <View
             key={document.id}
             className="min-w-[170px] flex-1 rounded-2xl border border-neutral-200/80 bg-white p-4"
@@ -242,16 +346,16 @@ function DocumentsCard() {
   );
 }
 
-function WorkHistoryCard() {
+function WorkHistoryCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Work History" detail="Recent roles" />
       <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white">
-        {STATIC_WORKER.workHistory.map((item, index) => (
+        {worker.workHistory.map((item: any, index: number) => (
           <View
             key={item.id}
             className={`flex-row items-start justify-between px-4 py-4 ${
-              index < STATIC_WORKER.workHistory.length - 1
+              index < worker.workHistory.length - 1
                 ? "border-b border-neutral-100"
                 : ""
             }`}
@@ -282,21 +386,21 @@ function WorkHistoryCard() {
   );
 }
 
-function RatingCard() {
+function RatingCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Rating & Feedback" />
       <View className="flex-row items-center gap-4">
         <View className="items-center">
           <Text className="text-4xl font-bold text-neutral-900">
-            {STATIC_WORKER.rating}
+            {worker.rating}
           </Text>
           <Text className="text-xs text-neutral-400">/5</Text>
           <View className="mt-2">
-            <WorkerRatingStars rating={STATIC_WORKER.rating} />
+            <WorkerRatingStars rating={worker.rating} />
           </View>
           <Text className="mt-2 text-xs text-neutral-400">
-            {STATIC_WORKER.reviews}
+            {worker.reviews}
           </Text>
         </View>
 
@@ -326,15 +430,15 @@ function RatingCard() {
   );
 }
 
-function ReviewsCard() {
+function ReviewsCard({ worker }: { worker: any }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle
         title="Reviews"
-        detail={`${STATIC_WORKER.feedback.length} entries`}
+        detail={`${worker.feedback.length} entries`}
       />
       <View className="gap-3">
-        {STATIC_WORKER.feedback.map((item) => (
+        {worker.feedback.map((item: any) => (
           <View
             key={item.id}
             className="rounded-2xl border border-neutral-200/80 bg-white p-4"
@@ -345,7 +449,7 @@ function ReviewsCard() {
                   <Text className="text-xs font-bold text-neutral-700">
                     {item.name
                       .split(" ")
-                      .map((part) => part[0])
+                      .map((part: any) => part[0])
                       .join("")
                       .slice(0, 2)}
                   </Text>
@@ -374,54 +478,7 @@ function ReviewsCard() {
   );
 }
 
-function TimesheetCard() {
-  return (
-    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-      <View className="mb-4 flex-row items-center justify-between">
-        <View>
-          <Text className="text-base font-medium text-neutral-900">
-            Update Timesheet
-          </Text>
-          <Text className="mt-1 text-sm text-neutral-500">Day 3 of 20</Text>
-        </View>
-        <View className="rounded-full bg-[#FFF1E9] px-2.5 py-1">
-          <Text
-            style={{ color: Colors.common.BRAND }}
-            className="text-xs font-medium"
-          >
-            Approval queue
-          </Text>
-        </View>
-      </View>
-
-      <View className="gap-3">
-        {STATIC_WORKER.weeks.map((week) => (
-          <View
-            key={week.id}
-            className="flex-row items-center justify-between rounded-2xl border border-neutral-100 px-4 py-3"
-          >
-            <View className="flex-1 pr-3">
-              <Text className="text-base font-medium text-slate-800">
-                {week.title}
-              </Text>
-              <Text className="mt-0.5 text-sm text-slate-400">
-                {week.range}
-              </Text>
-            </View>
-
-            <TouchableOpacity className="rounded-xl border border-neutral-200 px-4 py-2 active:opacity-80">
-              <Text className="text-xs font-medium text-neutral-500">
-                Approve
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function SummaryCard({ onBack }: { onBack: () => void }) {
+function SummaryCard({ worker, onBack }: { worker: any; onBack: () => void }) {
   return (
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <View className="flex-row items-center gap-3">
@@ -430,11 +487,11 @@ function SummaryCard({ onBack }: { onBack: () => void }) {
         </View>
         <View className="flex-1">
           <Text className="text-sm font-semibold text-neutral-900">
-            Static worker summary
+            Worker summary
           </Text>
           <Text className="mt-1 text-sm leading-6 text-neutral-600">
-            This page is now presentation-only and always shows the same worker
-            information without client-side branching.
+            {worker.email ? `${worker.email} - ` : ""}
+            {worker.role} - {worker.location}
           </Text>
         </View>
       </View>
@@ -452,6 +509,61 @@ function SummaryCard({ onBack }: { onBack: () => void }) {
 
 export default function WorkerDetailsWebScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const workerQuery = useGetSingleWorkerQuery(
+    { id: id as string },
+    { skip: !id },
+  );
+  const [refreshing, setRefreshing] = React.useState(false);
+  const worker = React.useMemo(
+    () => mapServerWorkerToDetails(workerQuery.data),
+    [workerQuery.data],
+  );
+  const [resolvedLocation, setResolvedLocation] = React.useState<string | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    const coordinates = worker.locationCoordinates;
+
+    setResolvedLocation(null);
+    if (!coordinates) return;
+
+    let cancelled = false;
+
+    getAddressFromCoordinates(coordinates)
+      .then((address) => {
+        if (!cancelled) setResolvedLocation(address);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedLocation(getCoordinateLabel(coordinates));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [worker.locationCoordinates]);
+
+  const displayWorker = React.useMemo(
+    () => ({
+      ...worker,
+      location: `${resolvedLocation ?? worker.location}${
+        worker.distance ? ` - ${getDistanceLabel(worker.distance)}` : ""
+      }`,
+    }),
+    [resolvedLocation, worker],
+  );
+
+  const refreshWorker = React.useCallback(async () => {
+    if (!id) return;
+
+    setRefreshing(true);
+    try {
+      await workerQuery.refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id, workerQuery]);
 
   return (
     <View className="flex-1 bg-neutral-50">
@@ -461,27 +573,64 @@ export default function WorkerDetailsWebScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 64 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void refreshWorker()}
+            tintColor={Colors.common.BRAND}
+            colors={[Colors.common.BRAND]}
+          />
+        }
       >
         <View className="px-6 pt-6 md:px-10 md:pt-8 xl:px-12">
           <View className="mx-auto w-full max-w-7xl gap-6">
-            <HeroCard onBack={() => router.back()} />
-
-            <View className="flex-col gap-6 xl:flex-row">
-              <View className="flex-[1.45] gap-4">
-                <ProfileCard />
-                <StatsCard />
-                <AboutCard />
-                <DocumentsCard />
-                <WorkHistoryCard />
-                <RatingCard />
-                <ReviewsCard />
+            {workerQuery.isLoading ? (
+              <View className="items-center justify-center rounded-[28px] border border-neutral-200 bg-white px-6 py-16">
+                <ActivityIndicator color={Colors.common.BRAND} />
+                <Text className="mt-3 text-sm font-semibold text-neutral-500">
+                  Loading worker details...
+                </Text>
               </View>
-
-              <View className="flex-1 gap-4">
-                {/* <TimesheetCard /> */}
-                <SummaryCard onBack={() => router.back()} />
+            ) : workerQuery.isError ? (
+              <View className="rounded-[28px] border border-red-100 bg-white px-6 py-10">
+                <Text className="text-center text-sm font-semibold text-red-700">
+                  Unable to load worker details. Please try again.
+                </Text>
               </View>
-            </View>
+            ) : (
+              <>
+                <HeroCard worker={displayWorker} onBack={() => router.back()} />
+
+                <View className="flex-col gap-6 xl:flex-row">
+                  <View className="flex-[1.45] gap-4">
+                    <ProfileCard worker={displayWorker} />
+                    <StatsCard worker={displayWorker} />
+                    <AboutCard worker={displayWorker} />
+                    {displayWorker.documents.length > 0 ? (
+                      <DocumentsCard worker={displayWorker} />
+                    ) : null}
+                    {displayWorker.workHistory.length > 0 ? (
+                      <WorkHistoryCard worker={displayWorker} />
+                    ) : null}
+                    <RatingCard worker={displayWorker} />
+                    {displayWorker.feedback.length > 0 ? (
+                      <ReviewsCard worker={displayWorker} />
+                    ) : (
+                      <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                        <SectionTitle title="Reviews" detail="0 entries" />
+                        <Text className="text-center text-sm font-semibold text-neutral-500">
+                          No reviews yet.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View className="flex-1 gap-4">
+                    <SummaryCard worker={displayWorker} onBack={() => router.back()} />
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </ScrollView>
