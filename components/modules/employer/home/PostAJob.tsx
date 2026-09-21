@@ -6,6 +6,7 @@ import {
   Pressable,
   TextInput,
   Switch,
+  ScrollView,
 } from "react-native";
 import React, { useMemo, useState } from "react";
 import { CounterRow, DateCard, FormSectionLabel } from "./_ui";
@@ -483,96 +484,103 @@ export default function PostAJob({
 
       <FormSectionLabel label="Working hours" />
       <View className="mt-3 rounded-[24px] bg-white p-4">
-        <View className="gap-3">
-          {WORKING_DAY_OPTIONS.map((day) => {
-            const schedule = workingDaySchedule[day.key];
-            const enabled = schedule.enabled;
-            const showWeekendRates = WEEKEND_DAY_KEYS.includes(day.key);
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          showsHorizontalScrollIndicator
+          contentContainerStyle={{ paddingBottom: 2 }}
+        >
+          <View className="gap-3" style={{ minWidth: 352 }}>
+            {WORKING_DAY_OPTIONS.map((day) => {
+              const schedule = workingDaySchedule[day.key];
+              const enabled = schedule.enabled;
+              const showWeekendRates = WEEKEND_DAY_KEYS.includes(day.key);
 
-            return (
-              <View
-                key={day.key}
-                className="rounded-[18px] border border-[#EEEEEE] px-3 py-3"
-              >
-                <View className="flex-row items-center justify-between gap-3">
-                  <View className="flex-row items-center gap-3">
-                    <Switch
-                      value={enabled}
-                      onValueChange={() => toggleWorkingDay(day.key)}
-                      trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
-                      thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
-                      ios_backgroundColor="#E6E6E6"
-                      style={WEB_SWITCH_STYLE as any}
-                    />
-                    <Text className="text-[13px] font-bold text-[#202020]">
-                      {day.label}
-                    </Text>
+              return (
+                <View
+                  key={day.key}
+                  className="rounded-[18px] border border-[#EEEEEE] px-3 py-3"
+                >
+                  <View className="flex-row items-center justify-between gap-3">
+                    <View className="flex-row items-center gap-3">
+                      <Switch
+                        value={enabled}
+                        onValueChange={() => toggleWorkingDay(day.key)}
+                        trackColor={{ false: "#E6E6E6", true: "#FFD4BF" }}
+                        thumbColor={enabled ? Colors.common.BRAND : "#FFFFFF"}
+                        ios_backgroundColor="#E6E6E6"
+                        style={WEB_SWITCH_STYLE as any}
+                      />
+                      <Text className="text-[13px] font-bold text-[#202020]">
+                        {day.label}
+                      </Text>
+                    </View>
+
+                    <View
+                      className={`flex-row items-center gap-2 ${
+                        enabled ? "opacity-100" : "opacity-50"
+                      }`}
+                    >
+                      <TimePickerField
+                        value={schedule.startTime}
+                        onChange={(value) =>
+                          updateWorkingDayTime(day.key, "startTime", value)
+                        }
+                        disabled={!enabled}
+                      />
+                      <Text className="text-[12px] font-semibold text-[#777777]">
+                        to
+                      </Text>
+                      <TimePickerField
+                        value={schedule.endTime}
+                        onChange={(value) =>
+                          updateWorkingDayTime(day.key, "endTime", value)
+                        }
+                        disabled={!enabled}
+                      />
+                    </View>
                   </View>
 
-                  <View
-                    className={`flex-row items-center gap-2 ${
-                      enabled ? "opacity-100" : "opacity-50"
-                    }`}
-                  >
-                    <TimePickerField
-                      value={schedule.startTime}
-                      onChange={(value) =>
-                        updateWorkingDayTime(day.key, "startTime", value)
-                      }
-                      disabled={!enabled}
-                    />
-                    <Text className="text-[12px] font-semibold text-[#777777]">
-                      to
-                    </Text>
-                    <TimePickerField
-                      value={schedule.endTime}
-                      onChange={(value) =>
-                        updateWorkingDayTime(day.key, "endTime", value)
-                      }
-                      disabled={!enabled}
-                    />
-                  </View>
-                </View>
+                  {showWeekendRates ? (
+                    <View className="mt-3 flex-row items-center gap-2">
+                      {WEEKEND_RATE_OPTIONS.map((rate) => {
+                        const selected = schedule.weekendRate === rate;
 
-                {showWeekendRates ? (
-                  <View className="mt-3 flex-row items-center gap-2">
-                    {WEEKEND_RATE_OPTIONS.map((rate) => {
-                      const selected = schedule.weekendRate === rate;
-
-                      return (
-                        <Pressable
-                          key={rate}
-                          onPress={() => updateWeekendPayRate(day.key, rate)}
-                          disabled={!enabled}
-                          className={`flex-row items-center gap-2 rounded-full border px-3 py-2 ${
-                            selected
-                              ? "border-[#FF5A1F] bg-[#FFF1EA]"
-                              : "border-[#E9E9E9] bg-white"
-                          } ${enabled ? "opacity-100" : "opacity-50"}`}
-                        >
-                          <View
-                            className={`h-4 w-4 items-center justify-center rounded-[4px] border ${
+                        return (
+                          <Pressable
+                            key={rate}
+                            onPress={() => updateWeekendPayRate(day.key, rate)}
+                            disabled={!enabled}
+                            className={`flex-row items-center gap-2 rounded-full border px-3 py-2 ${
                               selected
-                                ? "border-[#FF5A1F] bg-[#FF5A1F]"
-                                : "border-[#CFCFCF] bg-white"
-                            }`}
+                                ? "border-[#FF5A1F] bg-[#FFF1EA]"
+                                : "border-[#E9E9E9] bg-white"
+                            } ${enabled ? "opacity-100" : "opacity-50"}`}
                           >
-                            {selected ? (
-                              <Check size={11} color="#FFFFFF" />
-                            ) : null}
-                          </View>
-                          <Text className="text-[12px] font-bold text-[#202020]">
-                            {rate} pay
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
+                            <View
+                              className={`h-4 w-4 items-center justify-center rounded-[4px] border ${
+                                selected
+                                  ? "border-[#FF5A1F] bg-[#FF5A1F]"
+                                  : "border-[#CFCFCF] bg-white"
+                              }`}
+                            >
+                              {selected ? (
+                                <Check size={11} color="#FFFFFF" />
+                              ) : null}
+                            </View>
+                            <Text className="text-[12px] font-bold text-[#202020]">
+                              {rate} pay
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
 
       <FormSectionLabel label="Must have" />

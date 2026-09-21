@@ -104,6 +104,7 @@ export default function LoginScreenWeb({
         }
       }
     } catch (error: any) {
+      console.log("Login error: ", error);
       Toast.show({
         type: "error",
         text1: "Login failed",
