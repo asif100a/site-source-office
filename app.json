@@ -13,8 +13,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.techdebuggers.sitesource"
-    },
+      "package": "com.sitesource.sitesource"
+    }
     "web": {
       "bundler": "metro",
       "output": "server",

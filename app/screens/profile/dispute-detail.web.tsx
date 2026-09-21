@@ -62,7 +62,9 @@ const getAttachmentName = (attachment: string, index: number) => {
   }
 };
 
-const getAttachmentType = (attachment: string) => {
+type AttachmentType = "image" | "pdf" | "file";
+
+const getAttachmentType = (attachment: string): AttachmentType => {
   const url = getAttachmentUrl(attachment).split("?")[0].toLowerCase();
 
   if (/\.(jpg|jpeg|png|webp|gif)$/.test(url)) return "image";
@@ -288,7 +290,7 @@ export default function DisputeDetailScreenWeb() {
                                     />
                                   </View>
                                   <Text className="mt-3 text-xs font-extrabold uppercase text-neutral-500">
-                                    {attachmentType === "pdf" ? "PDF" : "File"}
+                                    File
                                   </Text>
                                 </View>
                               )}
