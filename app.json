@@ -14,7 +14,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.sitesource.sitesource"
-    }
+    },
     "web": {
       "bundler": "metro",
       "output": "server",

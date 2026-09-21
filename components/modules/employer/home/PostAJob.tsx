@@ -183,6 +183,10 @@ export default function PostAJob({
     () => countWorkingDaysInRange(jobDateRange, workingDaySchedule),
     [jobDateRange, workingDaySchedule],
   );
+  const estimatedBillableHours = useMemo(
+    () => countBillableHoursInRange(jobDateRange, workingDaySchedule),
+    [jobDateRange, workingDaySchedule],
+  );
   const selectedDateCount = useMemo(
     () => countSelectedDatesInRange(jobDateRange),
     [jobDateRange],
@@ -205,8 +209,8 @@ export default function PostAJob({
   }, [selectedTrades]);
 
   const totalEstimate = useMemo(
-    () => hourlyRate * 9 * workingDays * workersNeeded,
-    [hourlyRate, workersNeeded, workingDays],
+    () => hourlyRate * estimatedBillableHours * workersNeeded,
+    [estimatedBillableHours, hourlyRate, workersNeeded],
   );
 
   const handleCreateJobPost = async () => {
@@ -432,7 +436,7 @@ export default function PostAJob({
 
         <CounterRow
           label="Workers needed"
-          hint={`£${hourlyRate * 9} per day at 9 hrs`}
+          hint={`£${formatCurrencyAmount(hourlyRate * estimatedBillableHours)} per worker for selected hours`}
           value={`${workersNeeded}`}
           onDecrease={() => adjustValue(setWorkersNeeded, workersNeeded - 1)}
           onIncrease={() => adjustValue(setWorkersNeeded, workersNeeded + 1)}
@@ -445,7 +449,7 @@ export default function PostAJob({
           <DateCard
             label="Start"
             value={formatDateLabel(jobDateRange.from)}
-            active
+            // active
           />
           <DateCard label="Finish" value={formatDateLabel(jobDateRange.to)} />
         </View>
@@ -616,12 +620,12 @@ export default function PostAJob({
               Estimated total
             </Text>
             <Text className="mt-1 text-[24px] font-black tracking-[-0.6px] text-[#222222]">
-              £{totalEstimate.toLocaleString()}
+              £{formatCurrencyAmount(totalEstimate)}
             </Text>
           </View>
 
           <Text className="max-w-[170px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
-            {workersNeeded} x labourer · {workingDays || 0} working days
+            {workersNeeded} x labourer · {formatHourCount(estimatedBillableHours)} billable hrs
           </Text>
         </View>
       </View>
@@ -686,6 +690,77 @@ const countWorkingDaysInRange = (
 
   return count;
 };
+
+const countBillableHoursInRange = (
+  range: JobDateRange,
+  schedule: WorkingDaySchedule,
+) => {
+  if (!range.from || !range.to) {
+    return 0;
+  }
+
+  const start = startOfLocalDay(range.from);
+  const end = startOfLocalDay(range.to);
+
+  if (start > end) {
+    return 0;
+  }
+
+  let hours = 0;
+  const cursor = startOfLocalDay(start);
+  const dayKeys: WorkingDayKey[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+
+  while (cursor <= end) {
+    const dayKey = dayKeys[cursor.getDay()];
+    const daySchedule = schedule[dayKey];
+
+    if (daySchedule.enabled) {
+      hours +=
+        getShiftHours(daySchedule.startTime, daySchedule.endTime) *
+        getPayMultiplier(daySchedule.weekendRate);
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+  }
+
+  return hours;
+};
+
+const getShiftHours = (startTime: Date, endTime: Date) => {
+  const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+  const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+  return Math.max(0, (endMinutes - startMinutes) / 60);
+};
+
+const getPayMultiplier = (rate: WeekendPayRate) => {
+  if (rate === "1.5x") {
+    return 1.5;
+  }
+
+  if (rate === "2x") {
+    return 2;
+  }
+
+  return 1;
+};
+
+const formatHourCount = (hours: number) =>
+  Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
+
+const formatCurrencyAmount = (amount: number) =>
+  amount.toLocaleString(undefined, {
+    maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+  });
 
 const startOfLocalDay = (value: Date) =>
   new Date(value.getFullYear(), value.getMonth(), value.getDate());
