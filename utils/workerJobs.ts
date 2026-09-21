@@ -40,6 +40,17 @@ const formatDate = (value: unknown) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 };
 
+const formatFullDate = (value: unknown) => {
+  if (!value) return "Date not set";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "Date not set";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const formatPostedDate = (value: unknown) => {
   if (!value) return "Recently posted";
   const date = new Date(String(value));
@@ -51,6 +62,20 @@ const formatDistance = (value: unknown) => {
   const distance = Number(value);
   if (!Number.isFinite(distance) || distance <= 0) return "";
   return ` - ${distance.toFixed(distance < 10 ? 1 : 0)} mi away`;
+};
+
+const getCoordinateLabel = (coordinates: any) => {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    return "Nearby site";
+  }
+
+  const [longitude, latitude] = coordinates;
+
+  if (!Number.isFinite(Number(latitude)) || !Number.isFinite(Number(longitude))) {
+    return "Nearby site";
+  }
+
+  return `${Number(latitude).toFixed(4)}, ${Number(longitude).toFixed(4)}`;
 };
 
 const getHoursBetween = (startTime?: string, endTime?: string) => {
@@ -90,6 +115,34 @@ const getDailyHours = (workingHours: any) => {
   return hours.reduce((total, value) => total + value, 0) / hours.length;
 };
 
+const formatWorkingHours = (workingHours: any) => {
+  if (!Array.isArray(workingHours) || !workingHours.length) {
+    return "Hours not set";
+  }
+
+  return workingHours
+    .map((schedule) => {
+      const day = schedule?.day ?? "Day";
+      const startTime = schedule?.startTime ?? "--:--";
+      const endTime = schedule?.endTime ?? "--:--";
+      const payRate = schedule?.isPayTwoX
+        ? " 2x"
+        : schedule?.isPayOnePointFiveX
+          ? " 1.5x"
+          : "";
+
+      return `${day} ${startTime}-${endTime}${payRate}`;
+    })
+    .join(", ");
+};
+
+const formatTrade = (trade: string) =>
+  trade
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob => {
   const [longitude, latitude] = job.location?.coordinates ?? [0, 0];
   const startDate = job.startDate ?? job.startAt;
@@ -101,15 +154,18 @@ export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob
     id: String(job.id ?? job._id),
     title: job.title ?? "Untitled job",
     company:
+      job.employerName ??
       job.employer?.name ??
       job.employerAuth?.profile?.name ??
       job.company ??
       "Employer",
-    area: job.location?.address ?? "Nearby site",
+    area: job.location?.address ?? getCoordinateLabel(job.location?.coordinates),
     distanceMiles: Number(distance ?? 0),
     workersNeeded: Number(job.workersNeeded ?? 0),
     startLabel: startDate ? `Starts ${formatDate(startDate)}` : "Start date not set",
     startDate: String(startDate ?? ""),
+    startDateLabel: formatFullDate(startDate),
+    endDateLabel: formatFullDate(endDate),
     posted: job.createdAt ? `Posted ${formatDate(job.createdAt)}` : "Recently posted",
     payRatePerDay: Math.round(hourlyRate * getDailyHours(job.workingHours)),
     duration: `${formatDate(startDate)} - ${formatDate(endDate)}`,
@@ -119,6 +175,11 @@ export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob
       top: 80 + (index % 4) * 48,
       left: `${25 + (index % 4) * 20}%`,
     },
+    trades: Array.isArray(job.trades) ? job.trades.map(formatTrade) : [],
+    hourlyRate,
+    workingHoursLabel: formatWorkingHours(job.workingHours),
+    mustHave: Array.isArray(job.mustHave) ? job.mustHave.map(formatTrade) : [],
+    note: job.note,
   };
 };
 
@@ -131,6 +192,7 @@ export const mapApiJobToWorkerJobItem = (job: any): WorkerJobItem => {
     id: String(job.id ?? job._id),
     title: job.title ?? "Untitled job",
     company:
+      job.employerName ??
       job.employer?.name ??
       job.employerAuth?.profile?.name ??
       job.company ??

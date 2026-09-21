@@ -31,7 +31,10 @@ import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/Worke
 import { getWorkerJobTrade } from "@/utils/workerJobFilters";
 import { getWorkerMapRegion } from "@/utils/workerMapJobs";
 import type { WorkerHomeJob } from "@/types";
-import type { AddressDetails } from "@/utils/googlePlaces";
+import {
+  getAddressFromCoordinates,
+  type AddressDetails,
+} from "@/utils/googlePlaces";
 
 const JOBS_LIMIT = 10;
 const MAP_JOBS_LIMIT = 100;
@@ -84,6 +87,7 @@ export default function WorkerSearchScreen() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedMapJobId, setSelectedMapJobId] = useState("");
+  const [selectedMapJobAddress, setSelectedMapJobAddress] = useState("");
 
   // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
@@ -162,7 +166,7 @@ export default function WorkerSearchScreen() {
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
   );
-  console.log("mapJobsQuery: ", mapJobsQuery);
+  console.log("mapJobsQuery: ", mapJobsQuery?.data);
   const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
     skip: !selectedMapJobId,
   });
@@ -173,7 +177,9 @@ export default function WorkerSearchScreen() {
   );
 
   const featuredMapJob = useMemo(() => {
-    const singleJob = getSingleJobData(selectedMapJobQuery.currentData);
+    const singleJob = getSingleJobData(
+      selectedMapJobQuery.currentData ?? selectedMapJobQuery.data,
+    );
 
     if (!singleJob) {
       return selectedMapJob ?? mapJobs[0];
@@ -186,7 +192,47 @@ export default function WorkerSearchScreen() {
       distanceMiles: selectedMapJob?.distanceMiles ?? mappedJob.distanceMiles,
       mapPosition: selectedMapJob?.mapPosition ?? mappedJob.mapPosition,
     };
-  }, [mapJobs, selectedMapJob, selectedMapJobQuery.currentData]);
+  }, [
+    mapJobs,
+    selectedMapJob,
+    selectedMapJobQuery.currentData,
+    selectedMapJobQuery.data,
+  ]);
+
+  const featuredMapJobWithAddress = useMemo(() => {
+    if (!featuredMapJob || !selectedMapJobAddress) {
+      return featuredMapJob;
+    }
+
+    return {
+      ...featuredMapJob,
+      area: selectedMapJobAddress,
+    };
+  }, [featuredMapJob, selectedMapJobAddress]);
+
+  useEffect(() => {
+    setSelectedMapJobAddress("");
+
+    if (!featuredMapJob?.coordinate) return;
+
+    const coordinates: [number, number] = [
+      featuredMapJob.coordinate.longitude,
+      featuredMapJob.coordinate.latitude,
+    ];
+    let cancelled = false;
+
+    getAddressFromCoordinates(coordinates)
+      .then((address) => {
+        if (!cancelled) setSelectedMapJobAddress(address);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedMapJobAddress(featuredMapJob.area);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [featuredMapJob?.area, featuredMapJob?.coordinate]);
 
   useEffect(() => {
     setPage(1);
@@ -417,7 +463,7 @@ export default function WorkerSearchScreen() {
         /* MAP VIEW */
         <SearchEmployerMapView
           jobs={mapJobs}
-          featuredJob={featuredMapJob}
+          featuredJob={featuredMapJobWithAddress}
           isLoading={isMapLoading}
           isError={mapJobsQuery.isError}
           isSelectedJobLoading={selectedMapJobQuery.isFetching}

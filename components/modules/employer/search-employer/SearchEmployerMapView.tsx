@@ -14,7 +14,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/Colors";
 import {
   formatDistance,
-  formatPayRate,
 } from "@/constants/workerHome";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
 import {
@@ -45,6 +44,16 @@ const getGoogleMapEmbedUrl = (region: MapRegion) => {
   const query = encodeURIComponent(`${region.latitude},${region.longitude}`);
 
   return `https://maps.google.com/maps?q=${query}&z=${getMapZoom(region)}&output=embed`;
+};
+
+const formatWorkersNeeded = (workersNeeded: number) =>
+  `${workersNeeded} worker${workersNeeded === 1 ? "" : "s"} needed`;
+
+const formatHourlyRate = (hourlyRate?: number) => {
+  const value = Number(hourlyRate);
+  if (!Number.isFinite(value) || value <= 0) return "Rate not set";
+
+  return `GBP ${value}/hr`;
 };
 
 export default function SearchEmployerMapView({
@@ -99,7 +108,7 @@ export default function SearchEmployerMapView({
                 key={job.id}
                 activeOpacity={0.9}
                 onPress={() => onSelectJob(job.id)}
-                className="absolute z-10"
+                className="absolute z-10 items-center"
                 style={
                   {
                     ...getWorkerMapPosition(job.coordinate, mapRegion),
@@ -108,6 +117,16 @@ export default function SearchEmployerMapView({
                 }
               >
                 <MarkerBubble dark={job.id === featuredJob?.id} />
+                {job.id === featuredJob?.id ? (
+                  <View className="mt-1 rounded-full bg-[#111111] px-3 py-1 shadow-sm">
+                    <Text
+                      className="text-xs font-bold text-white"
+                      numberOfLines={1}
+                    >
+                      {job.company}
+                    </Text>
+                  </View>
+                ) : null}
               </TouchableOpacity>
             ))}
           </>
@@ -195,8 +214,8 @@ export default function SearchEmployerMapView({
             onPress={() => handleViewDetails(featuredJob)}
             className="rounded-[28px] bg-white px-5 py-5 shadow-lg"
           >
-            <View className="flex-row items-center justify-between gap-4">
-              <View className="flex-1 flex-row items-center gap-4">
+            <View className="gap-4">
+              <View className="flex-row items-start justify-between gap-4">
                 <View className="h-14 w-14 items-center justify-center rounded-2xl bg-[#2F5BFF]">
                   <Briefcase size={24} color="#FFFFFF" />
                 </View>
@@ -205,18 +224,55 @@ export default function SearchEmployerMapView({
                     {isSelectedJobLoading ? "Loading job..." : featuredJob.title}
                   </Text>
                   <Text className="text-sm font-medium text-neutral-500">
-                    {`${featuredJob.company} - ${formatDistance(featuredJob.distanceMiles)} - ${featuredJob.startLabel}`}
+                    {featuredJob.company}
+                  </Text>
+                  {featuredJob.trades?.length ? (
+                    <Text className="mt-1 text-xs font-bold uppercase tracking-[0.6px] text-neutral-400">
+                      {featuredJob.trades.join(", ")}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <View className="items-end">
+                  <Text className="text-lg font-bold text-neutral-950">
+                    {isSelectedJobLoading
+                      ? "--"
+                      : formatHourlyRate(featuredJob.hourlyRate)}
                   </Text>
                 </View>
               </View>
 
-              <View className="items-end">
-                <Text className="text-lg font-bold text-neutral-950">
-                  {isSelectedJobLoading
-                    ? "--"
-                    : formatPayRate(featuredJob.payRatePerDay)}
+              <View className="gap-2 border-t border-neutral-100 pt-3">
+                <Text className="text-sm font-semibold text-neutral-700">
+                  {featuredJob.area}
+                  {featuredJob.distanceMiles
+                    ? ` - ${formatDistance(featuredJob.distanceMiles)}`
+                    : ""}
                 </Text>
-                <Text className="mt-1 text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
+                <Text className="text-sm font-semibold text-neutral-700">
+                  {featuredJob.startDateLabel ?? featuredJob.startLabel} -{" "}
+                  {featuredJob.endDateLabel ?? "End date not set"} -{" "}
+                  {formatWorkersNeeded(featuredJob.workersNeeded)}
+                </Text>
+                {featuredJob.workingHoursLabel ? (
+                  <Text className="text-xs font-medium leading-5 text-neutral-500">
+                    {featuredJob.workingHoursLabel}
+                  </Text>
+                ) : null}
+                {featuredJob.mustHave?.length ? (
+                  <Text className="text-xs font-medium leading-5 text-neutral-500">
+                    Must have: {featuredJob.mustHave.join(", ")}
+                  </Text>
+                ) : null}
+                {featuredJob.note ? (
+                  <Text
+                    className="text-xs font-medium leading-5 text-neutral-500"
+                    numberOfLines={2}
+                  >
+                    {featuredJob.note}
+                  </Text>
+                ) : null}
+                <Text className="text-xs font-bold uppercase tracking-[0.8px] text-neutral-400">
                   Tap to view details
                 </Text>
               </View>

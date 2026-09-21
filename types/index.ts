@@ -70,6 +70,8 @@ export interface WorkerHomeJob {
   workersNeeded: number;
   startLabel: string;
   startDate: string;
+  startDateLabel?: string;
+  endDateLabel?: string;
   posted: string;
   payRatePerDay: number;
   duration: string;
@@ -82,6 +84,11 @@ export interface WorkerHomeJob {
     top: number;
     left: string;
   };
+  trades?: string[];
+  hourlyRate?: number;
+  workingHoursLabel?: string;
+  mustHave?: string[];
+  note?: string;
 }
 
 export type WorkerHomeModalFilters = {
