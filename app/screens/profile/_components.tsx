@@ -53,10 +53,10 @@ export function ProfileHeader({
       <View className="flex-row justify-between items-end">
         <TouchableOpacity
           onPress={handleBackPress}
-          className="flex-row items-start gap-1 active:opacity-75"
+          className="flex-row items-start gap-0 active:opacity-75"
         >
-          <ChevronLeft size={22} color="#FFFFFF" style={{ marginTop: 2 }} />
-          <Text className="min-w-32 max-w-32 text-white text-lg font-extrabold tracking-tight">
+          <ChevronLeft size={22} color="#FFFFFF" style={{ marginTop: 0 }} />
+          <Text className="min-w-32 max-w-32 text-white text-base font-bold tracking-tight">
             {title}
           </Text>
         </TouchableOpacity>

@@ -137,31 +137,31 @@ export default function PostAJob({
   const [workingDaySchedule, setWorkingDaySchedule] =
     useState<WorkingDaySchedule>({
       monday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       tuesday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       wednesday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       thursday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       friday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
