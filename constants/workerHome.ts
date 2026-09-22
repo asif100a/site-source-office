@@ -219,6 +219,16 @@ export function formatNeeded(workersNeeded: number) {
   return `${workersNeeded} needed`;
 }
 
+export function formatHourlyRate(hourlyRate?: number) {
+  const value = Number(hourlyRate ?? 0);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    return "Rate not set";
+  }
+
+  return `£${value}/hour`;
+}
+
 export function formatPayRate(payRatePerDay: number) {
   return `£${payRatePerDay}/day`;
 }

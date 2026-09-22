@@ -1,5 +1,9 @@
 import { Colors } from "@/constants/Colors";
-import { formatDistance, formatNeeded, formatPayRate } from "@/constants/workerHome";
+import {
+  formatDistance,
+  formatHourlyRate,
+  formatNeeded,
+} from "@/constants/workerHome";
 import { WorkerHomeJob } from "@/types";
 import { Briefcase } from "lucide-react-native";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -35,7 +39,7 @@ export default function WebJobCard({
 
         <View className="items-end">
           <Text className="text-xl font-bold text-neutral-950">
-            {formatPayRate(job.payRatePerDay)}
+            {formatHourlyRate(job.hourlyRate)}
           </Text>
           <Text className="mt-1 text-sm font-medium text-neutral-500">
             {job.duration}

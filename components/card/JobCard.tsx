@@ -1,7 +1,11 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { Briefcase } from "lucide-react-native";
-import { formatDistance, formatNeeded, formatPayRate } from "@/constants/workerHome";
+import {
+  formatDistance,
+  formatHourlyRate,
+  formatNeeded,
+} from "@/constants/workerHome";
 import { Colors } from "@/constants/Colors";
 import { WorkerHomeJob } from "@/types";
 
@@ -36,7 +40,7 @@ export default function JobCard({
 
         <View className="items-end">
           <Text className="text-sm font-extrabold text-neutral-950">
-            {formatPayRate(job.payRatePerDay)}
+            {formatHourlyRate(job.hourlyRate)}
           </Text>
           <Text className="mt-1 text-[10px] font-medium text-neutral-500">
             {job.duration}
