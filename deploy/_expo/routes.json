@@ -189,6 +189,12 @@
       "routeKeys": {}
     },
     {
+      "file": "./screens/search/SearchJobs.tsx",
+      "page": "/screens/search/SearchJobs",
+      "namedRegex": "^/screens/search/SearchJobs(?:/)?$",
+      "routeKeys": {}
+    },
+    {
       "file": "./screens/job/CreateJobPost.web.tsx",
       "page": "/screens/job/CreateJobPost",
       "namedRegex": "^/screens/job/CreateJobPost(?:/)?$",
@@ -216,12 +222,6 @@
       "file": "./screens/auth/VerifyOtpScreen.web.tsx",
       "page": "/screens/auth/VerifyOtpScreen",
       "namedRegex": "^/screens/auth/VerifyOtpScreen(?:/)?$",
-      "routeKeys": {}
-    },
-    {
-      "file": "./screens/search/SearchEmployer.tsx",
-      "page": "/screens/search/SearchEmployer",
-      "namedRegex": "^/screens/search/SearchEmployer(?:/)?$",
       "routeKeys": {}
     },
     {
@@ -276,6 +276,22 @@
       "file": "./screens/worker-details/[id].web.tsx",
       "page": "/screens/worker-details/[id]",
       "namedRegex": "^/screens/worker\\-details/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/new-jobs/[id].web.tsx",
+      "page": "/screens/new-jobs/[id]",
+      "namedRegex": "^/screens/new\\-jobs/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      }
+    },
+    {
+      "file": "./screens/job/[id].web.tsx",
+      "page": "/screens/job/[id]",
+      "namedRegex": "^/screens/job/(?<id>[^/]+?)(?:/)?$",
       "routeKeys": {
         "id": "id"
       }
