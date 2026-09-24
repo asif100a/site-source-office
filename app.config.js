@@ -99,7 +99,7 @@ module.exports = ({ config }) => ({
     bundleIdentifier:
       config.ios?.bundleIdentifier ||
       config.android?.package ||
-      "com.techdebuggers.sitesource",
+      "com.sitesource.app",
     config: {
       ...config.ios?.config,
       ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
