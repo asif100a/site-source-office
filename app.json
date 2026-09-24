@@ -13,7 +13,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.techdebuggers.sitesource"
+      "package": "com.sitesource.app"
     },
     "web": {
       "bundler": "metro",
@@ -55,6 +55,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "googleMapsApiKey": "AIzaSyB3Ktiqv1sAYhiBJnWYQ34E45JeNQfjQEc",
+      "router": {},
+      "eas": {
+        "projectId": "e1a5388b-addb-41b1-b17b-c7d96c1d0fc4"
+      }
     }
   }
 }

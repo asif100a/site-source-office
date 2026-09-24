@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.techdebuggers.sitesource'
+    namespace 'com.sitesource.app'
     defaultConfig {
-        applicationId 'com.techdebuggers.sitesource'
+        applicationId 'com.sitesource.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

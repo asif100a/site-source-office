@@ -1,4 +1,4 @@
-package com.techdebuggers.sitesource
+package com.sitesource.app
 
 import android.os.Build
 import android.os.Bundle

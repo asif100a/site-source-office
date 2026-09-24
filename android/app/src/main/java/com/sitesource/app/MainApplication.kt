@@ -1,4 +1,4 @@
-package com.techdebuggers.sitesource
+package com.sitesource.app
 
 import android.app.Application
 import android.content.res.Configuration
