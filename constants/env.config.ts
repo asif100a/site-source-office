@@ -1,4 +1,6 @@
-export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.10.28.34:5000/api/v1"; // Default backend api url placeholder
+export const BACKEND_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL ||
+  "https://api.nazmulhasan.dev/api/v1";
 export const PUSH_TOKEN_REGISTRATION_PATH =
   process.env.EXPO_PUBLIC_PUSH_TOKEN_REGISTRATION_PATH ||
   "/notifications/push-token";
