@@ -28,11 +28,11 @@ import type { JobPostPayload } from "@/store/api/jobApi";
 import { TRADES } from "@/assets/data";
 
 const WORKING_DAY_OPTIONS = [
-  { key: "monday", label: "Monday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "tuesday", label: "Tuesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "wednesday", label: "Wednesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "thursday", label: "Thursday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
-  { key: "friday", label: "Friday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: true },
+  { key: "monday", label: "Monday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: false },
+  { key: "tuesday", label: "Tuesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: false },
+  { key: "wednesday", label: "Wednesday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: false },
+  { key: "thursday", label: "Thursday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: false },
+  { key: "friday", label: "Friday", startTime: createTimeValue(7, 30), endTime: createTimeValue(16, 30), enabled: false },
   { key: "saturday", label: "Saturday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
   { key: "sunday", label: "Sunday", startTime: createTimeValue(8, 0), endTime: createTimeValue(13, 0), enabled: false },
 ] as const;
@@ -91,31 +91,31 @@ export default function WebPostJobSection({
   const [workingDaySchedule, setWorkingDaySchedule] =
     useState<WorkingDaySchedule>({
       monday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       tuesday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       wednesday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       thursday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
       },
       friday: {
-        enabled: true,
+        enabled: false,
         startTime: createTimeValue(7, 30),
         endTime: createTimeValue(16, 30),
         weekendRate: "standard",
@@ -205,6 +205,14 @@ export default function WebPostJobSection({
   const workingDays = useMemo(
     () => countWorkingDaysInRange(jobDateRange, workingDaySchedule),
     [jobDateRange, workingDaySchedule],
+  );
+  const estimatedBillableHours = useMemo(
+    () => countBillableHoursInRange(jobDateRange, workingDaySchedule),
+    [jobDateRange, workingDaySchedule],
+  );
+  const totalEstimate = useMemo(
+    () => hourlyRate * estimatedBillableHours * workersNeeded,
+    [estimatedBillableHours, hourlyRate, workersNeeded],
   );
   const selectedDateCount = useMemo(
     () => countSelectedDatesInRange(jobDateRange),
@@ -402,7 +410,6 @@ export default function WebPostJobSection({
           <DateCard
             label="Start"
             value={formatDateLabel(jobDateRange.from)}
-            active
           />
           <DateCard label="Finish" value={formatDateLabel(jobDateRange.to)} />
 
@@ -566,17 +573,39 @@ export default function WebPostJobSection({
         className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222] placeholder:text-[#999999]"
       />
 
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={handleCreateJobPost}
-        disabled={isCreatingJob}
-        className="mt-5 items-center justify-center rounded-[18px] py-4"
-        style={{ backgroundColor: Colors.common.BRAND }}
-      >
-        <Text className="text-sm font-bold text-white">
-          {isCreatingJob ? "Posting..." : "Post Job"}
+      <View className="mt-6 flex-col gap-4 rounded-[24px] border border-neutral-100 bg-neutral-50 p-5 lg:flex-row lg:items-center lg:justify-between">
+        <View>
+          <Text className="text-[11px] font-bold uppercase tracking-[1.3px] text-[#222222]">
+            Estimated total
+          </Text>
+          <Text className="mt-1 text-[28px] font-black tracking-[-0.6px] text-[#222222]">
+            £{formatCurrencyAmount(totalEstimate)}
+          </Text>
+        </View>
+
+        <Text className="max-w-sm text-sm font-semibold leading-5 text-[#222222] lg:text-right">
+          {workersNeeded} x labourer · {formatHourCount(estimatedBillableHours)} billable hrs
         </Text>
-      </TouchableOpacity>
+      </View>
+
+      <View className="mt-5 flex-col gap-3 lg:flex-row lg:items-center">
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleCreateJobPost}
+          disabled={isCreatingJob}
+          className="items-center justify-center rounded-[18px] px-8 py-4 lg:min-w-[220px]"
+          style={{ backgroundColor: Colors.common.BRAND }}
+        >
+          <Text className="text-sm font-bold text-white">
+            {isCreatingJob ? "Posting..." : "Post Job"}
+          </Text>
+        </TouchableOpacity>
+
+        <Text className="text-sm leading-5 text-[#7D7D7D]">
+          Workers are matched by trade, rating and travel time. You pick who
+          starts.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -626,6 +655,77 @@ const countWorkingDaysInRange = (
 
   return count;
 };
+
+const countBillableHoursInRange = (
+  range: JobDateRange,
+  schedule: WorkingDaySchedule,
+) => {
+  if (!range.from || !range.to) {
+    return 0;
+  }
+
+  const start = startOfLocalDay(range.from);
+  const end = startOfLocalDay(range.to);
+
+  if (start > end) {
+    return 0;
+  }
+
+  let hours = 0;
+  const cursor = startOfLocalDay(start);
+  const dayKeys: WorkingDayKey[] = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+
+  while (cursor <= end) {
+    const dayKey = dayKeys[cursor.getDay()];
+    const daySchedule = schedule[dayKey];
+
+    if (daySchedule.enabled) {
+      hours +=
+        getShiftHours(daySchedule.startTime, daySchedule.endTime) *
+        getPayMultiplier(daySchedule.weekendRate);
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+  }
+
+  return hours;
+};
+
+const getShiftHours = (startTime: Date, endTime: Date) => {
+  const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+  const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+
+  return Math.max(0, (endMinutes - startMinutes) / 60);
+};
+
+const getPayMultiplier = (rate: WeekendPayRate) => {
+  if (rate === "1.5x") {
+    return 1.5;
+  }
+
+  if (rate === "2x") {
+    return 2;
+  }
+
+  return 1;
+};
+
+const formatHourCount = (hours: number) =>
+  Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
+
+const formatCurrencyAmount = (amount: number) =>
+  amount.toLocaleString(undefined, {
+    maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+  });
 
 const startOfLocalDay = (value: Date) =>
   new Date(value.getFullYear(), value.getMonth(), value.getDate());

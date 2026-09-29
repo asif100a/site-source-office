@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Clock3 } from "lucide-react-native";
 import {
   Platform,
@@ -32,14 +32,42 @@ export default function TimePickerField({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const webInputRef = useRef<HTMLInputElement | null>(null);
   const timeValue = formatTimeValue(value);
 
-  const handleWebChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const [hours, minutes] = event.target.value.split(":").map(Number);
+  const handleWebChange = (event: React.FormEvent<HTMLInputElement>) => {
+    const nextTime = event.currentTarget.value;
+
+    if (!nextTime) {
+      return;
+    }
+
+    const [hours, minutes] = nextTime.split(":").map(Number);
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return;
+    }
+
     const nextValue = new Date(value);
 
     nextValue.setHours(hours, minutes, 0, 0);
     onChange(nextValue);
+  };
+
+  const openWebTimePicker = () => {
+    if (disabled) {
+      return;
+    }
+
+    const input = webInputRef.current;
+
+    input?.focus();
+
+    try {
+      input?.showPicker?.();
+    } catch {
+      // Some browsers only allow showPicker from direct DOM click/pointer events.
+    }
   };
 
   if (Platform.OS === "web") {
@@ -50,21 +78,51 @@ export default function TimePickerField({
         }`}
       >
         <input
+          ref={webInputRef}
           type="time"
           value={timeValue}
           onChange={handleWebChange}
+          onInput={handleWebChange}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            openWebTimePicker();
+          }}
           disabled={disabled}
           aria-label="Select time"
+          step={300}
           style={{
             border: "none",
             background: "transparent",
             color: "#202020",
+            cursor: disabled ? "not-allowed" : "pointer",
             fontSize: 13,
             fontWeight: 700,
+            minWidth: 82,
             outline: "none",
+            pointerEvents: disabled ? "none" : "auto",
           }}
         />
-        <Clock3 size={15} color="#8A8A8A" />
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openWebTimePicker();
+          }}
+          disabled={disabled}
+          aria-label="Open time picker"
+          style={{
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            cursor: disabled ? "not-allowed" : "pointer",
+            display: "flex",
+            justifyContent: "center",
+            padding: 0,
+          }}
+        >
+          <Clock3 size={15} color="#8A8A8A" />
+        </button>
       </View>
     );
   }

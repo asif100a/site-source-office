@@ -1,7 +1,7 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
-import { Colors } from '@/constants/Colors';
-import { MapPin, Minus, Plus } from 'lucide-react-native';
+import { View, Text, TouchableOpacity } from "react-native";
+import React from "react";
+import { Colors } from "@/constants/Colors";
+import { MapPin, Minus, Plus } from "lucide-react-native";
 
 export default function WebMapHeroCard({
   mapEmbedUrl,
@@ -95,7 +95,7 @@ export default function WebMapHeroCard({
         </View>
       </View>
     </View>
-  )
+  );
 }
 
 function WebGoogleMap({ sourceUrl }: { sourceUrl: string }) {
