@@ -62,6 +62,7 @@ export default function RegisterSsoScreenWeb({
       return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
         email?: string;
         name?: string;
+        picture?: string;
       };
     } catch {
       return {};
@@ -86,7 +87,7 @@ export default function RegisterSsoScreenWeb({
       const response = await googleLogin({
         name: identity.name || identity.email.split("@")[0],
         email: identity.email,
-        token,
+        profileImage: identity.picture,
         isLegalTermsAccepted: true,
       }).unwrap();
       const user = response.data?.user;

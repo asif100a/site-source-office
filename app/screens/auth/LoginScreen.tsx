@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { Platform, View, TouchableOpacity, ScrollView } from "react-native";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
@@ -24,6 +22,10 @@ import {
 } from "@/constants/Routes";
 import { passwordSchema } from "@/zod/authSchema";
 import { getRoleFromToken } from "@/utils/authToken";
+import {
+  isGoogleSignInConfigured,
+  signInWithGoogleInApp,
+} from "@/utils/googleSignIn";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -31,14 +33,6 @@ interface LoginScreenProps {
   onForgotPasswordPress?: () => void;
   onLoginPress?: (email: string) => void;
 }
-
-WebBrowser.maybeCompleteAuthSession();
-
-const googleClientIds = {
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-};
 
 export default function LoginScreen({
   role,
@@ -53,10 +47,6 @@ export default function LoginScreen({
   const [googleLogin] = useGoogleLoginMutation();
   const [appleLogin] = useAppleLoginMutation();
   const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
-  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
-    ...googleClientIds,
-    scopes: ["openid", "profile", "email"],
-  });
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -128,6 +118,7 @@ export default function LoginScreen({
       return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
         email?: string;
         name?: string;
+        picture?: string;
       };
     } catch {
       return {};
@@ -136,8 +127,7 @@ export default function LoginScreen({
 
   const completeSsoLogin = async (
     provider: "google" | "apple",
-    token: string,
-    identity: { email?: string; name?: string },
+    identity: { email?: string; name?: string; picture?: string },
   ) => {
     if (!identity.email) {
       throw new Error(
@@ -148,7 +138,7 @@ export default function LoginScreen({
     const payload = {
       name: identity.name || identity.email.split("@")[0],
       email: identity.email,
-      token,
+      profileImage: identity.picture,
       isLegalTermsAccepted: true,
     };
     const response =
@@ -190,27 +180,20 @@ export default function LoginScreen({
   };
 
   const handleGoogleLogin = async () => {
-    if (
-      !googleClientIds.androidClientId &&
-      !googleClientIds.iosClientId &&
-      !googleClientIds.webClientId
-    ) {
+    if (!isGoogleSignInConfigured()) {
       Toast.show({
         type: "error",
         text1: "Google sign-in is not configured",
-        text2: "Add the Google OAuth client IDs to .env.",
+        text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env.",
       });
       return;
     }
-    if (!googleRequest) return;
 
     setSsoLoading("google");
     try {
-      const result = await promptGoogle();
-      if (result.type !== "success") return;
-      const token = result.params.id_token;
-      if (!token) throw new Error("Google did not return an identity token.");
-      await completeSsoLogin("google", token, getIdentityFromToken(token));
+      const identity = await signInWithGoogleInApp();
+      if (!identity) return;
+      await completeSsoLogin("google", identity);
     } catch (error: any) {
       Toast.show({
         type: "error",
@@ -251,7 +234,7 @@ export default function LoginScreen({
       ]
         .filter(Boolean)
         .join(" ");
-      await completeSsoLogin("apple", credential.identityToken, {
+      await completeSsoLogin("apple", {
         email: credential.email ?? tokenIdentity.email,
         name: name || tokenIdentity.name,
       });
@@ -376,7 +359,7 @@ export default function LoginScreen({
             <TouchableOpacity
               onPress={() => void handleGoogleLogin()}
               activeOpacity={0.9}
-              disabled={isLoading || ssoLoading !== null || !googleRequest}
+              disabled={isLoading || ssoLoading !== null}
               className="w-full border border-neutral-200 bg-white py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-[#1B2530] text-base font-semibold">

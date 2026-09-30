@@ -124,6 +124,7 @@ export default function LoginScreenWeb({
       return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
         email?: string;
         name?: string;
+        picture?: string;
       };
     } catch {
       return {};
@@ -157,7 +158,7 @@ export default function LoginScreenWeb({
       const response = await googleLogin({
         name: identity.name || identity.email.split("@")[0],
         email: identity.email,
-        token: providerToken,
+        profileImage: identity.picture,
         isLegalTermsAccepted: true,
       }).unwrap();
       const appToken =

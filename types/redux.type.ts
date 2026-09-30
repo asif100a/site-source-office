@@ -30,7 +30,6 @@ export interface LoginRequest {
 export interface GoogleLoginRequest {
   name: string;
   email: string;
-  token: string;
   profileImage?: string;
   isLegalTermsAccepted: boolean;
 }

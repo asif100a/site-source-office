@@ -27,6 +27,7 @@
     "@react-aria/utils": "^3.29.0",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-native-community/datetimepicker": "9.1.0",
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.18.8",
     "@reduxjs/toolkit": "^2.12.0",
     "ai": "^6.0.116",

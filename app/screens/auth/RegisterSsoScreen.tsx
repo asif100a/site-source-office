@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { Platform, ScrollView, TouchableOpacity, View } from "react-native";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "@/components/ui/text";
@@ -16,6 +14,10 @@ import {
   useRegisterMutation,
 } from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
+import {
+  isGoogleSignInConfigured,
+  signInWithGoogleInApp,
+} from "@/utils/googleSignIn";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -26,14 +28,6 @@ interface RegisterSsoScreenProps {
   onLoginPress?: () => void;
   onBackPress?: () => void;
 }
-
-WebBrowser.maybeCompleteAuthSession();
-
-const googleClientIds = {
-  androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-};
 
 export default function RegisterSsoScreen({
   onContinue,
@@ -46,10 +40,6 @@ export default function RegisterSsoScreen({
   const [googleLogin] = useGoogleLoginMutation();
   const [appleLogin] = useAppleLoginMutation();
   const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
-  const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
-    ...googleClientIds,
-    scopes: ["openid", "profile", "email"],
-  });
   const { control, handleSubmit } = useForm({
     defaultValues: {
       name: "",
@@ -67,6 +57,7 @@ export default function RegisterSsoScreen({
       return JSON.parse(decodeURIComponent(escape(atob(normalized)))) as {
         email?: string;
         name?: string;
+        picture?: string;
       };
     } catch {
       return {};
@@ -75,8 +66,7 @@ export default function RegisterSsoScreen({
 
   const completeSsoRegistration = async (
     provider: "google" | "apple",
-    token: string,
-    identity: { email?: string; name?: string },
+    identity: { email?: string; name?: string; picture?: string },
   ) => {
     if (!identity.email) {
       throw new Error("Your provider did not return an email address. Please use a different sign-in method.");
@@ -85,7 +75,7 @@ export default function RegisterSsoScreen({
     const payload = {
       name: identity.name || identity.email.split("@")[0],
       email: identity.email,
-      token,
+      profileImage: identity.picture,
       isLegalTermsAccepted: true,
     };
     const response = provider === "google"
@@ -100,19 +90,16 @@ export default function RegisterSsoScreen({
   };
 
   const handleGoogleContinue = async () => {
-    if (!googleClientIds.androidClientId && !googleClientIds.iosClientId && !googleClientIds.webClientId) {
-      Toast.show({ type: "error", text1: "Google sign-in is not configured", text2: "Add the Google OAuth client IDs to .env." });
+    if (!isGoogleSignInConfigured()) {
+      Toast.show({ type: "error", text1: "Google sign-in is not configured", text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env." });
       return;
     }
-    if (!googleRequest) return;
 
     setSsoLoading("google");
     try {
-      const result = await promptGoogle();
-      if (result.type !== "success") return;
-      const token = result.params.id_token;
-      if (!token) throw new Error("Google did not return an identity token.");
-      await completeSsoRegistration("google", token, getIdentityFromToken(token));
+      const identity = await signInWithGoogleInApp();
+      if (!identity) return;
+      await completeSsoRegistration("google", identity);
     } catch (error: any) {
       Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
     } finally {
@@ -139,7 +126,7 @@ export default function RegisterSsoScreen({
       const name = [credential.fullName?.givenName, credential.fullName?.familyName]
         .filter(Boolean)
         .join(" ");
-      await completeSsoRegistration("apple", credential.identityToken, {
+      await completeSsoRegistration("apple", {
         email: credential.email ?? tokenIdentity.email,
         name: name || tokenIdentity.name,
       });
@@ -284,7 +271,7 @@ export default function RegisterSsoScreen({
             <TouchableOpacity
               onPress={() => void handleGoogleContinue()}
               activeOpacity={0.9}
-              disabled={isLoading || ssoLoading !== null || !googleRequest}
+              disabled={isLoading || ssoLoading !== null}
               className="w-full border border-neutral-200 bg-white py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-[#1B2530] text-base font-semibold">
