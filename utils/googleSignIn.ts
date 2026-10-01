@@ -1,5 +1,9 @@
 import { Platform } from "react-native";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
 
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
@@ -51,4 +55,33 @@ export async function signInWithGoogleInApp(): Promise<GoogleIdentity | null> {
     name: user.name ?? user.givenName ?? undefined,
     picture: user.photo ?? undefined,
   };
+}
+
+export function getGoogleSignInErrorMessage(error: unknown) {
+  if (isErrorWithCode(error)) {
+    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+      return null;
+    }
+
+    if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      return "Google Play Services is unavailable or needs to be updated.";
+    }
+
+    if (error.code === statusCodes.IN_PROGRESS) {
+      return "Google sign-in is already in progress.";
+    }
+  }
+
+  const message =
+    error instanceof Error ? error.message : String(error ?? "");
+
+  if (
+    message.includes("NETWORK_ERROR") ||
+    message.includes("ApiException: 7") ||
+    message.includes("status code: 7")
+  ) {
+    return "Google Play Services cannot reach Google right now. Check the device internet connection, disable VPN/proxy/private DNS, update Google Play Services, then try again.";
+  }
+
+  return message || "Please try again.";
 }

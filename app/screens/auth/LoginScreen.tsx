@@ -23,6 +23,7 @@ import {
 import { passwordSchema } from "@/zod/authSchema";
 import { getRoleFromToken } from "@/utils/authToken";
 import {
+  getGoogleSignInErrorMessage,
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
@@ -192,14 +193,18 @@ export default function LoginScreen({
     setSsoLoading("google");
     try {
       const identity = await signInWithGoogleInApp();
+      console.log("Google sign-in identity: ", identity);
       if (!identity) return;
       await completeSsoLogin("google", identity);
     } catch (error: any) {
+      console.error("Google sign-in error: ", error);
+      const errorMessage = getGoogleSignInErrorMessage(error);
+      if (!errorMessage) return;
+
       Toast.show({
         type: "error",
         text1: "Google sign-in failed",
-        text2:
-          error?.data?.message ?? error?.message ?? "Please try again.",
+        text2: error?.data?.message ?? errorMessage,
       });
     } finally {
       setSsoLoading(null);
@@ -239,6 +244,7 @@ export default function LoginScreen({
         name: name || tokenIdentity.name,
       });
     } catch (error: any) {
+      console.error("Apple sign-in error: ", error);
       if (error?.code !== "ERR_REQUEST_CANCELED") {
         Toast.show({
           type: "error",

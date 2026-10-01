@@ -19,7 +19,7 @@ const WorkerRoutes: RouteMap = {
 const EmployerRoutes: RouteMap = {
   EMPLOYER_HOME: "/tabs/(employer-tabs)",
   EMPLOYER_DETAILS: "/screens/employer-details/[id]",
-  SEARCH_EMPLOYER: "/screens/search/SearchEmployer",
+  SEARCH_EMPLOYER: "/screens/search/SearchJobs",
   PROFILE_EMPLOYER: "/tabs/(employer-tabs)/profile",
 };
 

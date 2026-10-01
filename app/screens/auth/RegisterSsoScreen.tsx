@@ -15,6 +15,7 @@ import {
 } from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
 import {
+  getGoogleSignInErrorMessage,
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
@@ -101,7 +102,10 @@ export default function RegisterSsoScreen({
       if (!identity) return;
       await completeSsoRegistration("google", identity);
     } catch (error: any) {
-      Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
+      const errorMessage = getGoogleSignInErrorMessage(error);
+      if (!errorMessage) return;
+
+      Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? errorMessage });
     } finally {
       setSsoLoading(null);
     }
