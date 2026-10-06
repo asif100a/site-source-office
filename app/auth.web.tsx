@@ -117,6 +117,15 @@ export default function AuthFlowWeb() {
     setStep("verify_otp");
   };
 
+  const goToStep = (nextStep: AuthStep) => {
+    setStep(nextStep);
+    router.setParams({
+      step: nextStep,
+      currentStep: nextStep,
+      role,
+    });
+  };
+
   const handleBack = () => {
     if (step === "register_sso" || step === "register_employer") {
       setStep("login");
@@ -202,15 +211,16 @@ export default function AuthFlowWeb() {
                 ? goToForgotPassword()
                 : setStep(role === "employer" ? "register_employer" : "register_sso")
             }
-            onComplete={() =>
-              setStep(
+            onComplete={() => {
+              const nextStep =
                 otpFlow === "password_reset"
                   ? "reset_password"
                   : role === "employer"
                     ? "complete_payroll"
-                    : "register_general",
-              )
-            }
+                    : "register_general";
+
+              goToStep(nextStep);
+            }}
           />
         );
       case "forgot_password":
@@ -236,7 +246,7 @@ export default function AuthFlowWeb() {
             role={role}
             name={registrationName}
             onContinue={() => {
-              setStep("register_documents");
+              goToStep("register_documents");
             }}
             onBackPress={handleBack}
             onLoginPress={() => setStep("login")}

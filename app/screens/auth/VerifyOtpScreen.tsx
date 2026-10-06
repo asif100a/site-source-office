@@ -104,7 +104,7 @@ export default function VerifyOtpScreen({
       setError("Email is required to verify this code.");
       return;
     }
-    console.log("Flow: ", flow);
+    
     try {
       const payload = {
         email: trimmedEmail,
@@ -118,29 +118,36 @@ export default function VerifyOtpScreen({
           : await verifyOTP(payload as any).unwrap();
       console.log("OTP verification response: ", response);
 
-      if (response.success || response?.data?.success) {
-        if (flow !== "password_reset") {
-          const token =
-            response.accessToken ??
-            response.data?.accessToken ??
-            (response.data as any)?.token;
+      // `unwrap()` only resolves for a successful API response. The backend
+      // does not always return the success flag at the same response level,
+      // so do not use that flag to decide whether the registration continues.
+      if (flow !== "password_reset") {
+        const token =
+          response.accessToken ??
+          response.token ??
+          response.data?.accessToken ??
+          response.data?.token ??
+          response.data?.tokens?.accessToken;
 
-          if (token) {
-            dispatch(setToken(token));
+        if (token) {
+          dispatch(setToken(token));
+          try {
             await AsyncStorage.setItem("token", token);
+          } catch (storageError) {
+            console.error("Unable to persist verified access token:", storageError);
           }
         }
+      }
 
-        Toast.show({
-          type: "success",
-          text1: "OTP verified",
-          text2: response?.message ?? "Your code has been verified.",
-        });
+      Toast.show({
+        type: "success",
+        text1: "OTP verified",
+        text2: response?.message ?? "Your code has been verified.",
+      });
 
-        if (onComplete) {
-          onComplete();
-          return;
-        }
+      if (onComplete) {
+        onComplete();
+        return;
       }
     } catch (error: any) {
       const message =
@@ -157,6 +164,7 @@ export default function VerifyOtpScreen({
       return;
     }
   };
+
 
   const handleResend = async () => {
     if (secondsLeft > 0) {

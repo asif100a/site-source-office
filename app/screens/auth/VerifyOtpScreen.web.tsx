@@ -117,29 +117,36 @@ export default function VerifyOtpScreenWeb({
           flow === "password_reset" ? "RESET_PASSWORD" : "VERIFY_ACCOUNT",
       }).unwrap();
 
-      if (response.success || response?.data?.success) {
-        if (flow !== "password_reset") {
-          const token =
-            response.accessToken ??
-            response.data?.accessToken ??
-            (response.data as any)?.token;
+      // `unwrap()` only resolves for a successful API response. The backend
+      // does not always return the success flag at the same response level,
+      // so do not use that flag to decide whether the registration continues.
+      if (flow !== "password_reset") {
+        const token =
+          response.accessToken ??
+          response.token ??
+          response.data?.accessToken ??
+          response.data?.token ??
+          response.data?.tokens?.accessToken;
 
-          if (token) {
-            dispatch(setToken(token));
+        if (token) {
+          dispatch(setToken(token));
+          try {
             await AsyncStorage.setItem("token", token);
+          } catch (storageError) {
+            console.error("Unable to persist verified access token:", storageError);
           }
         }
+      }
 
-        Toast.show({
-          type: "success",
-          text1: "OTP verified",
-          text2: response?.message ?? "Your code has been verified.",
-        });
+      Toast.show({
+        type: "success",
+        text1: "OTP verified",
+        text2: response?.message ?? "Your code has been verified.",
+      });
 
-        if (onComplete) {
-          onComplete();
-          return;
-        }
+      if (onComplete) {
+        onComplete();
+        return;
       }
 
       // if (flow === "password_reset") {

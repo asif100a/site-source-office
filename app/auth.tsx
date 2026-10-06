@@ -119,6 +119,15 @@ export default function AuthFlow() {
     setStep("verify_otp");
   };
 
+  const goToStep = (nextStep: AuthStep) => {
+    setStep(nextStep);
+    router.setParams({
+      step: nextStep,
+      currentStep: nextStep,
+      role,
+    });
+  };
+
   // Go back to the previous screen in the flow
   const handleBack = () => {
     if (step === "register_sso" || step === "register_employer") {
@@ -205,15 +214,16 @@ export default function AuthFlow() {
                     role === "employer" ? "register_employer" : "register_sso",
                   )
             }
-            onComplete={() =>
-              setStep(
+            onComplete={() => {
+              const nextStep =
                 otpFlow === "password_reset"
                   ? "reset_password"
                   : role === "employer"
                     ? "complete_payroll"
-                    : "register_general",
-              )
-            }
+                    : "register_general";
+
+              goToStep(nextStep);
+            }}
           />
         );
       case "forgot_password":
@@ -239,7 +249,7 @@ export default function AuthFlow() {
             role={role}
             name={registrationName}
             onContinue={() => {
-              setStep("register_documents");
+              goToStep("register_documents");
             }}
             onLoginPress={() => setStep("login")}
           />

@@ -12,12 +12,25 @@ import {
   logout,
   setForgotToken,
   setOtpToken,
+  setToken,
 } from "../slices/authSlice";
 import { tagTypes } from "../type/tagType";
 import { baseApi } from "./_base/baseApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BASE_POINT = "/auth";
+
+const getVerificationToken = (response: any): string | undefined =>
+  response?.data?.verificationToken ??
+  response?.data?.otpToken?.verificationToken ??
+  response?.verificationToken;
+
+const getAccessToken = (response: any): string | undefined =>
+  response?.accessToken ??
+  response?.token ??
+  response?.data?.accessToken ??
+  response?.data?.token ??
+  response?.data?.tokens?.accessToken;
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -51,6 +64,20 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body: userData,
       }),
+      async onQueryStarted(args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const token = getVerificationToken(data);
+
+          if (token) {
+            dispatch(clearOtpToken());
+            dispatch(setOtpToken(token));
+            await AsyncStorage.setItem("otpToken", token);
+          }
+        } catch (error) {
+          console.error("Registration OTP token setup failed:", error);
+        }
+      },
       invalidatesTags: [tagTypes.auth],
     }),
     verifyOTP: builder.mutation<any, VerifyOTPRequest>({
@@ -59,9 +86,15 @@ export const authApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      async onQueryStarted(args, { queryFulfilled }) {
+      async onQueryStarted(args, { dispatch, queryFulfilled }) {
         try {
-          await queryFulfilled;
+          const { data } = await queryFulfilled;
+          const token = getAccessToken(data);
+
+          if (token) {
+            dispatch(setToken(token));
+            await AsyncStorage.setItem("token", token);
+          }
         } catch (error) {
           console.error("OTP verification failed:", error);
         }
@@ -78,8 +111,7 @@ export const authApi = baseApi.injectEndpoints({
         try {
           const { data } = await queryFulfilled;
           const token =
-            data?.data?.verificationToken ??
-            data?.data?.otpToken?.verificationToken ??
+            getVerificationToken(data) ??
             data?.data?.resetToken ??
             data?.resetToken;
 
