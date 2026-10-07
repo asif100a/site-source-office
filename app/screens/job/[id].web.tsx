@@ -251,7 +251,7 @@ export default function JobDetailsWebScreen() {
                       label="Hourly rate"
                       value={
                         job.hourlyRate != null
-                          ? `$${job.hourlyRate}/hour`
+                          ? `£${job.hourlyRate}/hour`
                           : "Not set"
                       }
                     />

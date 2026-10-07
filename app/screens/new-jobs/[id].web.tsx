@@ -304,7 +304,7 @@ export default function NewJobDetailsWebScreen() {
                     Hourly rate
                   </Text>
                   <Text className="mt-1 text-2xl font-bold text-white">
-                    {job.hourlyRate != null ? `$${job.hourlyRate}/hour` : "Not set"}
+                    {job.hourlyRate != null ? `£${job.hourlyRate}/hour` : "Not set"}
                   </Text>
                 </View>
               </View>

@@ -151,8 +151,8 @@ export default function WebPostJobSection({
       Toast.show({ type: "error", text1: "Finish date must be after start date" });
       return;
     }
-    if (!notes.trim()) {
-      Toast.show({ type: "error", text1: "Job notes are required" });
+    if (notes.trim().length < 250) {
+      Toast.show({ type: "error", text1: "Job description must be at least 250 characters" });
       return;
     }
     const workingHours = WORKING_DAY_OPTIONS.filter(
@@ -563,13 +563,13 @@ export default function WebPostJobSection({
         </View>
       </View>
 
-      <FormSectionLabel label="Job notes" />
+      <FormSectionLabel label="Job description" />
       <TextInput
         value={notes}
         onChangeText={setNotes}
         multiline
         textAlignVertical="top"
-        placeholder="Add site notes, access details, or start instructions"
+        placeholder="Describe the job, responsibilities, site details, and start instructions (minimum 250 characters)"
         className="mt-3 min-h-[140px] rounded-[22px] border border-neutral-100 bg-neutral-50 px-4 py-4 text-sm leading-6 text-[#222222] placeholder:text-[#999999]"
       />
 

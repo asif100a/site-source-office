@@ -36,26 +36,7 @@ export const SITE_REGION: Region = {
   longitudeDelta: 0.015,
 };
 
-const WEEKEND_DAYS = new Set(["saturday", "sunday"]);
 const REGION_CHANGE_EPSILON = 0.000001;
-
-const getWeekendPayValidationMessage = (payload: JobPostPayload) => {
-  const weekendWithoutPremiumPay = payload.workingHours.find((schedule) => {
-    const day = schedule.day.trim().toLowerCase();
-
-    return (
-      WEEKEND_DAYS.has(day) &&
-      !schedule.isPayOnePointFiveX &&
-      !schedule.isPayTwoX
-    );
-  });
-
-  if (!weekendWithoutPremiumPay) {
-    return "";
-  }
-
-  return `${weekendWithoutPremiumPay.day} requires 1.5x pay or 2x pay.`;
-};
 
 function getNativeMapComponents(): NativeMapComponents | null {
   try {
@@ -87,17 +68,6 @@ export default function EmployerHomeScreen() {
   const [createJob, { isLoading: isCreatingJob }] = useCreateJobMutation();
 
   const handleCreateJobPost = async (payload: JobPostPayload): Promise<boolean> => {
-    const weekendPayError = getWeekendPayValidationMessage(payload);
-
-    if (weekendPayError) {
-      Toast.show({
-        type: "error",
-        text1: "Select weekend pay",
-        text2: weekendPayError,
-      });
-      return false;
-    }
-
     try {
       console.log("Job post Payload: ", payload);
       // return true;

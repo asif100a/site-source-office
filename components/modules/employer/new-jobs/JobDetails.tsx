@@ -186,7 +186,7 @@ export default function NewJobDetails({
           <Detail
             label="Hourly rate"
             value={
-              job.hourlyRate != null ? `$${job.hourlyRate}/hour` : "Not set"
+              job.hourlyRate != null ? `£${job.hourlyRate}/hour` : "Not set"
             }
           />
           <Detail
