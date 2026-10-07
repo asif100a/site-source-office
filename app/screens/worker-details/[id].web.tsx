@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Bookmark,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -23,6 +24,7 @@ import WorkerRatingStars from "@/components/modules/worker/worker-details/_ui/Wo
 import PLACEHOLDER_USER from "@/assets/images/placeholder/placeholder-user.png";
 import { useGetSingleWorkerQuery } from "@/store/api/workerProfileApi";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
+import { useCreateWorkerBookmarkMutation } from "@/store/api/bookmarkApi";
 
 const getWorkerData = (response: any) => response?.data?.data ?? response?.data ?? response;
 
@@ -129,6 +131,7 @@ const mapServerWorkerToDetails = (response: any) => {
     : [];
 
   return {
+    hasBookmarked: Boolean(worker?.isBookmarked),
     name: profile?.name ?? worker?.name ?? worker?.email ?? "Worker",
     role,
     status: worker?.status === "ACTIVE" ? "Available" : worker?.status ?? "Worker",
@@ -193,7 +196,7 @@ function SectionTitle({
   );
 }
 
-function HeroCard({ worker, onBack }: { worker: any; onBack: () => void }) {
+function HeroCard({ worker, onBack, isFavorite, onToggleFavorite }: { worker: any; onBack: () => void; isFavorite: boolean; onToggleFavorite: () => void }) {
   return (
     <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
       <View className="flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -224,6 +227,14 @@ function HeroCard({ worker, onBack }: { worker: any; onBack: () => void }) {
           </View>
         </View>
 
+        <View className="flex-row gap-3">
+        <TouchableOpacity
+          onPress={onToggleFavorite}
+          activeOpacity={0.88}
+          className="flex-row items-center justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-3.5"
+        >
+          <Bookmark size={18} color={isFavorite ? Colors.common.BRAND : "#111827"} fill={isFavorite ? Colors.common.BRAND : "transparent"} />
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={onBack}
           activeOpacity={0.88}
@@ -232,6 +243,7 @@ function HeroCard({ worker, onBack }: { worker: any; onBack: () => void }) {
           <ArrowLeft size={18} color="#111827" />
           <Text className="text-sm font-semibold text-neutral-900">Back</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -515,10 +527,16 @@ export default function WorkerDetailsWebScreen() {
     { skip: !id },
   );
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isFavorite, setIsFavorite] = React.useState(false);
+  const [createWorkerBookmark] = useCreateWorkerBookmarkMutation();
   const worker = React.useMemo(
     () => mapServerWorkerToDetails(workerQuery.data),
     [workerQuery.data],
   );
+
+  React.useEffect(() => {
+    setIsFavorite(Boolean(worker.hasBookmarked));
+  }, [worker.hasBookmarked]);
   const [resolvedLocation, setResolvedLocation] = React.useState<string | null>(
     null,
   );
@@ -565,6 +583,17 @@ export default function WorkerDetailsWebScreen() {
     }
   }, [id, workerQuery]);
 
+  const toggleFavorite = async () => {
+    if (!id) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    try {
+      await createWorkerBookmark({ workerAuthId: String(id) }).unwrap();
+    } catch {
+      setIsFavorite(!next);
+    }
+  };
+
   return (
     <View className="flex-1 bg-neutral-50">
       <StatusBar style="dark" />
@@ -599,7 +628,7 @@ export default function WorkerDetailsWebScreen() {
               </View>
             ) : (
               <>
-                <HeroCard worker={displayWorker} onBack={() => router.back()} />
+                <HeroCard worker={displayWorker} onBack={() => router.back()} isFavorite={isFavorite} onToggleFavorite={() => void toggleFavorite()} />
 
                 <View className="flex-col gap-6 xl:flex-row">
                   <View className="flex-[1.45] gap-4">

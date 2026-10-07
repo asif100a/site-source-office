@@ -20,6 +20,7 @@ import WorkerDetailsReviews from "@/components/modules/worker/worker-details/Wor
 import WorkerRatingStars from "@/components/modules/worker/worker-details/_ui/WorkerRatingStars";
 import { useGetSingleWorkerQuery } from "@/store/api/workerProfileApi";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
+import { useCreateWorkerBookmarkMutation } from "@/store/api/bookmarkApi";
 
 const getWorkerData = (response: any) => response?.data?.data ?? response?.data ?? response;
 
@@ -126,6 +127,7 @@ const mapServerWorkerToDetails = (response: any) => {
     : [];
 
   return {
+    hasBookmarked: Boolean(worker?.isBookmarked),
     name: profile?.name ?? worker?.name ?? worker?.email ?? "Worker",
     role,
     status: worker?.status === "ACTIVE" ? "Available" : worker?.status ?? "Worker",
@@ -287,11 +289,18 @@ export default function WorkerDetailsScreen() {
     { id: id as string },
     { skip: !id },
   );
+  console.log("workerQuery--------> ", workerQuery);
   const [refreshing, setRefreshing] = React.useState(false);
+  const [isFavorite, setIsFavorite] = React.useState(false);
+  const [createWorkerBookmark] = useCreateWorkerBookmarkMutation();
   const worker = React.useMemo(
     () => mapServerWorkerToDetails(workerQuery.data),
     [workerQuery.data],
   );
+
+  React.useEffect(() => {
+    setIsFavorite(Boolean(worker.hasBookmarked));
+  }, [worker.hasBookmarked]);
   const [resolvedLocation, setResolvedLocation] = React.useState<string | null>(
     null,
   );
@@ -338,6 +347,17 @@ export default function WorkerDetailsScreen() {
     }
   }, [id, workerQuery]);
 
+  const toggleFavorite = async () => {
+    if (!id) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
+    try {
+      await createWorkerBookmark({ workerAuthId: String(id) }).unwrap();
+    } catch {
+      setIsFavorite(!next);
+    }
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#F8FAFC" }}
@@ -345,7 +365,7 @@ export default function WorkerDetailsScreen() {
     >
       <StatusBar style="dark" />
 
-      <WorkerDetailsHeader handleHeaderBack={() => router.back()} />
+      <WorkerDetailsHeader handleHeaderBack={() => router.back()} isFavorite={isFavorite} onToggleFavorite={() => void toggleFavorite()} />
 
       <ScrollView
         className="flex-1"

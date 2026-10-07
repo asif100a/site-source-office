@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from "react-native";
 import React, { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import { CounterRow, DateCard, FormSectionLabel } from "./_ui";
 import { Check, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
@@ -126,6 +127,7 @@ export default function PostAJob({
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
   isCreatingJob?: boolean;
 }) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [hourlyRate, setHourlyRate] = useState(24);
   const [tradeRates, setTradeRates] = useState<Record<string, number>>({});
@@ -133,6 +135,7 @@ export default function PostAJob({
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({});
   const [workingDaySchedule, setWorkingDaySchedule] =
@@ -216,6 +219,10 @@ export default function PostAJob({
   );
 
   const handleCreateJobPost = async () => {
+    if (!acceptedTerms) {
+      Toast.show({ type: "error", text1: "Please accept the terms and conditions" });
+      return;
+    }
     if (!title.trim()) {
       Toast.show({ type: "error", text1: "Job title is required" });
       return;
@@ -272,6 +279,7 @@ export default function PostAJob({
       setTradeMenuOpen(false);
       setSelectedTrades([]);
       setNotes("");
+      setAcceptedTerms(false);
       setSelectedMustHaves([]);
       setJobDateRange({});
       setWorkingDaySchedule(getInitialWorkingDaySchedule());
@@ -444,16 +452,6 @@ export default function PostAJob({
           value={`£${hourlyRate}/hr`}
           onDecrease={() => { if (selectedTrades[0]) { const next = Math.max(1, (tradeRates[selectedTrades[0]] ?? 24) - 1); setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
           onIncrease={() => { if (selectedTrades[0]) { const next = (tradeRates[selectedTrades[0]] ?? 24) + 1; setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
-        />
-
-        <View className="my-4 h-px bg-[#EFEFEF]" />
-
-        <CounterRow
-          label=""
-          hint={`£${formatCurrencyAmount(hourlyRate * estimatedBillableHours)} per worker for selected hours`}
-          value=""
-          onDecrease={() => undefined}
-          onIncrease={() => undefined}
         />
       </View>
 
@@ -650,6 +648,23 @@ export default function PostAJob({
           </Text>
         </View>
       </View>
+
+      <Pressable
+        onPress={() => setAcceptedTerms((current) => !current)}
+        className="mt-4 flex-row items-center gap-3 px-1"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: acceptedTerms }}
+      >
+        <View className={`h-5 w-5 items-center justify-center rounded border ${acceptedTerms ? "border-[#FF5500] bg-[#FF5500]" : "border-[#BDBDBD] bg-white"}`}>
+          {acceptedTerms ? <Check size={14} color="#FFFFFF" /> : null}
+        </View>
+        <Text className="flex-1 text-[12px] leading-5 text-[#555555]">
+          I agree to SiteSource&apos;s {" "}
+          <Text className="font-bold text-[#FF5500]" onPress={() => router.push("/screens/profile/terms")}>
+            terms and conditions
+          </Text>.
+        </Text>
+      </Pressable>
 
       <TouchableOpacity
         activeOpacity={0.9}

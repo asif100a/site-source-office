@@ -29,7 +29,7 @@ export const bookmarkApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: [tagTypes.bookmark, tagTypes.worker],
+      invalidatesTags: [tagTypes.bookmark, tagTypes.worker, tagTypes.user],
     }),
     getBookmarkJobs: builder.query<any, any>({
       query: (args) => ({

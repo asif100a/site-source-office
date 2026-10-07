@@ -8,6 +8,7 @@ import {
   TextInput,
 } from "react-native";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import { CounterRow, DateCard, FormSectionLabel } from "./_ui";
 import { Check, ChevronDown } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
@@ -78,12 +79,14 @@ export default function WebPostJobSection({
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
   isCreatingJob?: boolean;
 }) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [tradeRates, setTradeRates] = useState<Record<string, number>>({});
   const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({});
   const [workingDaySchedule, setWorkingDaySchedule] =
@@ -133,6 +136,10 @@ export default function WebPostJobSection({
     });
 
   const handleCreateJobPost = async () => {
+    if (!acceptedTerms) {
+      Toast.show({ type: "error", text1: "Please accept the terms and conditions" });
+      return;
+    }
     if (!title.trim()) {
       Toast.show({ type: "error", text1: "Job title is required" });
       return;
@@ -194,6 +201,7 @@ export default function WebPostJobSection({
       setTradeMenuOpen(false);
       setSelectedTrades([]);
       setNotes("");
+      setAcceptedTerms(false);
       setSelectedMustHaves([]);
       setJobDateRange({});
       setWorkingDaySchedule(getInitialWorkingDaySchedule());
@@ -400,15 +408,6 @@ export default function WebPostJobSection({
           />
         </View>
 
-        <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
-          <CounterRow
-            label=""
-            hint={`£${hourlyRate * 9} per day at 9 hrs`}
-            value=""
-            onDecrease={() => undefined}
-            onIncrease={() => undefined}
-          />
-        </View>
       </View>
 
       <FormSectionLabel label="Job dates" />
@@ -594,6 +593,23 @@ export default function WebPostJobSection({
           {selectedTrades.length} trade posting{selectedTrades.length === 1 ? "" : "s"} · {formatHourCount(estimatedBillableHours)} billable hrs
         </Text>
       </View>
+
+      <Pressable
+        onPress={() => setAcceptedTerms((current) => !current)}
+        className="mt-4 flex-row items-center gap-3"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: acceptedTerms }}
+      >
+        <View className={`h-5 w-5 items-center justify-center rounded border ${acceptedTerms ? "border-[#FF5500] bg-[#FF5500]" : "border-[#BDBDBD] bg-white"}`}>
+          {acceptedTerms ? <Check size={14} color="#FFFFFF" /> : null}
+        </View>
+        <Text className="flex-1 text-sm leading-5 text-[#666666]">
+          I agree to SiteSource&apos;s {" "}
+          <Text className="font-bold text-[#FF5500]" onPress={() => router.push("/screens/profile/terms")}>
+            terms and conditions
+          </Text>.
+        </Text>
+      </Pressable>
 
       <View className="mt-5 flex-col gap-3 lg:flex-row lg:items-center">
         <TouchableOpacity
