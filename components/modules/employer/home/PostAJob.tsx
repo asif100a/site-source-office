@@ -128,7 +128,8 @@ export default function PostAJob({
 }) {
   const [title, setTitle] = useState("");
   const [hourlyRate, setHourlyRate] = useState(24);
-  const [workersNeeded, setWorkersNeeded] = useState(2);
+  const [tradeRates, setTradeRates] = useState<Record<string, number>>({});
+  const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
@@ -210,8 +211,8 @@ export default function PostAJob({
   }, [selectedTrades]);
 
   const totalEstimate = useMemo(
-    () => hourlyRate * estimatedBillableHours * workersNeeded,
-    [estimatedBillableHours, hourlyRate, workersNeeded],
+    () => selectedTrades.reduce((total, trade) => total + (tradeRates[trade] ?? 24) * (tradeWorkers[trade] ?? 1), 0) * estimatedBillableHours,
+    [estimatedBillableHours, selectedTrades, tradeRates, tradeWorkers],
   );
 
   const handleCreateJobPost = async () => {
@@ -242,7 +243,7 @@ export default function PostAJob({
     const workingHours = WORKING_DAY_OPTIONS.filter(
       (day) => workingDaySchedule[day.key].enabled,
     );
-    if (!workingHours.length || hourlyRate <= 0 || workersNeeded <= 0) {
+    if (!workingHours.length || selectedTrades.some((trade) => (tradeRates[trade] ?? 0) <= 0 || (tradeWorkers[trade] ?? 0) <= 0)) {
       Toast.show({ type: "error", text1: "Enter valid job rate, workers, and hours" });
       return;
     }
@@ -254,29 +255,20 @@ export default function PostAJob({
       return;
     }
 
-    const created = await onCreateJobPost({
+    const sharedPayload = {
       title: title.trim(),
-      trades: selectedTrades,
-      hourlyRate,
-      workersNeeded,
-      location: { type: "Point", coordinates: locationCoordinates },
-      startDate: formatDateForPayload(jobDateRange.from),
-      endDate: formatDateForPayload(jobDateRange.to),
-      workingHours: workingHours.map((day) => ({
-        day: day.label,
-        startTime: formatTime(workingDaySchedule[day.key].startTime),
-        endTime: formatTime(workingDaySchedule[day.key].endTime),
-        isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x",
-        isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x",
-      })),
-      mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]),
-      note: notes.trim(),
-    });
+      location: { type: "Point" as const, coordinates: locationCoordinates },
+      startDate: formatDateForPayload(jobDateRange.from), endDate: formatDateForPayload(jobDateRange.to),
+      workingHours: workingHours.map((day) => ({ day: day.label, startTime: formatTime(workingDaySchedule[day.key].startTime), endTime: formatTime(workingDaySchedule[day.key].endTime), isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x", isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x" })),
+      mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]), note: notes.trim(),
+    };
+    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({ ...sharedPayload, trades: [trade], hourlyRate: tradeRates[trade] ?? 24, workersNeeded: tradeWorkers[trade] ?? 1 })))).every(Boolean);
 
     if (created) {
       setTitle("");
       setHourlyRate(24);
-      setWorkersNeeded(2);
+      setTradeRates({});
+      setTradeWorkers({});
       setTradeMenuOpen(false);
       setSelectedTrades([]);
       setNotes("");
@@ -300,6 +292,15 @@ export default function PostAJob({
         ? current.filter((item) => item !== trade)
         : [...current, trade],
     );
+    setTradeRates((current) => {
+      if (trade in current) {
+        const next = { ...current };
+        delete next[trade];
+        return next;
+      }
+      return { ...current, [trade]: 24 };
+    });
+    setTradeWorkers((current) => ({ ...current, [trade]: current[trade] ?? 1 }));
   };
 
   const adjustValue = (
@@ -424,23 +425,35 @@ export default function PostAJob({
         ) : null}
       </View>
 
+      {selectedTrades.map((trade) => (
+        <View key={`${trade}-workers`} className="mt-3 rounded-[18px] bg-white px-4 py-3">
+          <CounterRow
+            label={`${trade} workers needed`}
+            hint="Number of workers for this trade"
+            value={`${tradeWorkers[trade] ?? 1}`}
+            onDecrease={() => setTradeWorkers((current) => ({ ...current, [trade]: Math.max(1, (current[trade] ?? 1) - 1) }))}
+            onIncrease={() => setTradeWorkers((current) => ({ ...current, [trade]: (current[trade] ?? 1) + 1 }))}
+          />
+        </View>
+      ))}
+
       <View className="mt-4 rounded-[22px] bg-white p-4">
         <CounterRow
-          label="Hourly rate"
+          label={selectedTrades.length === 1 ? `${selectedTrades[0]} hourly rate` : "Hourly rate per trade"}
           hint="Market rate here is £22-£28/hr"
           value={`£${hourlyRate}/hr`}
-          onDecrease={() => adjustValue(setHourlyRate, hourlyRate - 1)}
-          onIncrease={() => adjustValue(setHourlyRate, hourlyRate + 1)}
+          onDecrease={() => { if (selectedTrades[0]) { const next = Math.max(1, (tradeRates[selectedTrades[0]] ?? 24) - 1); setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
+          onIncrease={() => { if (selectedTrades[0]) { const next = (tradeRates[selectedTrades[0]] ?? 24) + 1; setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
         />
 
         <View className="my-4 h-px bg-[#EFEFEF]" />
 
         <CounterRow
-          label="Workers needed"
+          label=""
           hint={`£${formatCurrencyAmount(hourlyRate * estimatedBillableHours)} per worker for selected hours`}
-          value={`${workersNeeded}`}
-          onDecrease={() => adjustValue(setWorkersNeeded, workersNeeded - 1)}
-          onIncrease={() => adjustValue(setWorkersNeeded, workersNeeded + 1)}
+          value=""
+          onDecrease={() => undefined}
+          onIncrease={() => undefined}
         />
       </View>
 
@@ -633,7 +646,7 @@ export default function PostAJob({
           </View>
 
           <Text className="max-w-[170px] text-right text-[12px] font-semibold leading-4 text-[#222222]">
-            {workersNeeded} x labourer · {formatHourCount(estimatedBillableHours)} billable hrs
+            {selectedTrades.length} trade posting{selectedTrades.length === 1 ? "" : "s"} · {formatHourCount(estimatedBillableHours)} billable hrs
           </Text>
         </View>
       </View>

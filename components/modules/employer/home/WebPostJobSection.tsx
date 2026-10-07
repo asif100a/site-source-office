@@ -65,18 +65,14 @@ const getInitialWorkingDaySchedule = (): WorkingDaySchedule =>
 
 export default function WebPostJobSection({
   hourlyRate,
-  workersNeeded,
   setHourlyRate,
-  setWorkersNeeded,
   locationCoordinates,
   locationValid,
   onCreateJobPost,
   isCreatingJob = false,
 }: {
   hourlyRate: number;
-  workersNeeded: number;
   setHourlyRate: Dispatch<SetStateAction<number>>;
-  setWorkersNeeded: Dispatch<SetStateAction<number>>;
   locationCoordinates: [number, number] | null;
   locationValid: boolean;
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
@@ -85,6 +81,8 @@ export default function WebPostJobSection({
   const [title, setTitle] = useState("");
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [tradeRates, setTradeRates] = useState<Record<string, number>>({});
+  const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
   const [selectedMustHaves, setSelectedMustHaves] = useState<MustHaveOption[]>([]);
   const [jobDateRange, setJobDateRange] = useState<JobDateRange>({});
@@ -158,7 +156,7 @@ export default function WebPostJobSection({
     const workingHours = WORKING_DAY_OPTIONS.filter(
       (day) => workingDaySchedule[day.key].enabled,
     );
-    if (!workingHours.length || hourlyRate <= 0 || workersNeeded <= 0) {
+    if (!workingHours.length || selectedTrades.some((trade) => (tradeRates[trade] ?? 0) <= 0 || (tradeWorkers[trade] ?? 0) <= 0)) {
       Toast.show({ type: "error", text1: "Enter valid job rate, workers, and hours" });
       return;
     }
@@ -170,11 +168,11 @@ export default function WebPostJobSection({
       return;
     }
 
-    const created = await onCreateJobPost({
+    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({
       title: title.trim(),
-      trades: selectedTrades,
-      hourlyRate,
-      workersNeeded,
+      trades: [trade],
+      hourlyRate: tradeRates[trade] ?? hourlyRate,
+      workersNeeded: tradeWorkers[trade] ?? 1,
       location: { type: "Point", coordinates: locationCoordinates },
       startDate: formatDateForPayload(jobDateRange.from),
       endDate: formatDateForPayload(jobDateRange.to),
@@ -187,12 +185,12 @@ export default function WebPostJobSection({
       })),
       mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]),
       note: notes.trim(),
-    });
+    })))).every(Boolean);
 
     if (created) {
       setTitle("");
       setHourlyRate(24);
-      setWorkersNeeded(2);
+      setTradeWorkers({});
       setTradeMenuOpen(false);
       setSelectedTrades([]);
       setNotes("");
@@ -211,8 +209,8 @@ export default function WebPostJobSection({
     [jobDateRange, workingDaySchedule],
   );
   const totalEstimate = useMemo(
-    () => hourlyRate * estimatedBillableHours * workersNeeded,
-    [estimatedBillableHours, hourlyRate, workersNeeded],
+    () => selectedTrades.reduce((total, trade) => total + (tradeRates[trade] ?? hourlyRate) * (tradeWorkers[trade] ?? 1), 0) * estimatedBillableHours,
+    [estimatedBillableHours, hourlyRate, selectedTrades, tradeRates, tradeWorkers],
   );
   const selectedDateCount = useMemo(
     () => countSelectedDatesInRange(jobDateRange),
@@ -249,6 +247,10 @@ export default function WebPostJobSection({
         ? current.filter((item) => item !== trade)
         : [...current, trade],
     );
+    setTradeRates((current) => current[trade] !== undefined
+      ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== trade))
+      : { ...current, [trade]: 24 });
+    setTradeWorkers((current) => ({ ...current, [trade]: current[trade] ?? 1 }));
   };
 
   const adjustValue = (
@@ -383,23 +385,28 @@ export default function WebPostJobSection({
       </View>
 
       <View className="mt-5 grid gap-4 xl:grid-cols-2">
+        {selectedTrades.map((trade) => (
+          <View key={`${trade}-workers`} className="rounded-[24px] border border-neutral-100 bg-white p-5">
+            <CounterRow label={`${trade} workers needed`} hint="Number of workers for this trade" value={`${tradeWorkers[trade] ?? 1}`} onDecrease={() => setTradeWorkers((current) => ({ ...current, [trade]: Math.max(1, (current[trade] ?? 1) - 1) }))} onIncrease={() => setTradeWorkers((current) => ({ ...current, [trade]: (current[trade] ?? 1) + 1 }))} />
+          </View>
+        ))}
         <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
           <CounterRow
             label="Hourly rate"
             hint="Market rate here is £22-£28/hr"
             value={`£${hourlyRate}/hr`}
-            onDecrease={() => adjustValue(setHourlyRate, hourlyRate - 1)}
-            onIncrease={() => adjustValue(setHourlyRate, hourlyRate + 1)}
+            onDecrease={() => { if (selectedTrades[0]) { const next = Math.max(1, (tradeRates[selectedTrades[0]] ?? 24) - 1); setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
+            onIncrease={() => { if (selectedTrades[0]) { const next = (tradeRates[selectedTrades[0]] ?? 24) + 1; setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
           />
         </View>
 
         <View className="rounded-[24px] border border-neutral-100 bg-white p-5">
           <CounterRow
-            label="Workers needed"
+            label=""
             hint={`£${hourlyRate * 9} per day at 9 hrs`}
-            value={`${workersNeeded}`}
-            onDecrease={() => adjustValue(setWorkersNeeded, workersNeeded - 1)}
-            onIncrease={() => adjustValue(setWorkersNeeded, workersNeeded + 1)}
+            value=""
+            onDecrease={() => undefined}
+            onIncrease={() => undefined}
           />
         </View>
       </View>
@@ -584,7 +591,7 @@ export default function WebPostJobSection({
         </View>
 
         <Text className="max-w-sm text-sm font-semibold leading-5 text-[#222222] lg:text-right">
-          {workersNeeded} x labourer · {formatHourCount(estimatedBillableHours)} billable hrs
+          {selectedTrades.length} trade posting{selectedTrades.length === 1 ? "" : "s"} · {formatHourCount(estimatedBillableHours)} billable hrs
         </Text>
       </View>
 
