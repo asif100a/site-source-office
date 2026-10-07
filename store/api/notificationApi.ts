@@ -26,6 +26,15 @@ export const notificationApi = baseApi.injectEndpoints({
       }),
       providesTags: [tagTypes.notification],
     }),
+    getUnseenCount: builder.query<
+      any, any
+    >({
+      query: () => ({
+        url: BASE_POINT + '/unseen-count',
+        method: "GET",
+      }),
+      providesTags: [tagTypes.notification],
+    }),
     markAllAsDoneNotifications: builder.mutation<
       any, any
     >({
@@ -72,6 +81,7 @@ export const notificationApi = baseApi.injectEndpoints({
 
 export const {
   useGetNotificationsQuery,
+  useGetUnseenCountQuery,
   useMarkAllAsDoneNotificationsMutation,
   useDeleteSingleNotificationMutation,
   useDeleteAllNotificationMutation,
