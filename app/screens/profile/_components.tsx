@@ -57,7 +57,7 @@ export function ProfileHeader({
         >
           <ChevronLeft size={22} color="#FFFFFF" style={{ marginTop: 0 }} />
           <Text className="min-w-32 max-w-32 text-white text-base font-bold tracking-tight">
-            {title}
+            {"Back"}
           </Text>
         </TouchableOpacity>
 

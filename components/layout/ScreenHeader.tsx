@@ -7,6 +7,7 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
 import ProfileAvatar from "../common/ProfileAvatar";
+import { useGetUnseenCountQuery } from "@/store/api/notificationApi";
 
 export default function ScreenHeader() {
   const router = useRouter();
@@ -15,9 +16,10 @@ export default function ScreenHeader() {
 
   const { data: workerProfile } = useGetWorkerProfileQuery();
   const { data: employerProfile } = useGetEmployerProfileQuery();
+  const { data: unseenNotificationCountRes } = useGetUnseenCountQuery({});
+  const unseenNotificationCount = unseenNotificationCountRes?.data?.unseenCount || 0;
 
   const profile = workerProfile?.data || employerProfile?.data;
-  // console.log("Profile data in ScreenHeader: ", profile);
 
   const handleNotificationPress = () => {
     router.push(Routes.CommonRoutes.NOTIFICATIONS);
@@ -46,13 +48,14 @@ export default function ScreenHeader() {
           className="active:opacity-75"
         >
           <ProfileAvatar
-          uri={profile?.profile?.image}
-          style={{
-            width: 50,
-            height: 50,
-            borderWidth: 1,
-            borderColor: '#ffffff4d'
-          }} />
+            uri={profile?.profile?.image}
+            style={{
+              width: 50,
+              height: 50,
+              borderWidth: 1,
+              borderColor: "#ffffff4d",
+            }}
+          />
         </Pressable>
 
         <View className="-mb-3">
@@ -66,7 +69,7 @@ export default function ScreenHeader() {
           >
             <Feather name="bell" size={22} color="#FFFFFF" />
             <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/15 items-center justify-center border border-white/20">
-              <Text className="text-white text-[10px] font-bold">2</Text>
+              <Text className="text-white text-[10px] font-bold">{unseenNotificationCount}</Text>
             </View>
           </TouchableOpacity>
         </View>

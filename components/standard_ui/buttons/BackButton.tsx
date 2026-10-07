@@ -40,7 +40,7 @@ export default function BackButton({
         className={`text-white text-base mb-[0.5px] ${size === "lg" ? "text-2xl" : "text-base"}`}
         style={{...textStyle}}
       >
-        {title}
+        {"Back"}
       </Text>
     </TouchableOpacity>
   );

@@ -21,7 +21,7 @@ export default function ChatHeader({ origin }: { origin?: string }) {
         >
           <ChevronLeft size={20} color="#FFFFFF" />
           <Text className="text-white text-xl font-semibold tracking-tight">
-            Chats
+            Back
           </Text>
         </TouchableOpacity>
       </View>

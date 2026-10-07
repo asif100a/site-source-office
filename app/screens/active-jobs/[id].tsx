@@ -210,7 +210,7 @@ export default function ActiveJobDetailScreen() {
       <ScreenWrapper>
         <CommonHeader
           headerTitle={
-            statusRoute === "upcoming" ? "Upcoming Job" : "Active Job"
+            statusRoute === "upcoming" ? "Upcoming Jobs" : "Active Jobs"
           }
           withBackButton
           onPress={handleNavigateBack}
