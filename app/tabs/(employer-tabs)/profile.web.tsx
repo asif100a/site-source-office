@@ -284,15 +284,13 @@ export default function EmployerProfileWebScreen() {
 
                   <View className="rounded-[24px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm">
                     <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-500">
-                      {getEmployerProfile?.data?.profile?.name || "User name"}
+                      {"Employer Account"}
                     </Text>
                     <Text className="mt-2 text-lg font-bold text-neutral-950">
-                      {getEmployerProfile?.data?.email || "User email"}
+                      {getEmployerProfile?.data?.profile?.name || "User name"}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-500">
-                      {available
-                        ? "Verified employer profile"
-                        : "Profile inactive"}
+                      {getEmployerProfile?.data?.email|| "Profile inactive"}
                     </Text>
                   </View>
                 </View>

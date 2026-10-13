@@ -425,21 +425,6 @@ function WorkerEmployerContactCard({
           </Text>
         </View>
       </View>
-
-      <View className="gap-3 border-t border-neutral-100 pt-4">
-        <View className="flex-row items-center gap-2.5">
-          <Mail size={15} color="#858585" />
-          <Text className="text-xs font-semibold text-neutral-500">
-            {jobDetails.contactEmail}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2.5">
-          <Phone size={15} color="#858585" />
-          <Text className="text-xs font-semibold text-neutral-500">
-            {jobDetails.contactPhone}
-          </Text>
-        </View>
-      </View>
     </View>
   );
 }

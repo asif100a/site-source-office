@@ -235,14 +235,14 @@ export default function WorkerProfileWebScreen() {
                   </View>
 
                   <View className="rounded-[24px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm">
-                    <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-500">
-                      Worker account
+                   <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-500">
+                      {"Worker Account"}
                     </Text>
                     <Text className="mt-2 text-lg font-bold text-neutral-950">
-                      Hafizur Rahman
+                      {getWorkerProfile?.data?.profile?.name || "User name"}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-500">
-                      {available ? "Verified worker profile" : "Profile inactive"}
+                      {getWorkerProfile?.data?.email|| "Profile inactive"}
                     </Text>
                   </View>
                 </View>

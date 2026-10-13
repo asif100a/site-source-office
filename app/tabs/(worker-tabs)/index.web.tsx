@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { Modal, Pressable } from "react-native";
-import { Briefcase, Filter, Navigation } from "lucide-react-native";
+import { Briefcase, Filter } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import ScreenLoader from "@/components/ui/screen-loader";
@@ -146,8 +146,8 @@ export default function WorkerHomeScreen() {
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
   });
-  console.log("WorkerHomeScreen: mapJobsQuery = ", mapJobsQuery);
-  console.log("WorkerHomeScreen: allJobsQuery = ", allJobsQuery);
+  // console.log("WorkerHomeScreen: mapJobsQuery = ", mapJobsQuery);
+  // console.log("WorkerHomeScreen: allJobsQuery = ", allJobsQuery);
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
     skip: !selectedJobId,
   });
@@ -395,10 +395,6 @@ export default function WorkerHomeScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
-
-                <View className="absolute bottom-5 right-5 rounded-2xl bg-white px-3 py-3 shadow-sm">
-                  <Navigation size={18} color={Colors.common.BRAND} />
                 </View>
 
                 {featuredJob ? (
