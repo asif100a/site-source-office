@@ -1,4 +1,4 @@
-import React, { useState, type ComponentType } from "react";
+import React, { useEffect, useState, type ComponentType } from "react";
 import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,6 +18,7 @@ import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import { clearUserAuthenticated } from "@/constants/authState";
 import { logout } from "@/store/slices/authSlice";
+import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
@@ -82,6 +83,22 @@ export default function WorkerProfileWebScreen() {
   const dispatch = useDispatch();
   const [available] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const {
+    data: getWorkerProfile,
+    isLoading: isWorkerProfileLoading,
+    isError: isWorkerProfileError,
+    error: workerProfileError,
+  } = useGetWorkerProfileQuery(undefined);
+
+  useEffect(() => {
+    if (isWorkerProfileError) {
+      console.log("workerProfileError: ", workerProfileError);
+    }
+  }, [
+    isWorkerProfileError,
+    workerProfileError,
+  ]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;

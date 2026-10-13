@@ -1,4 +1,4 @@
-import React, { useState, type ComponentType } from "react";
+import React, { useEffect, useState, type ComponentType } from "react";
 import { useRouter } from "expo-router";
 import { useDispatch } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,11 +16,19 @@ import {
   Star,
   User,
 } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import { Colors } from "@/constants/Colors";
 import { clearUserAuthenticated } from "@/constants/authState";
 import { logout } from "@/store/slices/authSlice";
+import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
+import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 
 type MenuItem = {
   icon: ComponentType<{ size?: number; color?: string }>;
@@ -85,6 +93,23 @@ export default function EmployerProfileWebScreen() {
   const dispatch = useDispatch();
   const [available] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const {
+    data: getEmployerProfile,
+    isLoading: isEmployerProfileLoading,
+    isError: isEmployerProfileError,
+    error: employerProfileError,
+  } = useGetEmployerProfileQuery(undefined);
+  console.log("getEmployerProfile: ", getEmployerProfile);
+
+  useEffect(() => {
+    if (isEmployerProfileError) {
+      console.log("employerProfileError: ", employerProfileError);
+    }
+  }, [
+    isEmployerProfileError,
+    employerProfileError,
+  ]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -211,6 +236,15 @@ export default function EmployerProfileWebScreen() {
     ],
   };
 
+  const isLoading = isEmployerProfileLoading;
+
+  if (isLoading)
+    return (
+      <View className="flex-1 items-center justify-center bg-neutral-50">
+        <ActivityIndicator size="large" color="#111827" />
+      </View>
+    );
+
   return (
     <ScreenWrapper>
       <ScrollView
@@ -241,21 +275,24 @@ export default function EmployerProfileWebScreen() {
                         Manage your employer profile from one place.
                       </Text>
                       <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
-                        The same account and settings flow as mobile, arranged in
-                        a cleaner web layout for faster scanning and navigation.
+                        The same account and settings flow as mobile, arranged
+                        in a cleaner web layout for faster scanning and
+                        navigation.
                       </Text>
                     </View>
                   </View>
 
                   <View className="rounded-[24px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm">
                     <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-500">
-                      Employer account
+                      {getEmployerProfile?.data?.profile?.name || "User name"}
                     </Text>
                     <Text className="mt-2 text-lg font-bold text-neutral-950">
-                      Site Source Ltd
+                      {getEmployerProfile?.data?.email || "User email"}
                     </Text>
                     <Text className="mt-1 text-sm text-neutral-500">
-                      {available ? "Verified employer profile" : "Profile inactive"}
+                      {available
+                        ? "Verified employer profile"
+                        : "Profile inactive"}
                     </Text>
                   </View>
                 </View>

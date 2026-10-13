@@ -66,6 +66,8 @@ const getInitialWorkingDaySchedule = (): WorkingDaySchedule =>
 
 export default function WebPostJobSection({
   hourlyRate,
+  workersNeeded,
+  setWorkersNeeded,
   setHourlyRate,
   locationCoordinates,
   locationValid,
@@ -74,6 +76,8 @@ export default function WebPostJobSection({
 }: {
   hourlyRate: number;
   setHourlyRate: Dispatch<SetStateAction<number>>;
+  workersNeeded: number;
+  setWorkersNeeded: Dispatch<SetStateAction<number>>;
   locationCoordinates: [number, number] | null;
   locationValid: boolean;
   onCreateJobPost: (payload: JobPostPayload) => Promise<boolean>;
@@ -181,8 +185,8 @@ export default function WebPostJobSection({
       hourlyRate: tradeRates[trade] ?? hourlyRate,
       workersNeeded: tradeWorkers[trade] ?? 1,
       location: { type: "Point", coordinates: locationCoordinates },
-      startDate: formatDateForPayload(jobDateRange.from),
-      endDate: formatDateForPayload(jobDateRange.to),
+      startDate: formatDateForPayload(jobDateRange.from ?? new Date()),
+      endDate: formatDateForPayload(jobDateRange.to ?? new Date()),
       workingHours: workingHours.map((day) => ({
         day: day.label,
         startTime: formatTime(workingDaySchedule[day.key].startTime),
