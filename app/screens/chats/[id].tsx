@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Send } from "lucide-react-native";
+import Toast from "react-native-toast-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import ChatHeader from "@/components/modules/common/chat/ChatHeader";
@@ -26,6 +27,10 @@ import {
 import type { ChatMessage } from "@/store/api/chatApi";
 import type { RootState } from "@/store/store";
 import { getAuthIdFromToken, toBubbleMessage } from "@/utils/chat";
+import {
+  CONTACT_DETAILS_MESSAGE,
+  containsContactDetails,
+} from "@/utils/chatContactFilter";
 
 type SocketAck = {
   success?: boolean;
@@ -126,6 +131,15 @@ export default function ChatDetailScreen() {
   const handleSend = async () => {
     const content = inputText.trim();
     if (!conversationId || !content || isSending) return;
+
+    if (containsContactDetails(content)) {
+      Toast.show({
+        type: "error",
+        text1: "Contact details blocked",
+        text2: CONTACT_DETAILS_MESSAGE,
+      });
+      return;
+    }
 
     setInputText("");
 

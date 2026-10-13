@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
+import Toast from "react-native-toast-message";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -30,6 +31,10 @@ import type { ChatMessage } from "@/store/api/chatApi";
 import type { RootState } from "@/store/store";
 import type { ChatOrigin } from "@/types";
 import { getAuthIdFromToken, toBubbleMessage, toThread } from "@/utils/chat";
+import {
+  CONTACT_DETAILS_MESSAGE,
+  containsContactDetails,
+} from "@/utils/chatContactFilter";
 import { ChatAvatar, MessageBubble, ThreadRow } from "./_ui";
 
 type SocketAck = {
@@ -170,6 +175,15 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
   const handleSend = async () => {
     const content = draft.trim();
     if (!selectedThread?.id || !content || isSending) return;
+
+    if (containsContactDetails(content)) {
+      Toast.show({
+        type: "error",
+        text1: "Contact details blocked",
+        text2: CONTACT_DETAILS_MESSAGE,
+      });
+      return;
+    }
 
     setDraft("");
 
@@ -316,14 +330,14 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
                         </View>
                       </View>
 
-                      <TouchableOpacity
+                      {/* <TouchableOpacity
                         onPress={openDetailRoute}
                         className="rounded-xl bg-neutral-100 px-3 py-2"
                       >
                         <Text className="text-xs font-bold text-neutral-700">
                           Open
                         </Text>
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
 
                     <ScrollView
