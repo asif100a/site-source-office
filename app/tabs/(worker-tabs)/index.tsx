@@ -116,14 +116,14 @@ export default function WorkerHomeScreen() {
     page: allJobsPage,
     limit: ALL_JOBS_LIMIT,
     status: "POSTED",
-    // ...(selectedSearchLocation
-    //   ? {
-    //       latitude: selectedSearchLocation.latitude,
-    //       longitude: selectedSearchLocation.longitude,
-    //       radius: maxDistanceMiles,
-    //     }
-    //   : {}),
-    // ...(apiFilter ? { filter: apiFilter } : {}),
+    ...(selectedSearchLocation
+      ? {
+          latitude: selectedSearchLocation.latitude,
+          longitude: selectedSearchLocation.longitude,
+          radius: maxDistanceMiles,
+        }
+      : {}),
+    ...(apiFilter ? { filter: apiFilter } : {}),
   });
   console.log("allJobsQuery: ", allJobsQuery);
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
