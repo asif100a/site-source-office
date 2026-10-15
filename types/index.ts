@@ -195,6 +195,7 @@ export interface JobCard {
     availability: string;
     experience: string;
   }>;
+  canEdit?: boolean;
 };
 
 export type ProjectJob = {

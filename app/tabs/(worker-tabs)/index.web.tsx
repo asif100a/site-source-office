@@ -320,10 +320,7 @@ export default function WorkerHomeScreen() {
       });
   };
 
-  if (
-    locationPermission === "checking" ||
-    (mapJobsQuery.isLoading && allJobsQuery.isLoading)
-  ) {
+  if (allJobsQuery.isLoading && allJobs.length === 0) {
     return (
       <ScreenWrapper>
         <ScreenLoader />
