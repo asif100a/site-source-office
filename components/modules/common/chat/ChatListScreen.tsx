@@ -20,9 +20,11 @@ import { ChatAvatar } from "./_ui";
 export default function ChatListScreen({
   origin,
   header,
+  jobId,
 }: {
   origin: ChatOrigin;
   header?: React.ReactNode;
+  jobId?: string;
 }) {
   const router = useRouter();
   const token = useSelector((state: RootState) => state.auth.token);
@@ -36,6 +38,19 @@ export default function ChatListScreen({
       ),
     [chatsQuery.data],
   );
+
+  useEffect(() => {
+    if (!jobId || !chatsQuery.data) return;
+    const matchingChat = chatsQuery.data.find(
+      (conversation) => conversation.job?.id === jobId,
+    );
+    if (matchingChat) {
+      router.replace({
+        pathname: "/screens/chats/[id]",
+        params: { id: matchingChat.id, origin },
+      });
+    }
+  }, [chatsQuery.data, jobId, origin, router]);
 
   useEffect(() => {
     const socket = socketRef.current;

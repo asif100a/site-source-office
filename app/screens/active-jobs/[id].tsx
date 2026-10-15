@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { Headphones } from "lucide-react-native";
+import { Headphones, MessageCircle } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import CommonHeader from "@/components/modules/common/CommonHeader";
 import EmployerJobDetails from "@/components/modules/employer/active-jobs/EmployerJobDetails";
@@ -340,6 +340,19 @@ export default function ActiveJobDetailScreen() {
         withBackButton
         onPress={handleNavigateBack}
       />
+
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/screens/chats/chats",
+            params: { jobId, origin: originRoute === "employer" ? "employer" : "worker" },
+          })
+        }
+        className="mx-5 mt-3 flex-row items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3"
+      >
+        <MessageCircle size={17} color="#C2410C" />
+        <Text className="text-sm font-bold text-orange-700">Send message</Text>
+      </TouchableOpacity>
 
       <ScrollView
         className="flex-1"

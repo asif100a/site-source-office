@@ -43,7 +43,13 @@ type SocketAck = {
   message?: string;
 };
 
-export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
+export default function WebChatWorkspace({
+  origin,
+  jobId,
+}: {
+  origin: ChatOrigin;
+  jobId?: string;
+}) {
   const router = useRouter();
   const token = useSelector((state: RootState) => state.auth.token);
   const currentAuthId = useMemo(() => getAuthIdFromToken(token), [token]);
@@ -65,10 +71,20 @@ export default function WebChatWorkspace({ origin }: { origin: ChatOrigin }) {
   );
 
   useEffect(() => {
+    if (jobId) {
+      const matchingConversation = chatsQuery.data?.find(
+        (conversation) => conversation.job?.id === jobId,
+      );
+      if (matchingConversation && selectedThreadId !== matchingConversation.id) {
+        setSelectedThreadId(matchingConversation.id);
+      }
+      return;
+    }
+
     if (!selectedThreadId && threads[0]?.id) {
       setSelectedThreadId(threads[0].id);
     }
-  }, [selectedThreadId, threads]);
+  }, [chatsQuery.data, jobId, selectedThreadId, threads]);
 
   const filteredThreads = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();

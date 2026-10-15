@@ -8,6 +8,7 @@ import {
   Clock3,
   Headphones,
   Mail,
+  MessageCircle,
   MapPin,
   Phone,
   ShieldCheck,
@@ -120,11 +121,13 @@ function Hero({
   subtitle,
   statusLabel,
   onBack,
+  onMessage,
 }: {
   title: string;
   subtitle: string;
   statusLabel: string;
   onBack: () => void;
+  onMessage: () => void;
 }) {
   return (
     <View className="rounded-[28px] border border-neutral-200 bg-white p-6 md:p-8">
@@ -155,6 +158,15 @@ function Hero({
           </View>
         </View>
 
+        <View className="flex-row flex-wrap gap-3">
+        <TouchableOpacity
+          onPress={onMessage}
+          activeOpacity={0.88}
+          className="flex-row items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-3.5"
+        >
+          <MessageCircle size={18} color="#C2410C" />
+          <Text className="text-sm font-semibold text-orange-700">Send message</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={onBack}
           activeOpacity={0.88}
@@ -163,6 +175,7 @@ function Hero({
           <ArrowLeft size={18} color="#111827" />
           <Text className="text-sm font-semibold text-neutral-900">Back</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -1130,6 +1143,7 @@ export default function ActiveJobDetailWebScreen() {
                   employerJobStatus === "upcoming" ? "Upcoming role" : "In progress"
                 }
                 onBack={handleNavigateBack}
+                onMessage={() => router.push({ pathname: "/screens/chats/chats", params: { jobId, origin: originRoute } })}
               />
 
               <View className="flex-col gap-6 xl:flex-row">
@@ -1235,6 +1249,7 @@ export default function ActiveJobDetailWebScreen() {
               subtitle="Track the current role, employer contact, schedule, timesheets, and policy from a web layout that keeps the mobile route untouched."
               statusLabel={jobDetails.statusBadge}
               onBack={handleNavigateBack}
+              onMessage={() => router.push({ pathname: "/screens/chats/chats", params: { jobId, origin: originRoute } })}
             />
 
             <View className="flex-col gap-6 xl:flex-row">

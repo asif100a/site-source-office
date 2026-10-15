@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Briefcase, Calendar, MapPin, MessageCircle, Users } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import AvatarStack from "./_ui/AvatarStack";
 import JobLocationLabel from "./JobLocationLabel";
@@ -14,6 +15,8 @@ export default function MyJobActiveCards({
   openJobDetails: (id: string) => void;
   user: string;
 }) {
+  const router = useRouter();
+
   return (
     <View className="bg-white rounded-xl overflow-hidden">
       <View className="px-4 pt-4 pb-3">
@@ -78,6 +81,20 @@ export default function MyJobActiveCards({
           </Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/screens/chats/chats",
+            params: { jobId: job.id, origin: "employer" },
+          })
+        }
+        activeOpacity={0.8}
+        className="mx-4 mb-4 flex-row items-center justify-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-2.5"
+      >
+        <MessageCircle size={16} color="#C2410C" />
+        <Text className="text-xs font-bold text-orange-700">Send message</Text>
+      </TouchableOpacity>
     </View>
   );
 }

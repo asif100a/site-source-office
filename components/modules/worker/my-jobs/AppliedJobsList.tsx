@@ -1,4 +1,6 @@
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import {
@@ -52,6 +54,7 @@ export default function AppliedJobsList({
   hasNextPage,
   onLoadMore,
 }: AppliedJobsListProps) {
+  const router = useRouter();
   const query = searchQuery.trim().toLowerCase();
   const visibleOffers = offers.filter((offer) => {
     if (activeTab !== "My Offers") return false;
@@ -296,6 +299,22 @@ export default function AppliedJobsList({
             </Text>
           </View>
         </View>
+
+        {activeTab === "Active Jobs" ? (
+          <TouchableOpacity
+            onPress={() =>
+              router.push({
+                pathname: "/screens/chats/chats",
+                params: { jobId, origin: "worker" },
+              })
+            }
+            activeOpacity={0.8}
+            className="mt-4 flex-row items-center justify-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-4 py-2.5"
+          >
+            <MessageCircle size={16} color="#C2410C" />
+            <Text className="text-xs font-bold text-orange-700">Send message</Text>
+          </TouchableOpacity>
+        ) : null}
       </TouchableOpacity>
     );
   };
