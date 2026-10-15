@@ -100,8 +100,30 @@ export const mapJobToCard = (job: any): JobCard => {
     ? job.applicants.map(mapApplicant)
     : [];
   const applicationsCount = Number(
-    job.applicationsCount ?? job.totalApplicants ?? applicants.length ?? 0,
+    job?.totalApplicants ?? applicants.length ?? 0,
   );
+  const rawWorkersNeeded =
+    job.workersNeeded ??
+    job.job?.workersNeeded ??
+    job.details?.workersNeeded ??
+    job.requiredWorkers ??
+    job.workersRequired ??
+    job.numberOfWorkers ??
+    job.workers;
+  const workersNeeded = Array.isArray(rawWorkersNeeded)
+    ? rawWorkersNeeded.reduce(
+        (total: number, item: any) =>
+          total + Number(item?.howMany ?? item?.count ?? item?.quantity ?? 0),
+        0,
+      )
+    : typeof rawWorkersNeeded === "object" && rawWorkersNeeded !== null
+      ? Number(
+          rawWorkersNeeded.howMany ??
+            rawWorkersNeeded.count ??
+            rawWorkersNeeded.quantity ??
+            0,
+        )
+      : Number(rawWorkersNeeded ?? 0);
 
   return {
     id: String(job.id ?? job._id),
@@ -124,8 +146,8 @@ export const mapJobToCard = (job: any): JobCard => {
     coordinates: Array.isArray(coordinates)
       ? [Number(coordinates[0]), Number(coordinates[1])]
       : undefined,
-    team: `${job.workersNeeded ?? 0} worker${
-      job.workersNeeded === 1 ? "" : "s"
+    team: `${workersNeeded} worker${
+      workersNeeded === 1 ? "" : "s"
     } needed`,
     duration: `${formatDate(startDate)} - ${formatDate(endDate)}`,
     status,

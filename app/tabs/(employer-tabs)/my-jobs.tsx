@@ -140,7 +140,6 @@ export default function EmployerMyJobsScreen() {
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
-    // console.log("Jobs data: ", jobsQuery.data);
     const nextJobs = getJobItems(jobsQuery.data).map(mapJobToCard);
     setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
     setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
@@ -191,20 +190,37 @@ export default function EmployerMyJobsScreen() {
     });
   };
 
-  const editJob = (jobId: string) => router.push({ pathname: "/screens/job/UpdateJobPost", params: { id: jobId, mode: "edit" } } as any);
+  const editJob = (jobId: string) =>
+    router.push({
+      pathname: "/screens/job/UpdateJobPost",
+      params: { id: jobId, mode: "edit" },
+    } as any);
   const removeJob = (jobId: string) => setJobToDelete(jobId);
   const confirmRemoveJob = async () => {
     if (!jobToDelete) return;
     setIsDeleting(true);
     try {
       await deleteJob(jobToDelete).unwrap();
-      Toast.show({ type: "success", text1: "Job deleted", text2: "The job posting was deleted." });
+      Toast.show({
+        type: "success",
+        text1: "Job deleted",
+        text2: "The job posting was deleted.",
+      });
       setJobToDelete(null);
       void jobsQuery.refetch();
     } catch (error: any) {
       console.error("Error deleting job:", error);
-      Toast.show({ type: "error", text1: "Delete failed", text2: error?.data?.message ?? error?.message ?? "Unable to delete this job." });
-    } finally { setIsDeleting(false); }
+      Toast.show({
+        type: "error",
+        text1: "Delete failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Unable to delete this job.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const selectedProject = projects.find(
@@ -371,74 +387,76 @@ export default function EmployerMyJobsScreen() {
     </View>
   );
 
-  if (isLoading || jobsQuery.isFetching)
-    return (
-      <ScreenWrapper>
-        <ScreenHeader />
-        <ScreenLoader />
-      </ScreenWrapper>
-    );
-
   return (
     <ScreenWrapper>
       <ScreenHeader />
+      {isLoading || jobsQuery.isFetching ? (
+        <ScreenLoader />
+      ) : (
+        <View className="flex-1">
+          <FlatList
+            className="flex-1 px-5 pt-5"
+            data={jobs}
+            keyExtractor={(item) => item.id}
+            renderItem={renderJobCard}
+            ListHeaderComponent={renderListHeader}
+            ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={renderListFooter}
+            ItemSeparatorComponent={() => <View className="h-4" />}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={refreshJobs}
+            onEndReached={() => {
+              if (hasNextPage && !jobsQuery.isFetching) {
+                setPage((current) => current + 1);
+              }
+            }}
+            onEndReachedThreshold={0.35}
+          />
 
-      <FlatList
-        className="flex-1 px-5 pt-5"
-        data={jobs}
-        keyExtractor={(item) => item.id}
-        renderItem={renderJobCard}
-        ListHeaderComponent={renderListHeader}
-        ListEmptyComponent={renderEmptyState}
-        ListFooterComponent={renderListFooter}
-        ItemSeparatorComponent={() => <View className="h-4" />}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        refreshing={refreshing}
-        onRefresh={refreshJobs}
-        onEndReached={() => {
-          if (hasNextPage && !jobsQuery.isFetching) {
-            setPage((current) => current + 1);
-          }
-        }}
-        onEndReachedThreshold={0.35}
-      />
+          <StartProjectModal
+            visible={showProjectModal}
+            projectForm={projectForm}
+            setProjectForm={setProjectForm}
+            onClose={() => {
+              setShowProjectModal(false);
+              resetProjectForm();
+            }}
+            onCreate={createProject}
+          />
 
-      <StartProjectModal
-        visible={showProjectModal}
-        projectForm={projectForm}
-        setProjectForm={setProjectForm}
-        onClose={() => {
-          setShowProjectModal(false);
-          resetProjectForm();
-        }}
-        onCreate={createProject}
-      />
+          <ProjectDetailModal
+            visible={showProjectDetail}
+            project={selectedProject}
+            onClose={() => setShowProjectDetail(false)}
+            onCreateJob={() => {
+              setShowProjectDetail(false);
+              setShowProjectJobModal(true);
+            }}
+          />
 
-      <ProjectDetailModal
-        visible={showProjectDetail}
-        project={selectedProject}
-        onClose={() => setShowProjectDetail(false)}
-        onCreateJob={() => {
-          setShowProjectDetail(false);
-          setShowProjectJobModal(true);
-        }}
-      />
-
-      <ProjectJobModal
-        visible={showProjectJobModal}
-        project={selectedProject}
-        jobForm={projectJobForm}
-        setJobForm={setProjectJobForm}
-        dateRange={projectJobDateRange}
-        setDateRange={setProjectJobDateRange}
-        onClose={() => {
-          setShowProjectJobModal(false);
-          resetProjectJobForm();
-        }}
-        onCreate={createProjectJob}
-      />
-      <ConfirmDeleteJobModal visible={Boolean(jobToDelete)} isDeleting={isDeleting} onCancel={() => setJobToDelete(null)} onConfirm={() => void confirmRemoveJob()} />
+          <ProjectJobModal
+            visible={showProjectJobModal}
+            project={selectedProject}
+            jobForm={projectJobForm}
+            setJobForm={setProjectJobForm}
+            dateRange={projectJobDateRange}
+            setDateRange={setProjectJobDateRange}
+            onClose={() => {
+              setShowProjectJobModal(false);
+              resetProjectJobForm();
+            }}
+            onCreate={createProjectJob}
+          />
+          <ConfirmDeleteJobModal
+            visible={Boolean(jobToDelete)}
+            isDeleting={isDeleting}
+            onCancel={() => setJobToDelete(null)}
+            onConfirm={() => void confirmRemoveJob()}
+          />
+        </View>
+      )}
     </ScreenWrapper>
   );
 }

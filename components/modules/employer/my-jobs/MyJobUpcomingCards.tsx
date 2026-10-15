@@ -18,6 +18,7 @@ export default function MyJobUpcomingCards({
   onDelete?: (id: string) => void;
   user: string;
 }) {
+  console.log("job.team: ", job);
   return (
     <View className="bg-white rounded-xl overflow-hidden">
       <View className="px-4 pt-4 pb-3">
