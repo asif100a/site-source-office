@@ -67,10 +67,33 @@ export default function UpdateJobPost() {
       workBrief: job.note ?? job.workBrief ?? "",
       note: job.note ?? "",
     });
-    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
-    setWorkersNeeded(workerEntries.reduce((sum: number, item: any) => sum + Number(item.howMany ?? 0), 0) || Number(job.workersNeeded ?? 3));
-    setSelectedTrades(job.trades ?? []);
-    setTradeWorkers(Object.fromEntries(workerEntries.length ? workerEntries.map((item: any) => [item.trade, Number(item.howMany ?? 1)]) : (job.trades ?? []).map((trade: string) => [trade, Number(job.workersNeeded ?? 1)])));
+    const workerEntries = Array.isArray(job.workersNeeded)
+      ? job.workersNeeded
+      : [];
+    setWorkersNeeded(
+      workerEntries.reduce(
+        (sum: number, item: any) => sum + Number(item.howMany ?? 0),
+        0,
+      ) || Number(job.workersNeeded ?? 3),
+    );
+    const jobTrades =
+      Array.isArray(job.trades) && job.trades.length
+        ? job.trades
+        : workerEntries.map((item: any) => item.trade).filter(Boolean);
+    setSelectedTrades(jobTrades);
+    setTradeWorkers(
+      Object.fromEntries(
+        workerEntries.length
+          ? workerEntries.map((item: any) => [
+              item.trade,
+              Number(item.howMany ?? 1),
+            ])
+          : jobTrades.map((trade: string) => [
+              trade,
+              Number(job.workersNeeded ?? 1),
+            ]),
+      ),
+    );
     setStartDate(job.startDate ? new Date(job.startDate) : null);
     setEndDate(job.endDate ? new Date(job.endDate) : null);
     const coordinates = job.location?.coordinates;
@@ -92,9 +115,14 @@ export default function UpdateJobPost() {
           body: {
             title: values.jobTitle.trim(),
             hourlyRate: Number(values.hourlyRate),
-          workersNeeded: selectedTrades.map((trade) => ({ trade, howMany: tradeWorkers[trade] ?? 1 })),
-          trades: selectedTrades,
-          location: currentJob?.location ? { ...currentJob.location, address: values.address.trim() } : undefined,
+            workersNeeded: selectedTrades.map((trade) => ({
+              trade,
+              howMany: tradeWorkers[trade] ?? 1,
+            })),
+            trades: selectedTrades,
+            location: currentJob?.location
+              ? { ...currentJob.location, address: values.address.trim() }
+              : undefined,
             endDate: endDate ? endDate.toISOString() : undefined,
             workingHours: currentJob?.workingHours ?? [],
             mustHave: currentJob?.mustHave ?? [],
