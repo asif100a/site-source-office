@@ -269,7 +269,7 @@ export default function PostAJob({
       workingHours: workingHours.map((day) => ({ day: day.label, startTime: formatTime(workingDaySchedule[day.key].startTime), endTime: formatTime(workingDaySchedule[day.key].endTime), isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x", isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x" })),
       mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]), note: notes.trim(),
     };
-    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({ ...sharedPayload, trades: [trade], hourlyRate: tradeRates[trade] ?? 24, workersNeeded: [{ trade, howMany: tradeWorkers[trade] ?? 1 }] })))).every(Boolean);
+    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({ ...sharedPayload, trades: [trade], hourlyRate: tradeRates[trade] ?? hourlyRate, workersNeeded: [{ trade, howMany: tradeWorkers[trade] ?? 1 }] })))).every(Boolean);
 
     if (created) {
       setTitle("");
@@ -306,7 +306,7 @@ export default function PostAJob({
         delete next[trade];
         return next;
       }
-      return { ...current, [trade]: 24 };
+      return { ...current, [trade]: hourlyRate };
     });
     setTradeWorkers((current) => ({ ...current, [trade]: current[trade] ?? 1 }));
   };
@@ -450,8 +450,8 @@ export default function PostAJob({
           label={selectedTrades.length === 1 ? `${selectedTrades[0]} hourly rate` : "Hourly rate per trade"}
           hint="Market rate here is £22-£28/hr"
           value={`£${hourlyRate}/hr`}
-          onDecrease={() => { if (selectedTrades[0]) { const next = Math.max(1, (tradeRates[selectedTrades[0]] ?? 24) - 1); setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
-          onIncrease={() => { if (selectedTrades[0]) { const next = (tradeRates[selectedTrades[0]] ?? 24) + 1; setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
+          onDecrease={() => { const next = Math.max(1, hourlyRate - 1); setHourlyRate(next); setTradeRates(() => Object.fromEntries(selectedTrades.map((trade) => [trade, next]))); }}
+          onIncrease={() => { const next = hourlyRate + 1; setHourlyRate(next); setTradeRates(() => Object.fromEntries(selectedTrades.map((trade) => [trade, next]))); }}
         />
       </View>
 

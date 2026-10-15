@@ -261,7 +261,7 @@ export default function WebPostJobSection({
     );
     setTradeRates((current) => current[trade] !== undefined
       ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== trade))
-      : { ...current, [trade]: 24 });
+      : { ...current, [trade]: hourlyRate });
     setTradeWorkers((current) => ({ ...current, [trade]: current[trade] ?? 1 }));
   };
 
@@ -407,8 +407,8 @@ export default function WebPostJobSection({
             label="Hourly rate"
             hint="Market rate here is £22-£28/hr"
             value={`£${hourlyRate}/hr`}
-            onDecrease={() => { if (selectedTrades[0]) { const next = Math.max(1, (tradeRates[selectedTrades[0]] ?? 24) - 1); setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
-            onIncrease={() => { if (selectedTrades[0]) { const next = (tradeRates[selectedTrades[0]] ?? 24) + 1; setTradeRates((current) => ({ ...current, [selectedTrades[0]]: next })); setHourlyRate(next); } }}
+            onDecrease={() => { const next = Math.max(1, hourlyRate - 1); setHourlyRate(next); setTradeRates(() => Object.fromEntries(selectedTrades.map((trade) => [trade, next]))); }}
+            onIncrease={() => { const next = hourlyRate + 1; setHourlyRate(next); setTradeRates(() => Object.fromEntries(selectedTrades.map((trade) => [trade, next]))); }}
           />
         </View>
 

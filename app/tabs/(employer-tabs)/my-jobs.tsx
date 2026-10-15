@@ -75,7 +75,7 @@ export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
 export default function EmployerMyJobsScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<JobTab>("upcoming");
+  const [activeTab, setActiveTab] = useState<JobTab>("active");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<JobCard[]>([]);
@@ -85,7 +85,9 @@ export default function EmployerMyJobsScreen() {
   const requestedStatus =
     activeTab === "upcoming"
       ? "POSTED"
-      : (activeTab.toUpperCase() as "ACTIVE" | "COMPLETED");
+      : activeTab === "active"
+        ? "ACTIVE"
+        : "COMPLETED";
   const jobsQuery = useGetMyJobsQuery({
     page,
     limit: 10,
