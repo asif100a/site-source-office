@@ -8,18 +8,10 @@ import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import UpdateJobHeader from "@/components/modules/employer/update-job/UpdateJobHeader";
 import UpdateJobForm from "@/components/modules/employer/update-job/UpdateJobForm";
 import type { JobFormValues } from "@/components/modules/employer/update-job/UpdateJobForm";
-import WorkersRequiredModal from "@/components/modules/employer/update-job/WorkersRequiredModal";
 import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 import Toast from "react-native-toast-message";
-
-const TRADE_OPTIONS = [
-  { label: "Groundworker", value: "groundworker" },
-  { label: "Labourer", value: "labourer" },
-  { label: "Carpenter", value: "carpenter" },
-  { label: "Electrician", value: "electrician" },
-];
 
 export default function UpdateJobPost() {
   const router = useRouter();
@@ -34,8 +26,9 @@ export default function UpdateJobPost() {
     defaultValues: {
       jobTitle: "",
       hourlyRate: "",
-      tradeSkill: "groundworker",
+      tradeSkill: "GROUND_WORKER",
       address: "",
+      workersNeeded: "1",
       workBrief: "",
       note: "",
     },
@@ -43,13 +36,8 @@ export default function UpdateJobPost() {
 
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [applicationDeadline, setApplicationDeadline] = useState<Date | null>(
-    null,
-  );
-  const [showWorkersModal, setShowWorkersModal] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
-  const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
-  const [workersNeeded, setWorkersNeeded] = useState(3);
+  const [location, setLocation] = useState("");
+  const [locationCoordinates, setLocationCoordinates] = useState<[number, number] | null>(null);
 
   const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !isEditing });
   const currentJob = jobQuery.data?.data?.data ?? jobQuery.data?.data;
@@ -59,41 +47,18 @@ export default function UpdateJobPost() {
     const job = currentJob;
     console.log("Job: ", job);
     if (!job) return;
+    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
     reset({
       jobTitle: job.title ?? "",
       hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
-      tradeSkill: job.trades?.[0] ?? "groundworker",
+      tradeSkill: job.trades?.[0] ?? workerEntries?.[0]?.trade ?? "GROUND_WORKER",
       address: job.location?.address ?? job.address ?? "",
+      workersNeeded: String(workerEntries?.[0]?.howMany ?? 1),
       workBrief: job.note ?? job.workBrief ?? "",
       note: job.note ?? "",
     });
-    const workerEntries = Array.isArray(job.workersNeeded)
-      ? job.workersNeeded
-      : [];
-    setWorkersNeeded(
-      workerEntries.reduce(
-        (sum: number, item: any) => sum + Number(item.howMany ?? 0),
-        0,
-      ) || Number(job.workersNeeded ?? 3),
-    );
-    const jobTrades =
-      Array.isArray(job.trades) && job.trades.length
-        ? job.trades
-        : workerEntries.map((item: any) => item.trade).filter(Boolean);
-    setSelectedTrades(jobTrades);
-    setTradeWorkers(
-      Object.fromEntries(
-        workerEntries.length
-          ? workerEntries.map((item: any) => [
-              item.trade,
-              Number(item.howMany ?? 1),
-            ])
-          : jobTrades.map((trade: string) => [
-              trade,
-              Number(job.workersNeeded ?? 1),
-            ]),
-      ),
-    );
+    setLocation(job.location?.address ?? job.address ?? "");
+    setLocationCoordinates(Array.isArray(job.location?.coordinates) ? [Number(job.location.coordinates[0]), Number(job.location.coordinates[1])] : null);
     setStartDate(job.startDate ? new Date(job.startDate) : null);
     setEndDate(job.endDate ? new Date(job.endDate) : null);
     const coordinates = job.location?.coordinates;
@@ -102,7 +67,7 @@ export default function UpdateJobPost() {
         Number(coordinates[0]),
         Number(coordinates[1]),
       ])
-        .then((address) => setValue("address", address))
+        .then((address) => { setLocation(address); setValue("address", address); })
         .catch(() => setValue("address", "Saved location"));
     }
   }, [currentJob, reset, setValue]);
@@ -115,13 +80,11 @@ export default function UpdateJobPost() {
           body: {
             title: values.jobTitle.trim(),
             hourlyRate: Number(values.hourlyRate),
-            workersNeeded: selectedTrades.map((trade) => ({
-              trade,
-              howMany: tradeWorkers[trade] ?? 1,
-            })),
-            trades: selectedTrades,
-            location: currentJob?.location
-              ? { ...currentJob.location, address: values.address.trim() }
+            workersNeeded: [{ trade: values.tradeSkill, howMany: Number(values.workersNeeded) }],
+            location: locationCoordinates
+              ? { type: "Point", coordinates: locationCoordinates }
+              : currentJob?.location
+                ? { ...currentJob.location }
               : undefined,
             endDate: endDate ? endDate.toISOString() : undefined,
             workingHours: currentJob?.workingHours ?? [],
@@ -142,22 +105,7 @@ export default function UpdateJobPost() {
     }
   });
 
-  const closeWorkersModal = () => setShowWorkersModal(false);
-
-  const publishWorkers = () => {
-    closeWorkersModal();
-  };
-
   const onBackPress = () => {
-    // if (origin === "worker") {
-    //   router.replace("/tabs/(worker-tabs)" as any);
-    //   return;
-    // }
-    // if (origin === "employer") {
-    //   router.replace("/tabs/(employer-tabs)" as any);
-    //   return;
-    // }
-
     router.back();
   };
 
@@ -183,16 +131,17 @@ export default function UpdateJobPost() {
       {/* Form */}
       <UpdateJobForm
         control={control}
-        setShowWorkersModal={setShowWorkersModal}
-        tradeOptions={TRADE_OPTIONS}
+        setShowWorkersModal={() => undefined}
+        tradeOptions={[]}
         startDate={startDate}
         setStartDate={setStartDate}
         endDate={endDate}
         setEndDate={setEndDate}
-        applicationDeadline={applicationDeadline}
-        setApplicationDeadline={setApplicationDeadline}
-        selectedTrades={selectedTrades}
-        setSelectedTrades={setSelectedTrades}
+        applicationDeadline={null}
+        setApplicationDeadline={() => undefined}
+        selectedTrade={currentJob?.trades?.[0] ?? currentJob?.workersNeeded?.[0]?.trade ?? ""}
+        location={location}
+        onLocationChange={(details) => { setLocation(details.description); setValue("address", details.description); setLocationCoordinates(details.coordinates); }}
       />
 
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-4 py-4 flex-row gap-3">
@@ -219,16 +168,6 @@ export default function UpdateJobPost() {
         </TouchableOpacity>
       </View>
 
-      {/* Workers Required Modal */}
-      <WorkersRequiredModal
-        showWorkersModal={showWorkersModal}
-        closeWorkersModal={closeWorkersModal}
-        selectedTrades={selectedTrades}
-        tradeWorkers={tradeWorkers}
-        setTradeWorkers={setTradeWorkers}
-        publishWorkers={publishWorkers}
-        TRADE_OPTIONS={TRADE_OPTIONS}
-      />
     </ScreenWrapper>
   );
 }

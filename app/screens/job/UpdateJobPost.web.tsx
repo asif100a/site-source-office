@@ -18,11 +18,13 @@ import { Colors } from "@/constants/Colors";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
 import Toast from "react-native-toast-message";
 
 type JobFormValues = {
   jobTitle: string;
   hourlyRate: string;
+  workersNeeded: string;
   tradeSkill: string;
   address: string;
   workBrief: string;
@@ -240,6 +242,7 @@ export default function UpdateJobPostWeb() {
     defaultValues: {
       jobTitle: "",
       hourlyRate: "",
+      workersNeeded: "1",
       tradeSkill: "groundworker",
       address: "",
       workBrief: "",
@@ -249,6 +252,8 @@ export default function UpdateJobPostWeb() {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [location, setLocation] = useState("");
+  const [locationCoordinates, setLocationCoordinates] = useState<[number, number] | null>(null);
   const [applicationDeadline, setApplicationDeadline] = useState("");
   const [showWorkersModal, setShowWorkersModal] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
@@ -261,15 +266,18 @@ export default function UpdateJobPostWeb() {
   useEffect(() => {
     const job = currentJob;
     if (!job) return;
+    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
     reset({
       jobTitle: job.title ?? "",
       hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
+      workersNeeded: String(workerEntries?.[0]?.howMany ?? 1),
       tradeSkill: job.trades?.[0] ?? "groundworker",
       address: job.location?.address ?? job.address ?? "",
       workBrief: job.note ?? job.workBrief ?? "",
       note: job.note ?? "",
     });
-    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
+    setLocation(job.location?.address ?? job.address ?? "");
+    setLocationCoordinates(Array.isArray(job.location?.coordinates) ? [Number(job.location.coordinates[0]), Number(job.location.coordinates[1])] : null);
     setWorkersNeeded(workerEntries.reduce((sum: number, item: any) => sum + Number(item.howMany ?? 0), 0) || Number(job.workersNeeded ?? 3));
     const jobTrades = Array.isArray(job.trades) && job.trades.length
       ? job.trades
@@ -288,7 +296,7 @@ export default function UpdateJobPostWeb() {
         Number(coordinates[0]),
         Number(coordinates[1]),
       ])
-        .then((address) => setValue("address", address))
+        .then((address) => { setLocation(address); setValue("address", address); })
         .catch(() => setValue("address", "Saved location"));
     }
   }, [currentJob, reset, setValue]);
@@ -301,9 +309,13 @@ export default function UpdateJobPostWeb() {
           body: {
             title: values.jobTitle.trim(),
             hourlyRate: Number(values.hourlyRate),
-            workersNeeded: selectedTrades.map((trade) => ({ trade, howMany: tradeWorkers[trade] ?? 1 })),
-            trades: selectedTrades,
-          location: currentJob?.location ? { ...currentJob.location, address: values.address.trim() } : undefined,
+            workersNeeded: [{ trade: values.tradeSkill, howMany: Number(values.workersNeeded) }],
+            trades: [values.tradeSkill],
+            location: locationCoordinates
+              ? { type: "Point", coordinates: locationCoordinates, address: values.address.trim() }
+              : currentJob?.location
+                ? { ...currentJob.location, address: values.address.trim() }
+                : undefined,
             endDate: endDate ? new Date(endDate).toISOString() : undefined,
             workingHours: currentJob?.workingHours ?? [],
             mustHave: currentJob?.mustHave ?? [],
@@ -416,43 +428,19 @@ export default function UpdateJobPostWeb() {
                   }}
                 />
 
-                <Controller
-                  control={control}
-                  name="tradeSkill"
-                  render={({ field: { onChange, value } }) => (
-                    <View className="mb-5">
-                      <Text className="mb-2 text-sm font-semibold text-[#333]">Trade / Skill</Text>
-                      <View className="flex-row flex-wrap gap-2">
-                        {TRADE_OPTIONS.map((trade) => {
-                          const selected = selectedTrades.includes(trade.value);
-                          return <TouchableOpacity key={trade.value} onPress={() => setSelectedTrades((current) => selected ? current.filter((item) => item !== trade.value) : [...current, trade.value])} className={`rounded-full px-3 py-2 ${selected ? "bg-orange-100" : "bg-neutral-100"}`}><Text className={`text-xs font-bold ${selected ? "text-orange-700" : "text-neutral-600"}`}>{trade.label}</Text></TouchableOpacity>;
-                        })}
-                      </View>
-                    </View>
-                  )}
-                />
-
-                <StandardInputField
-                  label="Address"
-                  id="address"
-                  control={control}
-                  placeholder="2972 Westheimer Rd. Santa A..."
-                  required
-                  textInputProps={{ className: "text-[#222]" }}
-                />
-
-                <Pressable onPress={() => setShowWorkersModal(true)}>
-                  <View className="mb-5">
-                    <Text className="mb-2 text-sm font-semibold text-[#333]">
-                      Workers Needed
-                    </Text>
-                    <View className="h-[52px] flex-row items-center justify-between rounded-xl border border-[#e8e8e8] bg-transparent px-4">
-                      <Text className="text-sm text-[#222]">
-                      </Text>
-                      <ChevronDown size={18} color="#999999" />
-                    </View>
+                <View className="mb-5">
+                  <Text className="mb-2 text-sm font-semibold text-[#333]">Trade / Skill</Text>
+                  <View className="h-[52px] justify-center rounded-xl border border-[#e8e8e8] bg-neutral-50 px-4">
+                    <Text className="text-sm text-[#222]">{currentJob?.trades?.[0] ?? currentJob?.workersNeeded?.[0]?.trade ?? "Not set"}</Text>
                   </View>
-                </Pressable>
+                </View>
+
+                <View className="mb-5">
+                  <Text className="mb-2 text-sm font-semibold text-[#333]">Address</Text>
+                  <JobLocationPicker address={location} onChange={(details) => { setLocation(details.description); setValue("address", details.description); setLocationCoordinates(details.coordinates); }} onlyField />
+                </View>
+
+                <StandardInputField label="Workers Needed" id="workersNeeded" control={control} placeholder="3" textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }} />
 
                 <View className="grid gap-4 lg:grid-cols-3">
                   <WebDateField
@@ -515,14 +503,6 @@ export default function UpdateJobPostWeb() {
         </View>
       </ScrollView>
 
-      <WorkersRequiredWebModal
-        open={showWorkersModal}
-        closeModal={closeWorkersModal}
-        selectedTrades={selectedTrades}
-        tradeWorkers={tradeWorkers}
-        setTradeWorkers={setTradeWorkers}
-        publishWorkers={publishWorkers}
-      />
     </ScreenWrapper>
   );
 }

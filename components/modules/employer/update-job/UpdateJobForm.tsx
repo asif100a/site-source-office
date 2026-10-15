@@ -7,11 +7,12 @@ import StandardSelectField from "@/components/standard_ui/form_fields/StandardSe
 import StandardDateInput from "@/components/standard_ui/form_fields/StandardDateInput";
 import StandardTextAreaField from "@/components/standard_ui/form_fields/StandardTextAreaField";
 import { ChevronDown } from "lucide-react-native";
-import { TRADES } from "@/assets/data";
+import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
 
 export type JobFormValues = {
   jobTitle: string;
   hourlyRate: string;
+  workersNeeded: string;
   tradeSkill: string;
   address: string;
   workBrief: string;
@@ -34,8 +35,9 @@ type CreateJobFormProps = {
   setEndDate: Dispatch<SetStateAction<Date | null>>;
   applicationDeadline: Date | null;
   setApplicationDeadline: Dispatch<SetStateAction<Date | null>>;
-  selectedTrades: string[];
-  setSelectedTrades: Dispatch<SetStateAction<string[]>>;
+  selectedTrade: string;
+  location: string;
+  onLocationChange: (details: any) => void;
 };
 
 const RADIUS_OPTIONS = [
@@ -55,8 +57,9 @@ export default function UpdateJobForm({
   setEndDate,
   applicationDeadline,
   setApplicationDeadline,
-  selectedTrades,
-  setSelectedTrades,
+  selectedTrade,
+  location,
+  onLocationChange,
 }: CreateJobFormProps) {
   return (
     <ScrollView
@@ -88,36 +91,17 @@ export default function UpdateJobForm({
 
       <View className="mb-5">
         <Text className="mb-2 text-[#333] text-sm font-semibold">Trade / Skill</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {TRADES.map((trade) => {
-            const selected = selectedTrades.includes(trade.value);
-            return <Pressable key={trade.value} onPress={() => setSelectedTrades((current) => selected ? current.filter((item) => item !== trade.value) : [...current, trade.value])} className={`rounded-full px-3 py-2 ${selected ? "bg-orange-100" : "bg-neutral-100"}`}>
-              <Text className={`text-xs font-bold ${selected ? "text-orange-700" : "text-neutral-600"}`}>{trade.label}</Text>
-            </Pressable>;
-          })}
+        <View className="h-[52px] justify-center rounded-xl border border-[#e8e8e8] px-4 bg-neutral-50">
+          <Text className="text-sm text-[#222]">{selectedTrade || "Not set"}</Text>
         </View>
       </View>
 
-      <StandardInputField
-        label="Address"
-        id="address"
-        control={control}
-        placeholder="2972 Westheimer Rd. Santa A..."
-        required={true}
-        textInputProps={{ className: "text-[#222]" }}
-      />
+      <View className="mb-5">
+        <Text className="mb-2 text-[#333] text-sm font-semibold">Address</Text>
+        <JobLocationPicker address={location} onChange={onLocationChange} onlyField />
+      </View>
 
-      <Pressable onPress={() => setShowWorkersModal(true)}>
-        <View className="mb-5">
-          <Text className="text-[#333] text-sm font-semibold mb-2">
-            Workers Needed
-          </Text>
-          <View className="h-[52px] rounded-xl border border-[#e8e8e8] bg-transparent px-4 flex-row items-center justify-between">
-            <Text className="text-sm text-[#222]">{workersNeeded}</Text>
-            <ChevronDown size={18} color="#999999" />
-          </View>
-        </View>
-      </Pressable>
+      <StandardInputField label="Workers Needed" id="workersNeeded" control={control} placeholder="3" textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }} />
 
       <StandardDateInput
         label="Start Date"
