@@ -195,9 +195,9 @@
       "routeKeys": {}
     },
     {
-      "file": "./screens/job/CreateJobPost.web.tsx",
-      "page": "/screens/job/CreateJobPost",
-      "namedRegex": "^/screens/job/CreateJobPost(?:/)?$",
+      "file": "./screens/job/UpdateJobPost.web.tsx",
+      "page": "/screens/job/UpdateJobPost",
+      "namedRegex": "^/screens/job/UpdateJobPost(?:/)?$",
       "routeKeys": {}
     },
     {
