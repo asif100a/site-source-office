@@ -5,7 +5,7 @@ export type JobPostPayload = {
   title: string;
   trades: string[];
   hourlyRate: number;
-  workersNeeded: number;
+  workersNeeded: number | { trade: string; howMany: number }[];
   location: {
     type: "Point";
     coordinates: [number, number];

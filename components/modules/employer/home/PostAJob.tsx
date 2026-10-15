@@ -269,7 +269,7 @@ export default function PostAJob({
       workingHours: workingHours.map((day) => ({ day: day.label, startTime: formatTime(workingDaySchedule[day.key].startTime), endTime: formatTime(workingDaySchedule[day.key].endTime), isPayOnePointFiveX: workingDaySchedule[day.key].weekendRate === "1.5x", isPayTwoX: workingDaySchedule[day.key].weekendRate === "2x" })),
       mustHave: selectedMustHaves.map((item) => MUST_HAVE_VALUES[item]), note: notes.trim(),
     };
-    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({ ...sharedPayload, trades: [trade], hourlyRate: tradeRates[trade] ?? 24, workersNeeded: tradeWorkers[trade] ?? 1 })))).every(Boolean);
+    const created = (await Promise.all(selectedTrades.map((trade) => onCreateJobPost({ ...sharedPayload, trades: [trade], hourlyRate: tradeRates[trade] ?? 24, workersNeeded: [{ trade, howMany: tradeWorkers[trade] ?? 1 }] })))).every(Boolean);
 
     if (created) {
       setTitle("");

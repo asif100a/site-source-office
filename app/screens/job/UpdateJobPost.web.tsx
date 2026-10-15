@@ -18,13 +18,13 @@ import { Colors } from "@/constants/Colors";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
+import Toast from "react-native-toast-message";
 
 type JobFormValues = {
   jobTitle: string;
   hourlyRate: string;
   tradeSkill: string;
   address: string;
-  radius: string;
   workBrief: string;
   note: string;
 };
@@ -142,27 +142,21 @@ function WebDateField({
 function WorkersRequiredWebModal({
   open,
   closeModal,
-  selectedTrade,
-  setSelectedTrade,
-  workersNeeded,
-  setWorkersNeeded,
+  selectedTrades,
+  tradeWorkers,
+  setTradeWorkers,
   publishWorkers,
 }: {
   open: boolean;
   closeModal: () => void;
-  selectedTrade: string;
-  setSelectedTrade: React.Dispatch<React.SetStateAction<string>>;
-  workersNeeded: number;
-  setWorkersNeeded: React.Dispatch<React.SetStateAction<number>>;
+  selectedTrades: string[];
+  tradeWorkers: Record<string, number>;
+  setTradeWorkers: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   publishWorkers: () => void;
 }) {
   if (!open) {
     return null;
   }
-
-  const currentTradeLabel =
-    TRADE_OPTIONS.find((item) => item.value === selectedTrade)?.label ??
-    "Groundworker";
 
   return (
     <Modal
@@ -197,39 +191,21 @@ function WorkersRequiredWebModal({
             </TouchableOpacity>
           </View>
 
-          <View className="mt-6 gap-5">
-            <WebSelectField
-              label="Trade / Skill"
-              value={selectedTrade}
-              onChange={setSelectedTrade}
-              options={TRADE_OPTIONS}
-              placeholder={currentTradeLabel}
-            />
-
-            <View>
-              <Text className="mb-2 text-sm font-semibold text-[#333]">
-                Number of workers
-              </Text>
-              <View className="h-[52px] flex-row items-center justify-between rounded-xl border border-[#e8e8e8] px-4">
-                <Text className="text-sm text-[#222]">{workersNeeded}</Text>
-                <View className="flex-row items-center gap-3">
-                  <TouchableOpacity
-                    onPress={() =>
-                      setWorkersNeeded((value) => Math.max(1, value - 1))
-                    }
-                    className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100"
-                  >
-                    <Minus size={16} color="#111827" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setWorkersNeeded((value) => value + 1)}
-                    className="h-8 w-8 items-center justify-center rounded-full bg-neutral-900"
-                  >
-                    <Plus size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
+          <View className="mt-6 gap-4">
+            {selectedTrades.map((trade) => (
+              <View key={trade}>
+                <Text className="mb-2 text-sm font-semibold text-[#333]">
+                  {TRADE_OPTIONS.find((item) => item.value === trade)?.label ?? trade}
+                </Text>
+                <View className="h-[52px] flex-row items-center justify-between rounded-xl border border-[#e8e8e8] px-4">
+                  <Text className="text-sm text-[#222]">{tradeWorkers[trade] ?? 1}</Text>
+                  <View className="flex-row items-center gap-3">
+                    <TouchableOpacity onPress={() => setTradeWorkers((current) => ({ ...current, [trade]: Math.max(1, (current[trade] ?? 1) - 1) }))} className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100"><Minus size={16} color="#111827" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setTradeWorkers((current) => ({ ...current, [trade]: (current[trade] ?? 1) + 1 }))} className="h-8 w-8 items-center justify-center rounded-full bg-neutral-900"><Plus size={16} color="#FFFFFF" /></TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
+            ))}
           </View>
 
           <View className="mt-8 flex-row justify-end gap-3">
@@ -266,7 +242,6 @@ export default function UpdateJobPostWeb() {
       hourlyRate: "",
       tradeSkill: "groundworker",
       address: "",
-      radius: "1-10",
       workBrief: "",
       note: "",
     },
@@ -276,7 +251,8 @@ export default function UpdateJobPostWeb() {
   const [endDate, setEndDate] = useState("");
   const [applicationDeadline, setApplicationDeadline] = useState("");
   const [showWorkersModal, setShowWorkersModal] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState("groundworker");
+  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
   const [workersNeeded, setWorkersNeeded] = useState(3);
   const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !isEditing });
   const currentJob = jobQuery.data?.data?.data ?? jobQuery.data?.data;
@@ -290,40 +266,60 @@ export default function UpdateJobPostWeb() {
       hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
       tradeSkill: job.trades?.[0] ?? "groundworker",
       address: job.location?.address ?? job.address ?? "",
-      radius: "1-10",
       workBrief: job.note ?? job.workBrief ?? "",
       note: job.note ?? "",
     });
-    setWorkersNeeded(Number(job.workersNeeded ?? 3));
-    setStartDate(job.startDate ? new Date(job.startDate).toISOString().slice(0, 10) : "");
-    setEndDate(job.endDate ? new Date(job.endDate).toISOString().slice(0, 10) : "");
+    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
+    setWorkersNeeded(workerEntries.reduce((sum: number, item: any) => sum + Number(item.howMany ?? 0), 0) || Number(job.workersNeeded ?? 3));
+    setSelectedTrades(job.trades ?? []);
+    setTradeWorkers(Object.fromEntries(workerEntries.length ? workerEntries.map((item: any) => [item.trade, Number(item.howMany ?? 1)]) : (job.trades ?? []).map((trade: string) => [trade, Number(job.workersNeeded ?? 1)])));
+    setStartDate(
+      job.startDate ? new Date(job.startDate).toISOString().slice(0, 10) : "",
+    );
+    setEndDate(
+      job.endDate ? new Date(job.endDate).toISOString().slice(0, 10) : "",
+    );
     const coordinates = job.location?.coordinates;
     if (Array.isArray(coordinates) && coordinates.length === 2) {
-      void getAddressFromCoordinates([Number(coordinates[0]), Number(coordinates[1])])
+      void getAddressFromCoordinates([
+        Number(coordinates[0]),
+        Number(coordinates[1]),
+      ])
         .then((address) => setValue("address", address))
         .catch(() => setValue("address", "Saved location"));
     }
   }, [currentJob, reset, setValue]);
 
   const submitJob = handleSubmit(async (values) => {
-    if (isEditing && jobId) {
-      await updateJob({
-        id: jobId,
-        body: {
-          title: values.jobTitle.trim(),
-          hourlyRate: Number(values.hourlyRate),
-          workersNeeded,
-          trades: currentJob?.trades ?? [],
-          location: currentJob?.location,
-          endDate: endDate ? new Date(endDate).toISOString() : undefined,
-          workingHours: currentJob?.workingHours ?? [],
-          mustHave: currentJob?.mustHave ?? [],
-          note: values.note.trim(),
-          ...(startDate ? { startDate: new Date(startDate).toISOString() } : {}),
-        },
-      }).unwrap();
+    try {
+      if (isEditing && jobId) {
+        await updateJob({
+          id: jobId,
+          body: {
+            title: values.jobTitle.trim(),
+            hourlyRate: Number(values.hourlyRate),
+            workersNeeded: selectedTrades.map((trade) => ({ trade, howMany: tradeWorkers[trade] ?? 1 })),
+            trades: selectedTrades,
+          location: currentJob?.location ? { ...currentJob.location, address: values.address.trim() } : undefined,
+            endDate: endDate ? new Date(endDate).toISOString() : undefined,
+            workingHours: currentJob?.workingHours ?? [],
+            mustHave: currentJob?.mustHave ?? [],
+            note: values.note.trim(),
+            ...(startDate
+              ? { startDate: new Date(startDate).toISOString() }
+              : {}),
+          },
+        }).unwrap();
+      }
+      Toast.show({
+        type: "success",
+        text1: "Job updated successfully",
+        text2: "Your job post has been updated successfully.",
+      });
+      router.replace("/tabs/(employer-tabs)/my-jobs");
+    } catch (error) {
+      console.error("Error updating job post:", error);
     }
-    router.replace("/tabs/(employer-tabs)" as any);
   });
 
   const closeWorkersModal = () => setShowWorkersModal(false);
@@ -339,7 +335,7 @@ export default function UpdateJobPostWeb() {
   if (jobQuery?.isLoading) {
     return (
       <ScreenWrapper>
-        <ScreenLoader  />
+        <ScreenLoader />
       </ScreenWrapper>
     );
   }
@@ -402,7 +398,7 @@ export default function UpdateJobPostWeb() {
                   control={control}
                   placeholder="Enter Job Title"
                   required
-                  textInputProps={{ className: "text-[#222]", editable: false }}
+                  textInputProps={{ className: "text-[#222]" }}
                 />
 
                 <StandardInputField
@@ -411,20 +407,25 @@ export default function UpdateJobPostWeb() {
                   control={control}
                   placeholder="35"
                   required={false}
-                  textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }}
+                  textInputProps={{
+                    className: "text-[#222]",
+                    keyboardType: "numeric",
+                  }}
                 />
 
                 <Controller
                   control={control}
                   name="tradeSkill"
                   render={({ field: { onChange, value } }) => (
-                    <WebSelectField
-                      label="Trade / Skill"
-                      value={value}
-                      onChange={onChange}
-                      options={TRADE_OPTIONS}
-                      placeholder="Select trade and number"
-                    />
+                    <View className="mb-5">
+                      <Text className="mb-2 text-sm font-semibold text-[#333]">Trade / Skill</Text>
+                      <View className="flex-row flex-wrap gap-2">
+                        {TRADE_OPTIONS.map((trade) => {
+                          const selected = selectedTrades.includes(trade.value);
+                          return <TouchableOpacity key={trade.value} onPress={() => setSelectedTrades((current) => selected ? current.filter((item) => item !== trade.value) : [...current, trade.value])} className={`rounded-full px-3 py-2 ${selected ? "bg-orange-100" : "bg-neutral-100"}`}><Text className={`text-xs font-bold ${selected ? "text-orange-700" : "text-neutral-600"}`}>{trade.label}</Text></TouchableOpacity>;
+                        })}
+                      </View>
+                    </View>
                   )}
                 />
 
@@ -437,20 +438,6 @@ export default function UpdateJobPostWeb() {
                   textInputProps={{ className: "text-[#222]" }}
                 />
 
-                <Controller
-                  control={control}
-                  name="radius"
-                  render={({ field: { onChange, value } }) => (
-                    <WebSelectField
-                      label="Radius"
-                      value={value}
-                      onChange={onChange}
-                      options={RADIUS_OPTIONS}
-                      placeholder="1-10 Km"
-                    />
-                  )}
-                />
-
                 <Pressable onPress={() => setShowWorkersModal(true)}>
                   <View className="mb-5">
                     <Text className="mb-2 text-sm font-semibold text-[#333]">
@@ -458,7 +445,6 @@ export default function UpdateJobPostWeb() {
                     </Text>
                     <View className="h-[52px] flex-row items-center justify-between rounded-xl border border-[#e8e8e8] bg-transparent px-4">
                       <Text className="text-sm text-[#222]">
-                        {workersNeeded}
                       </Text>
                       <ChevronDown size={18} color="#999999" />
                     </View>
@@ -513,7 +499,11 @@ export default function UpdateJobPostWeb() {
                   className="flex-1 items-center justify-center rounded-2xl px-5 py-3.5"
                 >
                   <Text className="text-sm font-bold text-white">
-                    {isUpdating ? "Saving..." : isEditing ? "Save Changes" : "Publish Job"}
+                    {isUpdating
+                      ? "Saving..."
+                      : isEditing
+                        ? "Save Changes"
+                        : "Publish Job"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -525,10 +515,9 @@ export default function UpdateJobPostWeb() {
       <WorkersRequiredWebModal
         open={showWorkersModal}
         closeModal={closeWorkersModal}
-        selectedTrade={selectedTrade}
-        setSelectedTrade={setSelectedTrade}
-        workersNeeded={workersNeeded}
-        setWorkersNeeded={setWorkersNeeded}
+        selectedTrades={selectedTrades}
+        tradeWorkers={tradeWorkers}
+        setTradeWorkers={setTradeWorkers}
         publishWorkers={publishWorkers}
       />
     </ScreenWrapper>

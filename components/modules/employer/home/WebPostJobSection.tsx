@@ -183,7 +183,7 @@ export default function WebPostJobSection({
       title: title.trim(),
       trades: [trade],
       hourlyRate: tradeRates[trade] ?? hourlyRate,
-      workersNeeded: tradeWorkers[trade] ?? 1,
+      workersNeeded: [{ trade, howMany: tradeWorkers[trade] ?? 1 }],
       location: { type: "Point", coordinates: locationCoordinates },
       startDate: formatDateForPayload(jobDateRange.from ?? new Date()),
       endDate: formatDateForPayload(jobDateRange.to ?? new Date()),

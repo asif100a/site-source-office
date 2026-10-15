@@ -19,6 +19,9 @@ import { JobStatus, JobTab } from "@/types";
 import { useDeleteJobMutation, useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
 import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
+import Toast from "react-native-toast-message";
+import ConfirmDeleteJobModal from "@/components/modules/employer/my-jobs/ConfirmDeleteJobModal";
+import ScreenLoader from "@/components/ui/screen-loader";
 
 type JobCard = {
   id: string;
@@ -64,6 +67,8 @@ export default function EmployerMyJobsScreenWeb() {
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
   const [deleteJob] = useDeleteJobMutation();
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     data: GetEmployerProfile,
     isLoading,
@@ -142,11 +147,37 @@ export default function EmployerMyJobsScreenWeb() {
     });
   };
 
-  const editJob = (jobId: string) => router.push({ pathname: "/screens/job/UpdateJobPost", params: { id: jobId, mode: "edit" } } as any);
-  const removeJob = async (jobId: string) => {
-    if (!globalThis.confirm?.("Delete this job posting?")) return;
-    await deleteJob(jobId).unwrap();
-    void jobsQuery.refetch();
+  const editJob = (jobId: string) =>
+    router.push({
+      pathname: "/screens/job/UpdateJobPost",
+      params: { id: jobId, mode: "edit" },
+    } as any);
+  const removeJob = (jobId: string) => setJobToDelete(jobId);
+  const confirmRemoveJob = async () => {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteJob(jobToDelete).unwrap();
+      Toast.show({
+        type: "success",
+        text1: "Job deleted",
+        text2: "The job posting was deleted.",
+      });
+      setJobToDelete(null);
+      void jobsQuery.refetch();
+    } catch (error: any) {
+      console.error("Error deleting job:", error);
+      Toast.show({
+        type: "error",
+        text1: "Delete failed",
+        text2:
+          error?.data?.message ??
+          error?.message ??
+          "Unable to delete this job.",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const pageTitle =
@@ -320,6 +351,13 @@ export default function EmployerMyJobsScreenWeb() {
     </View>
   );
 
+  if (isLoading || jobsQuery.isFetching)
+    return (
+      <ScreenWrapper>
+        <ScreenLoader />
+      </ScreenWrapper>
+    );
+
   return (
     <ScreenWrapper>
       <FlatList
@@ -341,6 +379,12 @@ export default function EmployerMyJobsScreenWeb() {
           }
         }}
         onEndReachedThreshold={0.35}
+      />
+      <ConfirmDeleteJobModal
+        visible={Boolean(jobToDelete)}
+        isDeleting={isDeleting}
+        onCancel={() => setJobToDelete(null)}
+        onConfirm={() => void confirmRemoveJob()}
       />
     </ScreenWrapper>
   );

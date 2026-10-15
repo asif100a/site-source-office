@@ -30,6 +30,9 @@ import {
 import { useDeleteJobMutation, useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
 import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
+import Toast from "react-native-toast-message";
+import ConfirmDeleteJobModal from "@/components/modules/employer/my-jobs/ConfirmDeleteJobModal";
+import ScreenLoader from "@/components/ui/screen-loader";
 
 const EMPTY_PROJECT_FORM: ProjectForm = {
   name: "",
@@ -90,6 +93,8 @@ export default function EmployerMyJobsScreen() {
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
   const [deleteJob] = useDeleteJobMutation();
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     data: GetEmployerProfile,
     isLoading,
@@ -187,10 +192,19 @@ export default function EmployerMyJobsScreen() {
   };
 
   const editJob = (jobId: string) => router.push({ pathname: "/screens/job/UpdateJobPost", params: { id: jobId, mode: "edit" } } as any);
-  const removeJob = async (jobId: string) => {
-    if (!globalThis.confirm?.("Delete this job posting?")) return;
-    await deleteJob(jobId).unwrap();
-    void jobsQuery.refetch();
+  const removeJob = (jobId: string) => setJobToDelete(jobId);
+  const confirmRemoveJob = async () => {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteJob(jobToDelete).unwrap();
+      Toast.show({ type: "success", text1: "Job deleted", text2: "The job posting was deleted." });
+      setJobToDelete(null);
+      void jobsQuery.refetch();
+    } catch (error: any) {
+      console.error("Error deleting job:", error);
+      Toast.show({ type: "error", text1: "Delete failed", text2: error?.data?.message ?? error?.message ?? "Unable to delete this job." });
+    } finally { setIsDeleting(false); }
   };
 
   const selectedProject = projects.find(
@@ -288,7 +302,7 @@ export default function EmployerMyJobsScreen() {
   );
 
   const renderJobCard = ({ item }: { item: JobCard }) => {
-    console.log("item: ", item);
+    // console.log("item: ", item);
     if (activeTab === "upcoming") {
       return (
         <MyJobUpcomingCards
@@ -357,6 +371,14 @@ export default function EmployerMyJobsScreen() {
     </View>
   );
 
+  if (isLoading || jobsQuery.isFetching)
+    return (
+      <ScreenWrapper>
+        <ScreenHeader />
+        <ScreenLoader />
+      </ScreenWrapper>
+    );
+
   return (
     <ScreenWrapper>
       <ScreenHeader />
@@ -416,6 +438,7 @@ export default function EmployerMyJobsScreen() {
         }}
         onCreate={createProjectJob}
       />
+      <ConfirmDeleteJobModal visible={Boolean(jobToDelete)} isDeleting={isDeleting} onCancel={() => setJobToDelete(null)} onConfirm={() => void confirmRemoveJob()} />
     </ScreenWrapper>
   );
 }

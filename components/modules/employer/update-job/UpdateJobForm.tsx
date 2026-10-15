@@ -7,13 +7,13 @@ import StandardSelectField from "@/components/standard_ui/form_fields/StandardSe
 import StandardDateInput from "@/components/standard_ui/form_fields/StandardDateInput";
 import StandardTextAreaField from "@/components/standard_ui/form_fields/StandardTextAreaField";
 import { ChevronDown } from "lucide-react-native";
+import { TRADES } from "@/assets/data";
 
 export type JobFormValues = {
   jobTitle: string;
   hourlyRate: string;
   tradeSkill: string;
   address: string;
-  radius: string;
   workBrief: string;
   note: string;
 };
@@ -34,6 +34,8 @@ type CreateJobFormProps = {
   setEndDate: Dispatch<SetStateAction<Date | null>>;
   applicationDeadline: Date | null;
   setApplicationDeadline: Dispatch<SetStateAction<Date | null>>;
+  selectedTrades: string[];
+  setSelectedTrades: Dispatch<SetStateAction<string[]>>;
 };
 
 const RADIUS_OPTIONS = [
@@ -53,6 +55,8 @@ export default function UpdateJobForm({
   setEndDate,
   applicationDeadline,
   setApplicationDeadline,
+  selectedTrades,
+  setSelectedTrades,
 }: CreateJobFormProps) {
   return (
     <ScrollView
@@ -82,13 +86,17 @@ export default function UpdateJobForm({
         textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }}
       />
 
-      <StandardSelectField
-        label="Trade / Skill"
-        id="tradeSkill"
-        control={control}
-        options={tradeOptions}
-        placeholder="Select trade and number"
-      />
+      <View className="mb-5">
+        <Text className="mb-2 text-[#333] text-sm font-semibold">Trade / Skill</Text>
+        <View className="flex-row flex-wrap gap-2">
+          {TRADES.map((trade) => {
+            const selected = selectedTrades.includes(trade.value);
+            return <Pressable key={trade.value} onPress={() => setSelectedTrades((current) => selected ? current.filter((item) => item !== trade.value) : [...current, trade.value])} className={`rounded-full px-3 py-2 ${selected ? "bg-orange-100" : "bg-neutral-100"}`}>
+              <Text className={`text-xs font-bold ${selected ? "text-orange-700" : "text-neutral-600"}`}>{trade.label}</Text>
+            </Pressable>;
+          })}
+        </View>
+      </View>
 
       <StandardInputField
         label="Address"
@@ -96,15 +104,7 @@ export default function UpdateJobForm({
         control={control}
         placeholder="2972 Westheimer Rd. Santa A..."
         required={true}
-        textInputProps={{ className: "text-[#222]", editable: false }}
-      />
-
-      <StandardSelectField
-        label="Radius"
-        id="radius"
-        control={control}
-        options={RADIUS_OPTIONS}
-        placeholder="1-10 Km"
+        textInputProps={{ className: "text-[#222]" }}
       />
 
       <Pressable onPress={() => setShowWorkersModal(true)}>

@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { Colors } from "@/constants/Colors";
@@ -16,6 +12,7 @@ import WorkersRequiredModal from "@/components/modules/employer/update-job/Worke
 import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
 import ScreenLoader from "@/components/ui/screen-loader";
 import { getAddressFromCoordinates } from "@/utils/googlePlaces";
+import Toast from "react-native-toast-message";
 
 const TRADE_OPTIONS = [
   { label: "Groundworker", value: "groundworker" },
@@ -26,7 +23,11 @@ const TRADE_OPTIONS = [
 
 export default function UpdateJobPost() {
   const router = useRouter();
-  const { id, mode, origin } = useLocalSearchParams<{ id?: string; mode?: string; origin?: string }>();
+  const { id, mode, origin } = useLocalSearchParams<{
+    id?: string;
+    mode?: string;
+    origin?: string;
+  }>();
   const jobId = Array.isArray(id) ? id[0] : id;
   const isEditing = mode === "edit" && Boolean(jobId);
   const { control, handleSubmit, reset, setValue } = useForm<JobFormValues>({
@@ -35,7 +36,6 @@ export default function UpdateJobPost() {
       hourlyRate: "",
       tradeSkill: "groundworker",
       address: "",
-      radius: "1-10",
       workBrief: "",
       note: "",
     },
@@ -47,7 +47,8 @@ export default function UpdateJobPost() {
     null,
   );
   const [showWorkersModal, setShowWorkersModal] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState("groundworker");
+  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [tradeWorkers, setTradeWorkers] = useState<Record<string, number>>({});
   const [workersNeeded, setWorkersNeeded] = useState(3);
 
   const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !isEditing });
@@ -63,40 +64,54 @@ export default function UpdateJobPost() {
       hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
       tradeSkill: job.trades?.[0] ?? "groundworker",
       address: job.location?.address ?? job.address ?? "",
-      radius: "1-10",
       workBrief: job.note ?? job.workBrief ?? "",
       note: job.note ?? "",
     });
-    setWorkersNeeded(Number(job.workersNeeded ?? 3));
+    const workerEntries = Array.isArray(job.workersNeeded) ? job.workersNeeded : [];
+    setWorkersNeeded(workerEntries.reduce((sum: number, item: any) => sum + Number(item.howMany ?? 0), 0) || Number(job.workersNeeded ?? 3));
+    setSelectedTrades(job.trades ?? []);
+    setTradeWorkers(Object.fromEntries(workerEntries.length ? workerEntries.map((item: any) => [item.trade, Number(item.howMany ?? 1)]) : (job.trades ?? []).map((trade: string) => [trade, Number(job.workersNeeded ?? 1)])));
     setStartDate(job.startDate ? new Date(job.startDate) : null);
     setEndDate(job.endDate ? new Date(job.endDate) : null);
     const coordinates = job.location?.coordinates;
     if (Array.isArray(coordinates) && coordinates.length === 2) {
-      void getAddressFromCoordinates([Number(coordinates[0]), Number(coordinates[1])])
+      void getAddressFromCoordinates([
+        Number(coordinates[0]),
+        Number(coordinates[1]),
+      ])
         .then((address) => setValue("address", address))
         .catch(() => setValue("address", "Saved location"));
     }
   }, [currentJob, reset, setValue]);
 
   const submitJob = handleSubmit(async (values) => {
-    if (isEditing && jobId) {
-      await updateJob({
-        id: jobId,
-        body: {
-          title: values.jobTitle.trim(),
-          hourlyRate: Number(values.hourlyRate),
-          workersNeeded,
-          trades: currentJob?.trades ?? [],
-          location: currentJob?.location,
-          endDate: endDate ? endDate.toISOString() : undefined,
-          workingHours: currentJob?.workingHours ?? [],
-          mustHave: currentJob?.mustHave ?? [],
-          note: values.note.trim(),
-          ...(startDate ? { startDate: startDate.toISOString() } : {}),
-        },
-      }).unwrap();
+    try {
+      if (isEditing && jobId) {
+        await updateJob({
+          id: jobId,
+          body: {
+            title: values.jobTitle.trim(),
+            hourlyRate: Number(values.hourlyRate),
+          workersNeeded: selectedTrades.map((trade) => ({ trade, howMany: tradeWorkers[trade] ?? 1 })),
+          trades: selectedTrades,
+          location: currentJob?.location ? { ...currentJob.location, address: values.address.trim() } : undefined,
+            endDate: endDate ? endDate.toISOString() : undefined,
+            workingHours: currentJob?.workingHours ?? [],
+            mustHave: currentJob?.mustHave ?? [],
+            note: values.note.trim(),
+            ...(startDate ? { startDate: startDate.toISOString() } : {}),
+          },
+        }).unwrap();
+      }
+      Toast.show({
+        type: "success",
+        text1: "Job updated successfully",
+        text2: "Your job post has been updated successfully.",
+      });
+      router.replace("/tabs/(employer-tabs)/my-jobs" as any);
+    } catch (error) {
+      console.error("Error updating job post:", error);
     }
-    router.replace("/tabs/(employer-tabs)" as any);
   });
 
   const closeWorkersModal = () => setShowWorkersModal(false);
@@ -121,15 +136,17 @@ export default function UpdateJobPost() {
   if (jobQuery?.isLoading) {
     return (
       <ScreenWrapper>
-        <ScreenLoader  />
+        <ScreenLoader />
       </ScreenWrapper>
     );
   }
 
   return (
-    <ScreenWrapper style={{
-      marginBottom: 40
-    }}>
+    <ScreenWrapper
+      style={{
+        marginBottom: 40,
+      }}
+    >
       <StatusBar style="dark" />
 
       {/* Header */}
@@ -140,13 +157,14 @@ export default function UpdateJobPost() {
         control={control}
         setShowWorkersModal={setShowWorkersModal}
         tradeOptions={TRADE_OPTIONS}
-        workersNeeded={workersNeeded}
         startDate={startDate}
         setStartDate={setStartDate}
         endDate={endDate}
         setEndDate={setEndDate}
         applicationDeadline={applicationDeadline}
         setApplicationDeadline={setApplicationDeadline}
+        selectedTrades={selectedTrades}
+        setSelectedTrades={setSelectedTrades}
       />
 
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-neutral-100 px-4 py-4 flex-row gap-3">
@@ -156,7 +174,11 @@ export default function UpdateJobPost() {
           className="flex-1 py-4 rounded-2xl items-center justify-center active:opacity-90 shadow-sm"
         >
           <Text className="text-white font-extrabold text-sm">
-            {isUpdating ? "Saving..." : isEditing ? "Save Changes" : "Publish Job"}
+            {isUpdating
+              ? "Saving..."
+              : isEditing
+                ? "Save Changes"
+                : "Publish Job"}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -173,10 +195,9 @@ export default function UpdateJobPost() {
       <WorkersRequiredModal
         showWorkersModal={showWorkersModal}
         closeWorkersModal={closeWorkersModal}
-        selectedTrade={selectedTrade}
-        setSelectedTrade={setSelectedTrade}
-        workersNeeded={workersNeeded}
-        setWorkersNeeded={setWorkersNeeded}
+        selectedTrades={selectedTrades}
+        tradeWorkers={tradeWorkers}
+        setTradeWorkers={setTradeWorkers}
         publishWorkers={publishWorkers}
         TRADE_OPTIONS={TRADE_OPTIONS}
       />
