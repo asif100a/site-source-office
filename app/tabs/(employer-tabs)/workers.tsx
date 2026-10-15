@@ -186,7 +186,7 @@ function SendOfferModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end" style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}>
+      <View className="flex-1 justify-end pb-8" style={{backgroundColor: 'rgba(0, 0, 0, 0.4)'}}>
         <Pressable className="absolute inset-0" onPress={onClose} />
         <View className="max-h-[78%] rounded-t-3xl bg-white px-5 pb-6 pt-5">
           <View className="mb-4 flex-row items-start justify-between gap-4">

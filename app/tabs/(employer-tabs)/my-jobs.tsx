@@ -29,6 +29,7 @@ import {
 } from "@/types";
 import { useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
+import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 
 const EMPTY_PROJECT_FORM: ProjectForm = {
   name: "",
@@ -88,6 +89,15 @@ export default function EmployerMyJobsScreen() {
     status: requestedStatus,
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
+  const {
+    data: GetEmployerProfile,
+    isLoading,
+    isError,
+    error,
+  } = useGetEmployerProfileQuery();
+  const employer = GetEmployerProfile?.data;
+  const employerProfileName = employer?.profile?.name;
+
   const [projects, setProjects] = useState<ProjectCard[]>([]);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
@@ -124,6 +134,7 @@ export default function EmployerMyJobsScreen() {
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
+    console.log("Jobs data: ", jobsQuery.data);
     const nextJobs = getJobItems(jobsQuery.data).map(mapJobToCard);
     setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
     setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
@@ -269,20 +280,32 @@ export default function EmployerMyJobsScreen() {
   );
 
   const renderJobCard = ({ item }: { item: JobCard }) => {
+    console.log("item: ", item);
     if (activeTab === "upcoming") {
       return (
-        <MyJobUpcomingCards job={item} openJobDetails={openJobDetails} />
+        <MyJobUpcomingCards
+          job={item}
+          openJobDetails={openJobDetails}
+          user={employerProfileName}
+        />
       );
     }
 
     if (activeTab === "active") {
-      return <MyJobActiveCards job={item} openJobDetails={openJobDetails} />;
+      return (
+        <MyJobActiveCards
+          job={item}
+          openJobDetails={openJobDetails}
+          user={employerProfileName}
+        />
+      );
     }
 
     return (
       <MyJobCompletedOrCanceledCards
         job={item}
         openJobDetails={openJobDetails}
+        user={employerProfileName}
       />
     );
   };

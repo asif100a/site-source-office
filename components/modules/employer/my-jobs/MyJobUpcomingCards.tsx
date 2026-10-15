@@ -8,9 +8,11 @@ import JobLocationLabel from "./JobLocationLabel";
 export default function MyJobUpcomingCards({
   job,
   openJobDetails,
+  user
 }: {
   job: any;
   openJobDetails: (id: string) => void;
+  user: string;
 }) {
   return (
     <View className="bg-white rounded-xl overflow-hidden">
@@ -24,7 +26,7 @@ export default function MyJobUpcomingCards({
               <Text className="text-neutral-950 text-base font-bold">
                 {job.title}
               </Text>
-              <Text className="text-neutral-500 text-sm">{job.company}</Text>
+              <Text className="text-neutral-500 text-sm">{user ?? "User not found"}</Text>
             </View>
           </View>
 

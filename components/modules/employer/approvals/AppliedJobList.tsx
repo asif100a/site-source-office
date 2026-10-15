@@ -1,4 +1,6 @@
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { useRouter } from "expo-router";
+import { MessageCircle } from "lucide-react-native";
 import { AppliedJobApplication, formatAppliedJobDate } from "@/utils/jobApplications";
 
 type AppliedJobListProps = {
@@ -18,6 +20,8 @@ export default function AppliedJobList({
   hasNextPage,
   onLoadMore,
 }: AppliedJobListProps) {
+  const router = useRouter();
+
   if (isLoading) {
     return <ActivityIndicator className="mt-8" color="#FF5500" />;
   }
@@ -76,6 +80,17 @@ export default function AppliedJobList({
             <Text className="mt-1 text-xs text-neutral-400">
               Applied {formatAppliedJobDate(application.appliedAt)}
             </Text>
+
+            <TouchableOpacity
+              onPress={() => router.push("/screens/chats/chats" as any)}
+              activeOpacity={0.8}
+              className="mt-4 flex-row items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3"
+            >
+              <MessageCircle size={16} color="#C2410C" />
+              <Text className="text-sm font-bold text-orange-700">
+                Send message
+              </Text>
+            </TouchableOpacity>
           </View>
         );
       })}

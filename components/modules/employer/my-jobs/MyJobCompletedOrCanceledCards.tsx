@@ -7,9 +7,11 @@ import JobLocationLabel from "./JobLocationLabel";
 export default function MyJobCompletedOrCanceledCards({
   job,
   openJobDetails,
+  user,
 }: {
   job: any;
   openJobDetails: (id: string, status: "completed" | "cancelled") => void;
+  user: string;
 }) {
   const isCompleted = job.status === "completed";
   const isCancelled = job.status === "cancelled";
@@ -26,7 +28,9 @@ export default function MyJobCompletedOrCanceledCards({
               <Text className="text-neutral-950 text-base font-bold">
                 {job.title}
               </Text>
-              <Text className="text-neutral-500 text-sm">{job.company}</Text>
+              <Text className="text-neutral-500 text-sm">
+                {user ?? "User not found"}
+              </Text>
             </View>
           </View>
 

@@ -22,21 +22,6 @@ export default function CompletedEmployerContact({jobDetails}: {jobDetails: any}
           </Text>
         </View>
       </View>
-
-      <View className="gap-2.5 pt-3 border-t border-neutral-50">
-        <View className="flex-row items-center gap-2.5">
-          <Mail size={15} color="#858585" />
-          <Text className="text-neutral-500 text-xs font-semibold">
-            {jobDetails.contactEmail}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2.5">
-          <Phone size={15} color="#858585" />
-          <Text className="text-neutral-500 text-xs font-semibold">
-            {jobDetails.contactPhone}
-          </Text>
-        </View>
-      </View>
     </View>
   );
 }
