@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useSelector } from "react-redux";
 import Toast from "react-native-toast-message";
 import {
+  ArrowLeft,
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
@@ -75,7 +76,10 @@ export default function WebChatWorkspace({
       const matchingConversation = chatsQuery.data?.find(
         (conversation) => conversation.job?.id === jobId,
       );
-      if (matchingConversation && selectedThreadId !== matchingConversation.id) {
+      if (
+        matchingConversation &&
+        selectedThreadId !== matchingConversation.id
+      ) {
         setSelectedThreadId(matchingConversation.id);
       }
       return;
@@ -132,7 +136,10 @@ export default function WebChatWorkspace({
     const refreshChats = (message?: ChatMessage) => {
       void chatsQuery.refetch();
 
-      if (!message?.conversationId || message.conversationId === selectedThread?.id) {
+      if (
+        !message?.conversationId ||
+        message.conversationId === selectedThread?.id
+      ) {
         void messagesQuery.refetch();
       }
     };
@@ -256,16 +263,30 @@ export default function WebChatWorkspace({
               </Text>
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push(browseRoute as any)}
-              activeOpacity={0.88}
-              className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3"
-            >
-              <Text className="text-sm font-semibold text-white">
-                {browseLabel}
-              </Text>
-              <ArrowRight size={16} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View className="flex-row items-center gap-2">
+              {/* Back button */}
+              <TouchableOpacity
+                onPress={() => router.back()}
+                activeOpacity={0.88}
+                className="flex-row items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-5 py-3.5"
+              >
+                <ArrowLeft size={18} color="#111827" />
+                <Text className="text-sm font-semibold text-neutral-900">
+                  Back
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => router.push(browseRoute as any)}
+                activeOpacity={0.88}
+                className="flex-row items-center gap-2 rounded-2xl bg-neutral-950 px-5 py-3"
+              >
+                <Text className="text-sm font-semibold text-white">
+                  {browseLabel}
+                </Text>
+                <ArrowRight size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View className="min-h-[680px] flex-1 overflow-hidden rounded-[28px] border border-neutral-200 bg-white">

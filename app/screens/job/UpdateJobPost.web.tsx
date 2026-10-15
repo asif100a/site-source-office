@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { ArrowLeft, ChevronDown, Minus, Plus, X } from "lucide-react-native";
 import {
@@ -15,13 +15,18 @@ import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import StandardTextAreaField from "@/components/standard_ui/form_fields/StandardTextAreaField";
 import { Colors } from "@/constants/Colors";
+import ScreenLoader from "@/components/ui/screen-loader";
+import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
+import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 
 type JobFormValues = {
   jobTitle: string;
+  hourlyRate: string;
   tradeSkill: string;
   address: string;
   radius: string;
   workBrief: string;
+  note: string;
 };
 
 type TradeOption = {
@@ -250,15 +255,20 @@ function WorkersRequiredWebModal({
   );
 }
 
-export default function CreateJobPostWebScreen() {
+export default function UpdateJobPostWeb() {
   const router = useRouter();
-  const { control, handleSubmit } = useForm<JobFormValues>({
+  const { id, mode } = useLocalSearchParams<{ id?: string; mode?: string }>();
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const isEditing = mode === "edit" && Boolean(jobId);
+  const { control, handleSubmit, reset, setValue } = useForm<JobFormValues>({
     defaultValues: {
       jobTitle: "",
+      hourlyRate: "",
       tradeSkill: "groundworker",
       address: "",
       radius: "1-10",
       workBrief: "",
+      note: "",
     },
   });
 
@@ -268,8 +278,51 @@ export default function CreateJobPostWebScreen() {
   const [showWorkersModal, setShowWorkersModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("groundworker");
   const [workersNeeded, setWorkersNeeded] = useState(3);
+  const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !isEditing });
+  const currentJob = jobQuery.data?.data?.data ?? jobQuery.data?.data;
+  const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
 
-  const submitJob = handleSubmit(() => {
+  useEffect(() => {
+    const job = currentJob;
+    if (!job) return;
+    reset({
+      jobTitle: job.title ?? "",
+      hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
+      tradeSkill: job.trades?.[0] ?? "groundworker",
+      address: job.location?.address ?? job.address ?? "",
+      radius: "1-10",
+      workBrief: job.note ?? job.workBrief ?? "",
+      note: job.note ?? "",
+    });
+    setWorkersNeeded(Number(job.workersNeeded ?? 3));
+    setStartDate(job.startDate ? new Date(job.startDate).toISOString().slice(0, 10) : "");
+    setEndDate(job.endDate ? new Date(job.endDate).toISOString().slice(0, 10) : "");
+    const coordinates = job.location?.coordinates;
+    if (Array.isArray(coordinates) && coordinates.length === 2) {
+      void getAddressFromCoordinates([Number(coordinates[0]), Number(coordinates[1])])
+        .then((address) => setValue("address", address))
+        .catch(() => setValue("address", "Saved location"));
+    }
+  }, [currentJob, reset, setValue]);
+
+  const submitJob = handleSubmit(async (values) => {
+    if (isEditing && jobId) {
+      await updateJob({
+        id: jobId,
+        body: {
+          title: values.jobTitle.trim(),
+          hourlyRate: Number(values.hourlyRate),
+          workersNeeded,
+          trades: currentJob?.trades ?? [],
+          location: currentJob?.location,
+          endDate: endDate ? new Date(endDate).toISOString() : undefined,
+          workingHours: currentJob?.workingHours ?? [],
+          mustHave: currentJob?.mustHave ?? [],
+          note: values.note.trim(),
+          ...(startDate ? { startDate: new Date(startDate).toISOString() } : {}),
+        },
+      }).unwrap();
+    }
     router.replace("/tabs/(employer-tabs)" as any);
   });
 
@@ -282,6 +335,14 @@ export default function CreateJobPostWebScreen() {
   const onBackPress = () => {
     router.back();
   };
+
+  if (jobQuery?.isLoading) {
+    return (
+      <ScreenWrapper>
+        <ScreenLoader  />
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper>
@@ -304,7 +365,7 @@ export default function CreateJobPostWebScreen() {
                   <View className="max-w-3xl gap-3">
                     <View className="rounded-full bg-orange-50 px-3 py-1.5 self-start">
                       <Text className="text-xs font-bold uppercase text-neutral-900">
-                        Create job
+                        {isEditing ? "Update job" : "Create job"}
                       </Text>
                     </View>
 
@@ -341,7 +402,16 @@ export default function CreateJobPostWebScreen() {
                   control={control}
                   placeholder="Enter Job Title"
                   required
-                  textInputProps={{ className: "text-[#222]" }}
+                  textInputProps={{ className: "text-[#222]", editable: false }}
+                />
+
+                <StandardInputField
+                  label="Hourly Rate"
+                  id="hourlyRate"
+                  control={control}
+                  placeholder="35"
+                  required={false}
+                  textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }}
                 />
 
                 <Controller
@@ -406,11 +476,6 @@ export default function CreateJobPostWebScreen() {
                     value={endDate}
                     onChangeText={setEndDate}
                   />
-                  <WebDateField
-                    label="Application Deadline"
-                    value={applicationDeadline}
-                    onChangeText={setApplicationDeadline}
-                  />
                 </View>
 
                 <StandardTextAreaField
@@ -420,6 +485,15 @@ export default function CreateJobPostWebScreen() {
                   placeholder="Write here..."
                   numberOfLines={8}
                   required
+                />
+
+                <StandardTextAreaField
+                  label="Notes"
+                  id="note"
+                  control={control}
+                  placeholder="Add notes for workers..."
+                  numberOfLines={6}
+                  required={false}
                 />
               </View>
               <View className="flex-row gap-3">
@@ -439,7 +513,7 @@ export default function CreateJobPostWebScreen() {
                   className="flex-1 items-center justify-center rounded-2xl px-5 py-3.5"
                 >
                   <Text className="text-sm font-bold text-white">
-                    Publish Job
+                    {isUpdating ? "Saving..." : isEditing ? "Save Changes" : "Publish Job"}
                   </Text>
                 </TouchableOpacity>
               </View>

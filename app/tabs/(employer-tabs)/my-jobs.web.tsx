@@ -16,8 +16,9 @@ import MyJobUpcomingCards from "@/components/modules/employer/my-jobs/MyJobUpcom
 import MyJobCompletedOrCanceledCards from "@/components/modules/employer/my-jobs/MyJobCompletedOrCanceledCards";
 import { Colors } from "@/constants/Colors";
 import { JobStatus, JobTab } from "@/types";
-import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import { useDeleteJobMutation, useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
+import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 
 type JobCard = {
   id: string;
@@ -54,14 +55,23 @@ export default function EmployerMyJobsScreenWeb() {
     activeTab === "upcoming"
       ? "POSTED"
       : activeTab === "active"
-      ? "ACTIVE"
-      : "COMPLETED";
+        ? "ACTIVE"
+        : "COMPLETED";
   const jobsQuery = useGetMyJobsQuery({
     page,
     limit: 10,
     status: requestedStatus,
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
+  const [deleteJob] = useDeleteJobMutation();
+  const {
+    data: GetEmployerProfile,
+    isLoading,
+    isError,
+    error,
+  } = useGetEmployerProfileQuery();
+  const employer = GetEmployerProfile?.data;
+  const employerProfileName = employer?.profile?.name;
 
   useEffect(() => {
     const requestedTab = Array.isArray(tab) ? tab[0] : tab;
@@ -132,11 +142,18 @@ export default function EmployerMyJobsScreenWeb() {
     });
   };
 
+  const editJob = (jobId: string) => router.push({ pathname: "/screens/job/UpdateJobPost", params: { id: jobId, mode: "edit" } } as any);
+  const removeJob = async (jobId: string) => {
+    if (!globalThis.confirm?.("Delete this job posting?")) return;
+    await deleteJob(jobId).unwrap();
+    void jobsQuery.refetch();
+  };
+
   const pageTitle =
     activeTab === "active"
       ? "Active jobs"
       : activeTab === "upcoming"
-      ? "New jobs"
+        ? "New jobs"
         : "Completed jobs";
 
   const renderListHeader = () => (
@@ -163,14 +180,16 @@ export default function EmployerMyJobsScreenWeb() {
                     Manage active, upcoming, and completed jobs in one place.
                   </Text>
                   <Text className="max-w-2xl text-sm leading-6 text-neutral-600 md:text-base">
-                    The same employer job management flow as mobile, arranged
-                    in a cleaner desktop layout for faster review and follow-up.
+                    The same employer job management flow as mobile, arranged in
+                    a cleaner desktop layout for faster review and follow-up.
                   </Text>
                 </View>
               </View>
 
               <TouchableOpacity
-                onPress={() => router.push("/tabs/(employer-tabs)/workers" as any)}
+                onPress={() =>
+                  router.push("/tabs/(employer-tabs)/workers" as any)
+                }
                 activeOpacity={0.88}
                 className="flex-row items-center gap-2 self-start rounded-2xl border border-neutral-200 bg-white px-5 py-3.5 lg:self-auto"
               >
@@ -203,7 +222,9 @@ export default function EmployerMyJobsScreenWeb() {
             </Text>
 
             <TouchableOpacity
-              onPress={() => router.push("/tabs/(employer-tabs)/workers" as any)}
+              onPress={() =>
+                router.push("/tabs/(employer-tabs)/workers" as any)
+              }
               activeOpacity={0.85}
               className="flex-row items-center gap-1.5"
             >
@@ -222,14 +243,29 @@ export default function EmployerMyJobsScreenWeb() {
     let card: React.ReactNode;
 
     if (activeTab === "active") {
-      card = <MyJobActiveCards job={item} openJobDetails={openJobDetails} />;
+      card = (
+        <MyJobActiveCards
+          job={item}
+          openJobDetails={openJobDetails}
+          user={employerProfileName}
+        />
+      );
     } else if (activeTab === "upcoming") {
-      card = <MyJobUpcomingCards job={item} openJobDetails={openJobDetails} />;
+      card = (
+        <MyJobUpcomingCards
+          job={item}
+          openJobDetails={openJobDetails}
+          onEdit={editJob}
+          onDelete={removeJob}
+          user={employerProfileName}
+        />
+      );
     } else {
       card = (
         <MyJobCompletedOrCanceledCards
           job={item}
           openJobDetails={openJobDetails}
+          user={employerProfileName}
         />
       );
     }

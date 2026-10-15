@@ -134,6 +134,7 @@ export const mapJobToCard = (job: any): JobCard => {
     applications: `${applicationsCount} Application${
       applicationsCount === 1 ? "" : "s"
     }`,
+    canEdit: applicationsCount === 0 && status === "upcoming",
     applicants,
   };
 };

@@ -8,10 +8,14 @@ import JobLocationLabel from "./JobLocationLabel";
 export default function MyJobUpcomingCards({
   job,
   openJobDetails,
+  onEdit,
+  onDelete,
   user
 }: {
   job: any;
   openJobDetails: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
   user: string;
 }) {
   return (
@@ -81,6 +85,17 @@ export default function MyJobUpcomingCards({
           </Text>
         </TouchableOpacity>
       </View>
+
+      {job.canEdit ? (
+        <View className="flex-row gap-2 px-4 pb-4">
+          <TouchableOpacity onPress={() => onEdit?.(job.id)} className="flex-1 items-center rounded-md border border-neutral-200 px-3 py-2">
+            <Text className="text-xs font-bold text-neutral-700">Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onDelete?.(job.id)} className="flex-1 items-center rounded-md border border-red-200 bg-red-50 px-3 py-2">
+            <Text className="text-xs font-bold text-red-700">Delete</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   );
 }

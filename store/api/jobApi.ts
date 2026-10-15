@@ -57,6 +57,21 @@ export const jobApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.job, tagTypes.meta],
     }),
+    updateJob: builder.mutation<any, { id: string; body: Partial<JobPostPayload> }>({
+      query: ({ id, body }) => ({
+        url: BASE_POINT + `/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [tagTypes.job, tagTypes.meta],
+    }),
+    deleteJob: builder.mutation<any, string>({
+      query: (id) => ({
+        url: BASE_POINT + `/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [tagTypes.job, tagTypes.meta],
+    }),
     getAllJobs: builder.query<any, JobArgs>({
       query: (args) => {
         // console.log("args from the get all jobs api: ", args);
@@ -123,6 +138,8 @@ export const jobApi = baseApi.injectEndpoints({
 
 export const {
   useCreateJobMutation,
+  useUpdateJobMutation,
+  useDeleteJobMutation,
   useGetAllJobsQuery,
   useGetMyJobsQuery,
   useGetSingleJobQuery,

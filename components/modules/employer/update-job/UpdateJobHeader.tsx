@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { ArrowLeft } from "lucide-react-native";
 
-export default function CreateJobHeader({
+export default function UpdateJobHeader({
   onBackPress,
 }: {
   onBackPress: () => void;
@@ -16,7 +16,7 @@ export default function CreateJobHeader({
         <ArrowLeft size={20} color="#1F2937" />
       </TouchableOpacity>
       <Text className="text-neutral-900 text-base font-extrabold">
-        Create Job
+        Update Job
       </Text>
       <View className="w-10 h-10" />
     </View>

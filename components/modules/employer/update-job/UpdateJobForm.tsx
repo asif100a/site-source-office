@@ -10,10 +10,12 @@ import { ChevronDown } from "lucide-react-native";
 
 export type JobFormValues = {
   jobTitle: string;
+  hourlyRate: string;
   tradeSkill: string;
   address: string;
   radius: string;
   workBrief: string;
+  note: string;
 };
 
 type TradeOption = {
@@ -40,7 +42,7 @@ const RADIUS_OPTIONS = [
   { label: "21-50 Km", value: "21-50" },
 ];
 
-export default function CreateJobForm({
+export default function UpdateJobForm({
   control,
   setShowWorkersModal,
   tradeOptions,
@@ -71,6 +73,15 @@ export default function CreateJobForm({
         textInputProps={{ className: "text-[#222]" }}
       />
 
+      <StandardInputField
+        label="Hourly Rate"
+        id="hourlyRate"
+        control={control}
+        placeholder="35"
+        required={false}
+        textInputProps={{ className: "text-[#222]", keyboardType: "numeric" }}
+      />
+
       <StandardSelectField
         label="Trade / Skill"
         id="tradeSkill"
@@ -85,7 +96,7 @@ export default function CreateJobForm({
         control={control}
         placeholder="2972 Westheimer Rd. Santa A..."
         required={true}
-        textInputProps={{ className: "text-[#222]" }}
+        textInputProps={{ className: "text-[#222]", editable: false }}
       />
 
       <StandardSelectField
@@ -122,13 +133,6 @@ export default function CreateJobForm({
         placeholder="dd/mm/yyyy"
       />
 
-      <StandardDateInput
-        label="Application Deadline"
-        date={applicationDeadline}
-        onDateChange={(value) => setApplicationDeadline(value)}
-        placeholder="dd/mm/yyyy"
-      />
-
       <StandardTextAreaField
         label="Work Brief"
         id="workBrief"
@@ -136,6 +140,15 @@ export default function CreateJobForm({
         placeholder="write here....."
         numberOfLines={8}
         required={true}
+      />
+
+      <StandardTextAreaField
+        label="Notes"
+        id="note"
+        control={control}
+        placeholder="Add notes for workers..."
+        numberOfLines={6}
+        required={false}
       />
     </ScrollView>
   );

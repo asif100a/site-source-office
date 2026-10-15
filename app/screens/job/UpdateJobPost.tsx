@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,13 @@ import { useForm } from "react-hook-form";
 import { Colors } from "@/constants/Colors";
 import { StatusBar } from "expo-status-bar";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
-import CreateJobHeader from "@/components/modules/employer/create-job/CreateJobHeader";
-import CreateJobForm from "@/components/modules/employer/create-job/CreateJobForm";
-import type { JobFormValues } from "@/components/modules/employer/create-job/CreateJobForm";
-import WorkersRequiredModal from "@/components/modules/employer/create-job/WorkersRequiredModal";
+import UpdateJobHeader from "@/components/modules/employer/update-job/UpdateJobHeader";
+import UpdateJobForm from "@/components/modules/employer/update-job/UpdateJobForm";
+import type { JobFormValues } from "@/components/modules/employer/update-job/UpdateJobForm";
+import WorkersRequiredModal from "@/components/modules/employer/update-job/WorkersRequiredModal";
+import { useGetSingleJobQuery, useUpdateJobMutation } from "@/store/api/jobApi";
+import ScreenLoader from "@/components/ui/screen-loader";
+import { getAddressFromCoordinates } from "@/utils/googlePlaces";
 
 const TRADE_OPTIONS = [
   { label: "Groundworker", value: "groundworker" },
@@ -21,15 +24,20 @@ const TRADE_OPTIONS = [
   { label: "Electrician", value: "electrician" },
 ];
 
-export default function CreateJobPostScreen() {
+export default function UpdateJobPost() {
   const router = useRouter();
-  const { control, handleSubmit } = useForm<JobFormValues>({
+  const { id, mode, origin } = useLocalSearchParams<{ id?: string; mode?: string; origin?: string }>();
+  const jobId = Array.isArray(id) ? id[0] : id;
+  const isEditing = mode === "edit" && Boolean(jobId);
+  const { control, handleSubmit, reset, setValue } = useForm<JobFormValues>({
     defaultValues: {
       jobTitle: "",
+      hourlyRate: "",
       tradeSkill: "groundworker",
       address: "",
       radius: "1-10",
       workBrief: "",
+      note: "",
     },
   });
 
@@ -42,9 +50,52 @@ export default function CreateJobPostScreen() {
   const [selectedTrade, setSelectedTrade] = useState("groundworker");
   const [workersNeeded, setWorkersNeeded] = useState(3);
 
-  const { origin } = useLocalSearchParams();
+  const jobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !isEditing });
+  const currentJob = jobQuery.data?.data?.data ?? jobQuery.data?.data;
+  const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
 
-  const submitJob = handleSubmit(() => {
+  useEffect(() => {
+    const job = currentJob;
+    console.log("Job: ", job);
+    if (!job) return;
+    reset({
+      jobTitle: job.title ?? "",
+      hourlyRate: job.hourlyRate != null ? String(job.hourlyRate) : "",
+      tradeSkill: job.trades?.[0] ?? "groundworker",
+      address: job.location?.address ?? job.address ?? "",
+      radius: "1-10",
+      workBrief: job.note ?? job.workBrief ?? "",
+      note: job.note ?? "",
+    });
+    setWorkersNeeded(Number(job.workersNeeded ?? 3));
+    setStartDate(job.startDate ? new Date(job.startDate) : null);
+    setEndDate(job.endDate ? new Date(job.endDate) : null);
+    const coordinates = job.location?.coordinates;
+    if (Array.isArray(coordinates) && coordinates.length === 2) {
+      void getAddressFromCoordinates([Number(coordinates[0]), Number(coordinates[1])])
+        .then((address) => setValue("address", address))
+        .catch(() => setValue("address", "Saved location"));
+    }
+  }, [currentJob, reset, setValue]);
+
+  const submitJob = handleSubmit(async (values) => {
+    if (isEditing && jobId) {
+      await updateJob({
+        id: jobId,
+        body: {
+          title: values.jobTitle.trim(),
+          hourlyRate: Number(values.hourlyRate),
+          workersNeeded,
+          trades: currentJob?.trades ?? [],
+          location: currentJob?.location,
+          endDate: endDate ? endDate.toISOString() : undefined,
+          workingHours: currentJob?.workingHours ?? [],
+          mustHave: currentJob?.mustHave ?? [],
+          note: values.note.trim(),
+          ...(startDate ? { startDate: startDate.toISOString() } : {}),
+        },
+      }).unwrap();
+    }
     router.replace("/tabs/(employer-tabs)" as any);
   });
 
@@ -67,6 +118,14 @@ export default function CreateJobPostScreen() {
     router.back();
   };
 
+  if (jobQuery?.isLoading) {
+    return (
+      <ScreenWrapper>
+        <ScreenLoader  />
+      </ScreenWrapper>
+    );
+  }
+
   return (
     <ScreenWrapper style={{
       marginBottom: 40
@@ -74,10 +133,10 @@ export default function CreateJobPostScreen() {
       <StatusBar style="dark" />
 
       {/* Header */}
-      <CreateJobHeader onBackPress={onBackPress} />
+      <UpdateJobHeader onBackPress={onBackPress} />
 
       {/* Form */}
-      <CreateJobForm
+      <UpdateJobForm
         control={control}
         setShowWorkersModal={setShowWorkersModal}
         tradeOptions={TRADE_OPTIONS}
@@ -96,7 +155,9 @@ export default function CreateJobPostScreen() {
           style={{ backgroundColor: Colors.common.GRAY_DARK }}
           className="flex-1 py-4 rounded-2xl items-center justify-center active:opacity-90 shadow-sm"
         >
-          <Text className="text-white font-extrabold text-sm">Publish Job</Text>
+          <Text className="text-white font-extrabold text-sm">
+            {isUpdating ? "Saving..." : isEditing ? "Save Changes" : "Publish Job"}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => router.back()}

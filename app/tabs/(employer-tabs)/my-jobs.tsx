@@ -27,7 +27,7 @@ import {
   ProjectJobDateRange,
   ProjectJobForm,
 } from "@/types";
-import { useGetMyJobsQuery } from "@/store/api/jobApi";
+import { useDeleteJobMutation, useGetMyJobsQuery } from "@/store/api/jobApi";
 import { getHasNextPage, getJobItems, mapJobToCard } from "@/utils/jobList";
 import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 
@@ -89,6 +89,7 @@ export default function EmployerMyJobsScreen() {
     status: requestedStatus,
     ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
   });
+  const [deleteJob] = useDeleteJobMutation();
   const {
     data: GetEmployerProfile,
     isLoading,
@@ -134,7 +135,7 @@ export default function EmployerMyJobsScreen() {
 
   useEffect(() => {
     if (!jobsQuery.data || (page > 1 && jobsQuery.isFetching)) return;
-    console.log("Jobs data: ", jobsQuery.data);
+    // console.log("Jobs data: ", jobsQuery.data);
     const nextJobs = getJobItems(jobsQuery.data).map(mapJobToCard);
     setJobs((current) => (page === 1 ? nextJobs : [...current, ...nextJobs]));
     setHasNextPage(getHasNextPage(jobsQuery.data, nextJobs.length, 10));
@@ -183,6 +184,13 @@ export default function EmployerMyJobsScreen() {
       pathname: "/screens/active-jobs/[id]",
       params: { id: jobId, origin: "employer", status },
     });
+  };
+
+  const editJob = (jobId: string) => router.push({ pathname: "/screens/job/UpdateJobPost", params: { id: jobId, mode: "edit" } } as any);
+  const removeJob = async (jobId: string) => {
+    if (!globalThis.confirm?.("Delete this job posting?")) return;
+    await deleteJob(jobId).unwrap();
+    void jobsQuery.refetch();
   };
 
   const selectedProject = projects.find(
@@ -286,6 +294,8 @@ export default function EmployerMyJobsScreen() {
         <MyJobUpcomingCards
           job={item}
           openJobDetails={openJobDetails}
+          onEdit={editJob}
+          onDelete={removeJob}
           user={employerProfileName}
         />
       );
