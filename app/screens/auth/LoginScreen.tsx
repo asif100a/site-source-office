@@ -27,7 +27,7 @@ import {
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
-import { requestPushNotificationToken } from "@/services/pushNotifications";
+import { getOptionalPushNotificationToken } from "@/services/pushNotifications";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -142,7 +142,7 @@ export default function LoginScreen({
       email: identity.email,
       role: activeRole.toUpperCase(),
       image: identity.picture,
-      fcmToken: (await requestPushNotificationToken()) ?? "",
+      fcmToken: (await getOptionalPushNotificationToken()) ?? "",
       idToken: identity.idToken ?? "",
     };
     const response =
@@ -196,9 +196,10 @@ export default function LoginScreen({
     setSsoLoading("google");
     try {
       const identity = await signInWithGoogleInApp();
-      console.log("Google sign-in identity: ", identity);
+      // console.log("Google sign-in identity: ", identity);
       if (!identity) return;
       await completeSsoLogin("google", identity);
+      
     } catch (error: any) {
       console.error("Google sign-in error: ", error);
       const errorMessage = getGoogleSignInErrorMessage(error);

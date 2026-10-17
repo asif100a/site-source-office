@@ -68,3 +68,15 @@ export const requestPushNotificationToken = async () => {
 
   return tokenResponse.data;
 };
+
+// Authentication must remain usable when push notifications are not
+// configured for the current build (for example, a local Android build
+// without google-services.json).
+export const getOptionalPushNotificationToken = async () => {
+  try {
+    return await requestPushNotificationToken();
+  } catch (error) {
+    console.warn("Push token unavailable; continuing without FCM token.", error);
+    return null;
+  }
+};

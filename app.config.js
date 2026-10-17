@@ -75,6 +75,8 @@ function withReactNativeMapsPlugin(plugins, googleMapsApiKey) {
 const googleMapsApiKey =
   getEnvValue("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ||
   getEnvValue("GOOGLE_MAPS_API_KEY");
+const googleServicesFile = path.join(__dirname, "google-services.json");
+const hasGoogleServicesFile = fs.existsSync(googleServicesFile);
 const envEasProjectId = getEnvValue("EXPO_PUBLIC_EAS_PROJECT_ID");
 const easProjectId = envEasProjectId && isUuid(envEasProjectId) ? envEasProjectId : undefined;
 
@@ -107,6 +109,7 @@ module.exports = ({ config }) => ({
   },
   android: {
     ...config.android,
+    ...(hasGoogleServicesFile ? { googleServicesFile: "./google-services.json" } : {}),
     config: {
       ...config.android?.config,
       ...(googleMapsApiKey

@@ -51,7 +51,10 @@ export default function PushNotificationRegistrar() {
     };
 
     void registerToken().catch((error) => {
-      console.error("Unable to register push notification token:", error);
+      console.warn(
+        "Push notifications are unavailable in this build. Add google-services.json and rebuild Android.",
+        error,
+      );
     });
 
     return () => {

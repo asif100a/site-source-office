@@ -19,7 +19,7 @@ import {
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
-import { requestPushNotificationToken } from "@/services/pushNotifications";
+import { getOptionalPushNotificationToken } from "@/services/pushNotifications";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -79,7 +79,7 @@ export default function RegisterSsoScreen({
       email: identity.email,
       role: activeRole.toUpperCase(),
       image: identity.picture,
-      fcmToken: (await requestPushNotificationToken()) ?? "",
+      fcmToken: (await getOptionalPushNotificationToken()) ?? "",
       idToken: identity.idToken ?? "",
     };
     const response = provider === "google"
