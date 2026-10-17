@@ -11,6 +11,7 @@ import { normalizeUserRole } from "@/constants/Routes";
 import { useGoogleLoginMutation, useRegisterMutation } from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
 import AuthWebShell from "./_web-shell";
+import { signInWithAppleOnWeb } from "@/utils/appleSignIn.web";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -106,11 +107,23 @@ export default function RegisterSsoScreenWeb({
   };
 
   const handleAppleContinue = () => {
-    Toast.show({
-      type: "error",
-      text1: "Apple web sign-in needs server setup",
-      text2: "Configure an Apple web OAuth callback on the backend before enabling this button.",
-    });
+    setSsoLoading(true);
+    void signInWithAppleOnWeb()
+      .then(async (identity) => {
+        if (!identity.email) throw new Error("Apple did not return an email address.");
+        const response = await appleLogin({
+          email: identity.email,
+          role: activeRole.toUpperCase(),
+          name: identity.name || identity.email.split("@")[0],
+          image: "",
+          fcmToken: "",
+          idToken: identity.idToken,
+        }).unwrap();
+        const user = response.data?.user;
+        onContinue?.({ provider: "apple", email: user?.email ?? identity.email, name: user?.name ?? identity.name });
+      })
+      .catch((error: any) => Toast.show({ type: "error", text1: "Apple sign-in failed", text2: error?.message ?? "Please try again." }))
+      .finally(() => setSsoLoading(false));
   };
 
   const handleManualContinue = async (data: {

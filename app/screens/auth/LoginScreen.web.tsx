@@ -21,6 +21,7 @@ import {
   type UserRole,
 } from "@/constants/Routes";
 import AuthWebShell from "./_web-shell";
+import { signInWithAppleOnWeb } from "@/utils/appleSignIn.web";
 import { passwordSchema } from "@/zod/authSchema";
 import { getRoleFromToken } from "@/utils/authToken";
 
@@ -207,11 +208,27 @@ export default function LoginScreenWeb({
   };
 
   const handleAppleLogin = () => {
-    Toast.show({
-      type: "error",
-      text1: "Apple web sign-in needs server setup",
-      text2: "Configure an Apple web OAuth callback on the backend before enabling this button.",
-    });
+    setSsoLoading(true);
+    void signInWithAppleOnWeb()
+      .then(async (identity) => {
+        if (!identity.email) throw new Error("Apple did not return an email address.");
+        const response = await appleLogin({
+          email: identity.email,
+          role: activeRole.toUpperCase(),
+          name: identity.name || identity.email.split("@")[0],
+          image: "",
+          fcmToken: "",
+          idToken: identity.idToken,
+        }).unwrap();
+        const token = response.accessToken ?? response.data?.accessToken ?? (response.data as any)?.token;
+        if (!token) throw new Error("The server did not return an access token.");
+        dispatch(setToken(token));
+        await AsyncStorage.setItem("token", token);
+        onLoginPress?.(identity.email);
+        if (!onLoginPress) router.replace(getDashboardRouteForRole(activeRole));
+      })
+      .catch((error: any) => Toast.show({ type: "error", text1: "Apple sign-in failed", text2: error?.message ?? "Please try again." }))
+      .finally(() => setSsoLoading(false));
   };
 
   const handleRegister = () => {
