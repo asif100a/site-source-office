@@ -14,6 +14,7 @@ export type GoogleIdentity = {
   email?: string;
   name?: string;
   picture?: string;
+  idToken?: string;
 };
 
 export function isGoogleSignInConfigured() {
@@ -54,6 +55,7 @@ export async function signInWithGoogleInApp(): Promise<GoogleIdentity | null> {
     email: user.email,
     name: user.name ?? user.givenName ?? undefined,
     picture: user.photo ?? undefined,
+    idToken: response.data.idToken ?? undefined,
   };
 }
 

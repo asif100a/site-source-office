@@ -19,6 +19,7 @@ import {
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
+import { requestPushNotificationToken } from "@/services/pushNotifications";
 
 interface RegisterSsoScreenProps {
   onContinue?: (data: {
@@ -67,7 +68,7 @@ export default function RegisterSsoScreen({
 
   const completeSsoRegistration = async (
     provider: "google" | "apple",
-    identity: { email?: string; name?: string; picture?: string },
+    identity: { email?: string; name?: string; picture?: string; idToken?: string },
   ) => {
     if (!identity.email) {
       throw new Error("Your provider did not return an email address. Please use a different sign-in method.");
@@ -76,8 +77,10 @@ export default function RegisterSsoScreen({
     const payload = {
       name: identity.name || identity.email.split("@")[0],
       email: identity.email,
-      profileImage: identity.picture,
-      isLegalTermsAccepted: true,
+      role: activeRole.toUpperCase(),
+      image: identity.picture,
+      fcmToken: (await requestPushNotificationToken()) ?? "",
+      idToken: identity.idToken ?? "",
     };
     const response = provider === "google"
       ? await googleLogin(payload).unwrap()
@@ -133,6 +136,7 @@ export default function RegisterSsoScreen({
       await completeSsoRegistration("apple", {
         email: credential.email ?? tokenIdentity.email,
         name: name || tokenIdentity.name,
+        idToken: credential.identityToken,
       });
     } catch (error: any) {
       if (error?.code !== "ERR_REQUEST_CANCELED") {

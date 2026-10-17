@@ -27,6 +27,7 @@ import {
   isGoogleSignInConfigured,
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
+import { requestPushNotificationToken } from "@/services/pushNotifications";
 
 interface LoginScreenProps {
   role?: UserRole;
@@ -128,7 +129,7 @@ export default function LoginScreen({
 
   const completeSsoLogin = async (
     provider: "google" | "apple",
-    identity: { email?: string; name?: string; picture?: string },
+    identity: { email?: string; name?: string; picture?: string; idToken?: string },
   ) => {
     if (!identity.email) {
       throw new Error(
@@ -139,8 +140,10 @@ export default function LoginScreen({
     const payload = {
       name: identity.name || identity.email.split("@")[0],
       email: identity.email,
-      profileImage: identity.picture,
-      isLegalTermsAccepted: true,
+      role: activeRole.toUpperCase(),
+      image: identity.picture,
+      fcmToken: (await requestPushNotificationToken()) ?? "",
+      idToken: identity.idToken ?? "",
     };
     const response =
       provider === "google"
@@ -242,6 +245,7 @@ export default function LoginScreen({
       await completeSsoLogin("apple", {
         email: credential.email ?? tokenIdentity.email,
         name: name || tokenIdentity.name,
+        idToken: credential.identityToken,
       });
     } catch (error: any) {
       console.error("Apple sign-in error: ", error);

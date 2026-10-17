@@ -158,8 +158,10 @@ export default function LoginScreenWeb({
       const response = await googleLogin({
         name: identity.name || identity.email.split("@")[0],
         email: identity.email,
-        profileImage: identity.picture,
-        isLegalTermsAccepted: true,
+        role: activeRole.toUpperCase(),
+        image: identity.picture,
+        fcmToken: "",
+        idToken: providerToken,
       }).unwrap();
       const appToken =
         response.accessToken ??

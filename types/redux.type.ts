@@ -30,8 +30,10 @@ export interface LoginRequest {
 export interface GoogleLoginRequest {
   name: string;
   email: string;
-  profileImage?: string;
-  isLegalTermsAccepted: boolean;
+  role: string;
+  image?: string;
+  fcmToken: string;
+  idToken: string;
 }
 
 export interface AppleLoginRequest extends GoogleLoginRequest {}

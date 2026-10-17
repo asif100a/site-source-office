@@ -44,7 +44,7 @@ export const authApi = baseApi.injectEndpoints({
     }),
     googleLogin: builder.mutation<AuthResponse, GoogleLoginRequest>({
       query: (credentials) => ({
-        url: BASE_POINT + "/google",
+        url: BASE_POINT + "/google-login",
         method: "POST",
         body: credentials,
       }),
@@ -52,7 +52,7 @@ export const authApi = baseApi.injectEndpoints({
     }),
     appleLogin: builder.mutation<AuthResponse, AppleLoginRequest>({
       query: (credentials) => ({
-        url: BASE_POINT + "/apple",
+        url: BASE_POINT + "/apple-login",
         method: "POST",
         body: credentials,
       }),

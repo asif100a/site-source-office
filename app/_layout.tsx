@@ -11,10 +11,15 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
+import * as WebBrowser from "expo-web-browser";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistor, store } from "@/store/store";
 import PushNotificationRegistrar from "@/components/modules/common/PushNotificationRegistrar";
+
+// OAuth redirects back to the site root. This must run before the root route
+// renders so the popup returns the result to the page that opened it.
+WebBrowser.maybeCompleteAuthSession();
 
 export {
   // Catch any errors thrown by the Layout component.

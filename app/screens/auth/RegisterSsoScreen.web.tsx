@@ -87,8 +87,10 @@ export default function RegisterSsoScreenWeb({
       const response = await googleLogin({
         name: identity.name || identity.email.split("@")[0],
         email: identity.email,
-        profileImage: identity.picture,
-        isLegalTermsAccepted: true,
+        role: activeRole.toUpperCase(),
+        image: identity.picture,
+        fcmToken: "",
+        idToken: token,
       }).unwrap();
       const user = response.data?.user;
       onContinue?.({
