@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Animated } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import SplashScreenComponent from "./screens/SplashScreen";
 import OnboardingScreenComponent from "./screens/OnboardingScreen";
 import { getDashboardRouteForRole } from "@/constants/Routes";
@@ -29,7 +29,9 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [fadeAnim]);
 
-  useEffect(() => {
+  // A token can be issued during registration while this screen remains
+  // mounted behind /auth. Only redirect when the startup screen is focused.
+  useFocusEffect(useCallback(() => {
     if (showSplash || isCheckingAuth || !isAuthenticated) {
       return;
     }
@@ -53,7 +55,7 @@ export default function Home() {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated, isCheckingAuth, router, showSplash]);
+  }, [isAuthenticated, isCheckingAuth, router, showSplash]));
 
   if (showSplash) {
     return (

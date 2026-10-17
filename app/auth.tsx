@@ -120,6 +120,7 @@ export default function AuthFlow() {
   };
 
   const goToStep = (nextStep: AuthStep) => {
+    console.log("goToStep from the function: ", nextStep);
     setStep(nextStep);
     router.setParams({
       step: nextStep,
@@ -215,6 +216,7 @@ export default function AuthFlow() {
                   )
             }
             onComplete={() => {
+              console.log("OTP flow: ", otpFlow);
               const nextStep =
                 otpFlow === "password_reset"
                   ? "reset_password"
