@@ -68,10 +68,17 @@ export default function RegisterSsoScreen({
 
   const completeSsoRegistration = async (
     provider: "google" | "apple",
-    identity: { email?: string; name?: string; picture?: string; idToken?: string },
+    identity: {
+      email?: string;
+      name?: string;
+      picture?: string;
+      idToken?: string;
+    },
   ) => {
     if (!identity.email) {
-      throw new Error("Your provider did not return an email address. Please use a different sign-in method.");
+      throw new Error(
+        "Your provider did not return an email address. Please use a different sign-in method.",
+      );
     }
 
     const payload = {
@@ -82,9 +89,10 @@ export default function RegisterSsoScreen({
       fcmToken: (await getOptionalPushNotificationToken()) ?? "",
       idToken: identity.idToken ?? "",
     };
-    const response = provider === "google"
-      ? await googleLogin(payload).unwrap()
-      : await appleLogin(payload).unwrap();
+    const response =
+      provider === "google"
+        ? await googleLogin(payload).unwrap()
+        : await appleLogin(payload).unwrap();
     const user = response.data?.user;
     onContinue?.({
       provider,
@@ -95,7 +103,11 @@ export default function RegisterSsoScreen({
 
   const handleGoogleContinue = async () => {
     if (!isGoogleSignInConfigured()) {
-      Toast.show({ type: "error", text1: "Google sign-in is not configured", text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env." });
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in is not configured",
+        text2: "Add EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to .env.",
+      });
       return;
     }
 
@@ -108,15 +120,26 @@ export default function RegisterSsoScreen({
       const errorMessage = getGoogleSignInErrorMessage(error);
       if (!errorMessage) return;
 
-      Toast.show({ type: "error", text1: "Google sign-in failed", text2: error?.data?.message ?? errorMessage });
+      Toast.show({
+        type: "error",
+        text1: "Google sign-in failed",
+        text2: error?.data?.message ?? errorMessage,
+      });
     } finally {
       setSsoLoading(null);
     }
   };
 
   const handleAppleContinue = async () => {
-    if (Platform.OS !== "ios" || !(await AppleAuthentication.isAvailableAsync())) {
-      Toast.show({ type: "error", text1: "Apple sign-in is unavailable", text2: "Apple sign-in is available in the iOS app." });
+    if (
+      Platform.OS !== "ios" ||
+      !(await AppleAuthentication.isAvailableAsync())
+    ) {
+      Toast.show({
+        type: "error",
+        text1: "Apple sign-in is unavailable",
+        text2: "Apple sign-in is available in the iOS app.",
+      });
       return;
     }
 
@@ -128,9 +151,13 @@ export default function RegisterSsoScreen({
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      if (!credential.identityToken) throw new Error("Apple did not return an identity token.");
+      if (!credential.identityToken)
+        throw new Error("Apple did not return an identity token.");
       const tokenIdentity = getIdentityFromToken(credential.identityToken);
-      const name = [credential.fullName?.givenName, credential.fullName?.familyName]
+      const name = [
+        credential.fullName?.givenName,
+        credential.fullName?.familyName,
+      ]
         .filter(Boolean)
         .join(" ");
       await completeSsoRegistration("apple", {
@@ -140,7 +167,11 @@ export default function RegisterSsoScreen({
       });
     } catch (error: any) {
       if (error?.code !== "ERR_REQUEST_CANCELED") {
-        Toast.show({ type: "error", text1: "Apple sign-in failed", text2: error?.data?.message ?? error?.message ?? "Please try again." });
+        Toast.show({
+          type: "error",
+          text1: "Apple sign-in failed",
+          text2: error?.data?.message ?? error?.message ?? "Please try again.",
+        });
       }
     } finally {
       setSsoLoading(null);
@@ -266,14 +297,14 @@ export default function RegisterSsoScreen({
               </Text>
             </TouchableOpacity>
           </View>
-
           <View className="flex-row items-center gap-3">
-            <View className="flex-1 h-px bg-neutral-200" />
+
+            {/* <View className="flex-1 h-px bg-neutral-200" />
             <Text className="text-neutral-400 text-xs font-semibold uppercase">
-              Or register with
+            Or register with
             </Text>
             <View className="flex-1 h-px bg-neutral-200" />
-          </View>
+            </View>
 
           <View className="gap-4">
             <TouchableOpacity
@@ -296,11 +327,11 @@ export default function RegisterSsoScreen({
               <Text className="text-white text-base font-semibold">
                 {ssoLoading === "apple" ? "Connecting to Apple..." : "Continue with Apple"}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
-        <View className="flex-row justify-center items-center mt-10">
+        <View className="flex-row justify-center items-center mt-4">
           <Text className="text-neutral-800 text-sm font-medium">
             Already have an account?{" "}
           </Text>

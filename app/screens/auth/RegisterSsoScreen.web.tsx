@@ -244,7 +244,7 @@ export default function RegisterSsoScreenWeb({
         </TouchableOpacity>
       </View>
 
-      <View className="my-6 flex-row items-center gap-3">
+      {/* <View className="my-6 flex-row items-center gap-3">
         <View className="h-px flex-1 bg-neutral-200" />
         <Text className="text-xs font-semibold uppercase text-neutral-400">
           Or register with
@@ -274,9 +274,9 @@ export default function RegisterSsoScreenWeb({
             Continue with Apple
           </Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
-      <View className="mt-8 flex-row items-center justify-center">
+      <View className="mt-4 flex-row items-center justify-center">
         <Text className="text-sm font-medium text-neutral-700">
           Already have an account?{" "}
         </Text>
