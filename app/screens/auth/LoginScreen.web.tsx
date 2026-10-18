@@ -11,6 +11,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text as UiText } from "@/components/ui/text";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import {
+  useAppleLoginMutation,
   useGoogleLoginMutation,
   useLoginMutation,
 } from "@/store/api/authApi";
@@ -51,6 +52,7 @@ export default function LoginScreenWeb({
   const activeRole = normalizeUserRole(role);
   const [login, { isLoading }] = useLoginMutation();
   const [googleLogin] = useGoogleLoginMutation();
+  const [appleLogin] = useAppleLoginMutation();
   const [ssoLoading, setSsoLoading] = useState(false);
   const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
     ...googleClientIds,

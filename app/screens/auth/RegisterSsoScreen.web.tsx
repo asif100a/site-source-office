@@ -8,7 +8,11 @@ import { ArrowRight } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole } from "@/constants/Routes";
-import { useGoogleLoginMutation, useRegisterMutation } from "@/store/api/authApi";
+import {
+  useAppleLoginMutation,
+  useGoogleLoginMutation,
+  useRegisterMutation,
+} from "@/store/api/authApi";
 import { passwordSchema } from "@/zod/authSchema";
 import AuthWebShell from "./_web-shell";
 import { signInWithAppleOnWeb } from "@/utils/appleSignIn.web";
@@ -41,6 +45,7 @@ export default function RegisterSsoScreenWeb({
   const activeRole = normalizeUserRole(params.role);
   const [register, { isLoading }] = useRegisterMutation();
   const [googleLogin] = useGoogleLoginMutation();
+  const [appleLogin] = useAppleLoginMutation();
   const [ssoLoading, setSsoLoading] = useState(false);
   const [googleRequest, , promptGoogle] = Google.useIdTokenAuthRequest({
     ...googleClientIds,
