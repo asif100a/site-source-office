@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Briefcase, Filter, MapPin, Navigation } from "lucide-react-native";
+import { Briefcase, Filter } from "lucide-react-native";
 import ScreenHeader from "@/components/layout/ScreenHeader";
 import ScreenWrapper from "@/components/layout/ScreenWrapper";
 import MapFallback from "@/components/modules/employer/employer-details/_ui/MapFallback";
@@ -398,12 +398,6 @@ export default function WorkerHomeScreen() {
                       {mapJobs.length} live sites {hasWorkerLocation ? "nearby" : "available"}
                     </Text>
                   </View>
-                </View>
-              </View>
-
-              <View className="absolute bottom-4 right-4 z-10 items-end gap-2">
-                <View className="rounded-2xl bg-white px-3 py-2 shadow-sm">
-                  <Navigation size={18} color={Colors.common.BRAND} />
                 </View>
               </View>
 

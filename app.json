@@ -7,7 +7,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "site-source",
     "userInterfaceStyle": "automatic",
-    "ios": {},
+    "ios": {
+      "appleTeamId": "NH3VWVCKKS"
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
