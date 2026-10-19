@@ -100,7 +100,7 @@ export default function EmployerProfileWebScreen() {
     isError: isEmployerProfileError,
     error: employerProfileError,
   } = useGetEmployerProfileQuery(undefined);
-  console.log("getEmployerProfile: ", getEmployerProfile);
+  // console.log("getEmployerProfile: ", getEmployerProfile);
 
   useEffect(() => {
     if (isEmployerProfileError) {
@@ -181,15 +181,15 @@ export default function EmployerProfileWebScreen() {
             params: { origin: "employer" },
           }),
       },
-      {
-        icon: BellRing,
-        label: "Notification Settings",
-        onPress: () =>
-          router.push({
-            pathname: "/screens/profile/notification-settings",
-            params: { origin: "employer" },
-          }),
-      },
+      // {
+      //   icon: BellRing,
+      //   label: "Notification Settings",
+      //   onPress: () =>
+      //     router.push({
+      //       pathname: "/screens/profile/notification-settings",
+      //       params: { origin: "employer" },
+      //     }),
+      // },
       {
         icon: MessageSquareText,
         label: "Chats",

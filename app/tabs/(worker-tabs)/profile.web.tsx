@@ -161,15 +161,15 @@ export default function WorkerProfileWebScreen() {
             params: { origin: "worker" },
           }),
       },
-      {
-        icon: BellRing,
-        label: "Notification Settings",
-        onPress: () =>
-          router.push({
-            pathname: "/screens/profile/notification-settings",
-            params: { origin: "worker" },
-          }),
-      },
+      // {
+      //   icon: BellRing,
+      //   label: "Notification Settings",
+      //   onPress: () =>
+      //     router.push({
+      //       pathname: "/screens/profile/notification-settings",
+      //       params: { origin: "worker" },
+      //     }),
+      // },
     ],
     more: [
       {

@@ -108,15 +108,15 @@ export default function ProfileScreen() {
             params: { origin: "employer" },
           }),
       },
-      {
-        icon: BellRing,
-        label: "Notification Settings",
-        onPress: () =>
-          router.push({
-            pathname: "/screens/profile/notification-settings",
-            params: { origin: "employer" },
-          }),
-      },
+      // {
+      //   icon: BellRing,
+      //   label: "Notification Settings",
+      //   onPress: () =>
+      //     router.push({
+      //       pathname: "/screens/profile/notification-settings",
+      //       params: { origin: "employer" },
+      //     }),
+      // },
       {
         icon: MessageSquareText,
         label: "Chats",

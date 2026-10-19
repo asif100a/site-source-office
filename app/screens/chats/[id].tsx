@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   RefreshControl,
   ScrollView,
   Text,
@@ -49,10 +48,25 @@ export default function ChatDetailScreen() {
   const conversationId = normalizeParam(id);
   const originRoute = normalizeParam(origin);
   const [inputText, setInputText] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollViewRef = useRef<ScrollView | null>(null);
   const token = useSelector((state: RootState) => state.auth.token);
   const currentAuthId = useMemo(() => getAuthIdFromToken(token), [token]);
   const socketRef = useChatSocket(token);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
   const [sendMessage, { isLoading: isSending }] = useSendChatMessageMutation();
   const [markChatRead] = useMarkChatReadMutation();
 
@@ -166,10 +180,7 @@ export default function ChatDetailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "white" }} edges={[]}>
       <ChatHeader origin={originRoute} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-      >
+      <View className="flex-1">
         <ScrollView
           ref={scrollViewRef}
           className="flex-1 bg-white px-5 pt-5"
@@ -206,7 +217,10 @@ export default function ChatDetailScreen() {
           ))}
         </ScrollView>
 
-        <View className="absolute bottom-0 left-0 right-0 flex-row items-center gap-3 border-t border-neutral-200/80 bg-white px-6 pb-14 pt-4">
+        <View
+          className="flex-row items-center gap-3 border-t border-neutral-200/80 bg-white px-6 pb-4 pt-4"
+          style={{ marginBottom: keyboardHeight }}
+        >
           <View className="flex-1 rounded-xl border border-neutral-200/70 bg-neutral-50 px-4 py-0">
             <TextInput
               className="max-h-28 min-h-[44px] py-3 text-sm font-semibold text-neutral-800"
@@ -230,7 +244,7 @@ export default function ChatDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
