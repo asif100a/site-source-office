@@ -51,7 +51,7 @@ type WorkerTab = "all" | "favorite" | "sent";
 type OfferJob = {
   id: string;
   title: string;
-  workersNeeded?: number;
+  workersNeeded?: number | any[];
   hourlyRate?: number;
   startDate?: string;
   endDate?: string;
@@ -219,7 +219,16 @@ function SendOfferModal({
           ) : (
             <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
               <View className="gap-3">
-                {jobs.map((job) => (
+                {jobs.map((job) => {
+                  const workersCount = Array.isArray(job.workersNeeded)
+                    ? job.workersNeeded.reduce(
+                        (total: number, item: any) =>
+                          total + Number(item?.howMany ?? 0),
+                        0,
+                      )
+                    : Number(job.workersNeeded ?? 0);
+
+                  return (
                   <TouchableOpacity
                     key={job.id}
                     disabled={isSending}
@@ -231,17 +240,15 @@ function SendOfferModal({
                       {job.title}
                     </Text>
                     <Text className="mt-1 text-xs text-neutral-500">
-                      {job.workersNeeded ?? 0} worker
-                      {job.workersNeeded === 1 ? "" : "s"} needed
-                      {job.hourlyRate != null
-                        ? ` - GBP ${job.hourlyRate}/hour`
-                        : ""}
+                      {workersCount} worker{workersCount === 1 ? "" : "s"} needed
+                      {job.hourlyRate != null ? ` · £${job.hourlyRate}/hour` : ""}
                     </Text>
                     <Text className="mt-1 text-xs text-neutral-500">
                       {formatJobDate(job.startDate)} - {formatJobDate(job.endDate)}
                     </Text>
                   </TouchableOpacity>
-                ))}
+                  );
+                })}
               </View>
             </ScrollView>
           )}
