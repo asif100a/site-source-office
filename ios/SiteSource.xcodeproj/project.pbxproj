@@ -21,7 +21,7 @@
 		13B07F961A680F5B00A75B9A /* SiteSource.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SiteSource.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = SiteSource/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SiteSource/Info.plist; sourceTree = "<group>"; };
-		8C06DE44B269246445EC85C9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = SiteSource/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8C06DE44B269246445EC85C9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = SiteSource/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8D120A3DA6028C99E07C391A /* libPods-SiteSource.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SiteSource.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = SiteSource/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -73,7 +73,6 @@
 				E0D1FC92992AC88FD991DE1F /* Pods-SiteSource.debug.xcconfig */,
 				EA65D8B61E893297B14A102F /* Pods-SiteSource.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -166,7 +165,6 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = NH3VWVCKKS;
 						LastSwiftMigration = 1250;
 						ProvisioningStyle = Automatic;
 					};
@@ -417,7 +415,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sitesource.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sitesourceuser.app;
 				PRODUCT_NAME = SiteSource;
 				SWIFT_OBJC_BRIDGING_HEADER = "SiteSource/SiteSource-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -452,7 +450,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sitesource.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sitesourceuser.app;
 				PRODUCT_NAME = SiteSource;
 				SWIFT_OBJC_BRIDGING_HEADER = "SiteSource/SiteSource-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
