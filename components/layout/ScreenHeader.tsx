@@ -8,6 +8,7 @@ import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 import { useGetWorkerProfileQuery } from "@/store/api/workerProfileApi";
 import ProfileAvatar from "../common/ProfileAvatar";
 import { useGetUnseenCountQuery } from "@/store/api/notificationApi";
+import NotificationIcon from "../common/NotificationIcon";
 
 export default function ScreenHeader() {
   const router = useRouter();
@@ -16,14 +17,8 @@ export default function ScreenHeader() {
 
   const { data: workerProfile } = useGetWorkerProfileQuery();
   const { data: employerProfile } = useGetEmployerProfileQuery();
-  const { data: unseenNotificationCountRes } = useGetUnseenCountQuery({});
-  const unseenNotificationCount = unseenNotificationCountRes?.data?.unseenCount || 0;
 
   const profile = workerProfile?.data || employerProfile?.data;
-
-  const handleNotificationPress = () => {
-    router.push(Routes.CommonRoutes.NOTIFICATIONS);
-  };
 
   const role: UserRole = routeSegments.includes("(employer-tabs)")
     ? "employer"
@@ -62,17 +57,8 @@ export default function ScreenHeader() {
           <LogoWhite size={{ width: "124", height: "84" }} />
         </View>
 
-        <View className="flex-row items-center gap-3">
-          <TouchableOpacity
-            onPress={handleNotificationPress}
-            className="relative w-12 h-12 rounded-full bg-white/10 items-center justify-center active:opacity-85"
-          >
-            <Feather name="bell" size={22} color="#FFFFFF" />
-            <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white/15 items-center justify-center border border-white/20">
-              <Text className="text-white text-[10px] font-bold">{unseenNotificationCount}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+        {/* Notification Icon */}
+        <NotificationIcon />
       </View>
     </View>
   );

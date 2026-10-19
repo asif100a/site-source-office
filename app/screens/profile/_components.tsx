@@ -18,6 +18,7 @@ import {
 } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import LogoWhite from "@/assets/icons/LogoWhite";
+import NotificationIcon from "@/components/common/NotificationIcon";
 
 export const profilePhoto =
   "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&h=160&fit=crop";
@@ -77,9 +78,8 @@ export function ProfileHeader({
           </View>
         </View>
 
-        <TouchableOpacity className="w-11 h-11 rounded-full bg-white/15 items-center justify-center active:opacity-75">
-          <Bell color="#FFFFFF" size={18} />
-        </TouchableOpacity>
+        {/* Notification Icon */}
+        <NotificationIcon />
       </View>
     </View>
   );

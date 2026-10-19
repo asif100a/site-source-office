@@ -4,6 +4,7 @@ import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
 import { Bell, ChevronLeft } from "lucide-react-native";
 import LogoWhite from "@/assets/icons/LogoWhite";
+import NotificationIcon from "@/components/common/NotificationIcon";
 
 export default function CommonHeader({
   headerTitle = "Header",
@@ -45,19 +46,22 @@ export default function CommonHeader({
 
         <View
           className="-mb-3 mr-8"
-          style={{ minWidth: "100", minHeight: "72", position: "relative" } as any}
+          style={
+            { minWidth: "100", minHeight: "72", position: "relative" } as any
+          }
         >
-          <View style={{
-            position: 'absolute',
-            right: '37%'
-          }}>
+          <View
+            style={{
+              position: "absolute",
+              right: "37%",
+            }}
+          >
             <LogoWhite size={{ width: "100", height: "72" }} />
           </View>
         </View>
 
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-white/15 items-center justify-center border border-white/10 active:opacity-75">
-          <Bell color="#FFFFFF" size={18} />
-        </TouchableOpacity>
+        {/* Notification Icon */}
+        <NotificationIcon />
       </View>
     </View>
   );

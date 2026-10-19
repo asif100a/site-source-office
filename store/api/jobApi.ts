@@ -57,7 +57,10 @@ export const jobApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.job, tagTypes.meta],
     }),
-    updateJob: builder.mutation<any, { id: string; body: Partial<JobPostPayload> }>({
+    updateJob: builder.mutation<
+      any,
+      { id: string; body: Partial<JobPostPayload> }
+    >({
       query: ({ id, body }) => ({
         url: BASE_POINT + `/${id}`,
         method: "PATCH",
@@ -88,15 +91,18 @@ export const jobApi = baseApi.injectEndpoints({
       {
         page: number;
         limit: number;
-        status: 'POSTED' | 'ACTIVE' | 'COMPLETED';
+        status: "POSTED" | "ACTIVE" | "COMPLETED";
         searchTerm?: string;
       }
     >({
-      query: (args) => ({
-        url: BASE_POINT + "/my-jobs",
-        method: "GET",
-        params: args,
-      }),
+      query: (args) => {
+        console.log("args from the get my jobs api: ", args);
+        return {
+          url: BASE_POINT + "/my-jobs",
+          method: "GET",
+          params: args,
+        };
+      },
       providesTags: [tagTypes.job],
     }),
     getSingleJob: builder.query<any, string>({
@@ -124,7 +130,10 @@ export const jobApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [tagTypes.job],
     }),
-    changeCompletionStatus: builder.mutation<any, { jobId: string; status: "COMPLETED" | "REJECTED" }>({
+    changeCompletionStatus: builder.mutation<
+      any,
+      { jobId: string; status: "COMPLETED" | "REJECTED" }
+    >({
       query: ({ jobId, status }) => ({
         url: BASE_POINT + `/completion/${jobId}`,
         method: "PATCH",

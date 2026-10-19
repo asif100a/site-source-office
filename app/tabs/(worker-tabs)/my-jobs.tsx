@@ -210,10 +210,8 @@ export default function MyJobsScreen() {
           acceptingOfferIds={acceptingOfferIds}
           isLoading={
             activeTab === "My Offers"
-              ? myOffersQuery.isLoading ||
-                (myOffersQuery.isFetching && offers.length === 0)
-              : appliedJobsQuery.isLoading ||
-                (appliedJobsQuery.isFetching && applications.length === 0)
+              ? myOffersQuery.isLoading
+              : appliedJobsQuery.isLoading
           }
           isError={
             activeTab === "My Offers"
