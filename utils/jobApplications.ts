@@ -8,7 +8,7 @@ export type AppliedJobApplication = {
     title?: string;
     trades?: string[];
     hourlyRate?: number;
-    workersNeeded?: number;
+    workersNeeded?: number | { trade?: string; howMany?: number }[];
     status?: string;
     startDate?: string;
     endDate?: string;
