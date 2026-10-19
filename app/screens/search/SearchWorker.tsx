@@ -17,6 +17,12 @@ import SearchWorkerSearchBar from "@/components/modules/worker/search-workers/Se
 import SearchWorkerMapView from "@/components/modules/worker/search-workers/SearchWorkerMapView";
 import SearchWorkerModal from "@/components/modules/worker/search-workers/SearchWorkerModal";
 import { useGetAllWorkersQuery } from "@/store/api/workerProfileApi";
+import {
+  useCreateWorkerBookmarkMutation,
+  useGetBookmarkWorkersQuery,
+} from "@/store/api/bookmarkApi";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
+import Toast from "react-native-toast-message";
 import type { AddressDetails } from "@/utils/googlePlaces";
 
 type WorkerCard = {
@@ -145,6 +151,10 @@ export default function SearchWorkerScreen() {
   } | null>(null);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [favoriteWorkerIds, setFavoriteWorkerIds] = useState<string[]>([]);
+  const [bookmarkingWorkerIds, setBookmarkingWorkerIds] = useState<string[]>([]);
+  const [createWorkerBookmark] = useCreateWorkerBookmarkMutation();
+  const isAuthenticated = useIsAuthenticated();
 
   const { control } = useForm<FilterValues>({
     defaultValues: {
@@ -200,6 +210,10 @@ export default function SearchWorkerScreen() {
     ...(trade ? { trade } : {}),
     // ...(experience ? { experience } : {}),
   });
+  const bookmarkedWorkersQuery = useGetBookmarkWorkersQuery(
+    { page: 1, limit: 100 },
+    { skip: !isAuthenticated },
+  );
 
   const mapWorkersQuery = useGetAllWorkersQuery({
     page: 1,
@@ -211,6 +225,72 @@ export default function SearchWorkerScreen() {
     ...(trade ? { trade } : {}),
     // ...(experience ? { experience } : {}),
   }, { skip: viewType !== "map" });
+
+  useEffect(() => {
+    const fromSearch = getWorkerItems(listWorkersQuery.data)
+      .filter((worker: any) => Boolean(worker?.hasBookmarked))
+      .map((worker: any) => String(worker.authId ?? worker.id ?? worker._id));
+    const data = bookmarkedWorkersQuery.data?.data ?? bookmarkedWorkersQuery.data;
+    const items = data?.workers ?? data?.data?.workers ?? data?.bookmarks ?? data?.items ?? [];
+    const fromBookmarks = (Array.isArray(items) ? items : [])
+      .map((item: any) => {
+        const worker = item?.workerAuth ?? item?.worker ?? item;
+        return String(item?.workerAuthId ?? worker?.authId ?? worker?.id ?? worker?._id);
+      });
+
+    setFavoriteWorkerIds(Array.from(new Set([...fromSearch, ...fromBookmarks])));
+  }, [listWorkersQuery.data, bookmarkedWorkersQuery.data]);
+
+  const toggleFavoriteWorker = (id: string) => {
+    if (!isAuthenticated) {
+      router.push({
+        pathname: "/auth",
+        params: {
+          step: "login",
+          role: "employer",
+          returnTo: "/screens/search/SearchWorker",
+        },
+      } as any);
+      return;
+    }
+    if (bookmarkingWorkerIds.includes(id)) return;
+
+    const wasFavorite = favoriteWorkerIds.includes(id);
+    setFavoriteWorkerIds((current) =>
+      current.includes(id)
+        ? current.filter((workerId) => workerId !== id)
+        : [...current, id],
+    );
+    setBookmarkingWorkerIds((current) => [...current, id]);
+
+    void createWorkerBookmark({ workerAuthId: id })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: wasFavorite ? "Favorite updated" : "Worker added to favorites",
+        });
+        void listWorkersQuery.refetch();
+        void bookmarkedWorkersQuery.refetch();
+      })
+      .catch((error) => {
+        setFavoriteWorkerIds((current) =>
+          wasFavorite
+            ? Array.from(new Set([...current, id]))
+            : current.filter((workerId) => workerId !== id),
+        );
+        Toast.show({
+          type: "error",
+          text1: "Favorite failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setBookmarkingWorkerIds((current) =>
+          current.filter((workerId) => workerId !== id),
+        );
+      });
+  };
 
   useEffect(() => {
     if (
@@ -387,6 +467,9 @@ export default function SearchWorkerScreen() {
                   key={worker.id}
                   worker={worker}
                   onPress={() => openWorkerDetails(worker.id)}
+                  isFavorite={favoriteWorkerIds.includes(worker.id)}
+                  onToggleFavorite={toggleFavoriteWorker}
+                  isBookmarking={bookmarkingWorkerIds.includes(worker.id)}
                 />
               ))
             )}

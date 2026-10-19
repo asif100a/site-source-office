@@ -42,7 +42,7 @@ export default function LabourerCard({
           </View>
           <View>
             <Text className="text-base font-extrabold text-neutral-950">
-              {job.title}
+              {job.title?.length > 25 ? `${job.title.slice(0, 25)}...` : job.title}
             </Text>
             <Text className="text-xs font-semibold text-neutral-500">
               {job.company}

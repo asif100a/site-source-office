@@ -13,6 +13,9 @@ export default function SearchEmployerListView({
   handleViewDetails,
   handleApply,
   onOpenDetails,
+  favoriteJobIds = [],
+  onToggleFavorite,
+  bookmarkingJobIds = [],
   onRefresh,
   onLoadMore,
 }: {
@@ -24,6 +27,9 @@ export default function SearchEmployerListView({
   handleViewDetails: (id: string) => void;
   handleApply?: (id: string) => void;
   onOpenDetails?: (job: WorkerJobItem) => void;
+  favoriteJobIds?: string[];
+  onToggleFavorite?: (id: string) => void;
+  bookmarkingJobIds?: string[];
   onRefresh: () => void;
   onLoadMore: () => void;
 }) {
@@ -82,6 +88,9 @@ export default function SearchEmployerListView({
           handleViewDetails={handleViewDetails}
           handleApply={handleApply}
           onOpenDetails={onOpenDetails}
+          isFavorite={favoriteJobIds.includes(item.id)}
+          onToggleFavorite={onToggleFavorite}
+          isBookmarking={bookmarkingJobIds.includes(item.id)}
         />
       )}
       ListHeaderComponent={renderHeader}

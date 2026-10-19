@@ -21,8 +21,16 @@ import {
   useGetWorkersMapsJobsQuery,
 } from "@/store/api/jobApi";
 import {
+  useCreateJobBookmarkMutation,
+  useGetBookmarkJobsQuery,
+} from "@/store/api/bookmarkApi";
+import { useIsAuthenticated } from "@/hooks/useAuthGuard";
+import { getWorkerLoginRoute } from "@/constants/authState";
+import Toast from "react-native-toast-message";
+import {
   getAllJobsHasNextPage,
   getAllJobItems,
+  getBookmarkedJobItems,
   getSingleJobData,
   mapApiJobToWorkerHomeJob,
   mapApiJobToWorkerJobItem,
@@ -88,6 +96,10 @@ export default function WorkerSearchScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedMapJobId, setSelectedMapJobId] = useState("");
   const [selectedMapJobAddress, setSelectedMapJobAddress] = useState("");
+  const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
+  const [bookmarkingJobIds, setBookmarkingJobIds] = useState<string[]>([]);
+  const [createJobBookmark] = useCreateJobBookmarkMutation();
+  const isAuthenticated = useIsAuthenticated();
 
   // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
@@ -145,6 +157,10 @@ export default function WorkerSearchScreen() {
   );
 
   const allJobsQuery = useGetAllJobsQuery(queryArgs);
+  const bookmarkedJobsQuery = useGetBookmarkJobsQuery(
+    { page: 1, limit: 100 },
+    { skip: !isAuthenticated },
+  );
   // console.log('allJobsQuery: ', allJobsQuery)
 
   // Map search follows the worker home screen and queries nearby jobs by coordinates.
@@ -166,6 +182,60 @@ export default function WorkerSearchScreen() {
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
   );
+
+  useEffect(() => {
+    const fromSearch = getAllJobItems(allJobsQuery.data)
+      .filter((job: any) => Boolean(job?.hasBookmarked))
+      .map((job: any) => String(job.id ?? job._id));
+    const fromBookmarks = getBookmarkedJobItems(bookmarkedJobsQuery.data)
+      .map((job: any) => String(job.id ?? job._id));
+
+    setFavoriteJobIds(Array.from(new Set([...fromSearch, ...fromBookmarks])));
+  }, [allJobsQuery.data, bookmarkedJobsQuery.data]);
+
+  const toggleFavoriteJob = (id: string) => {
+    if (!isAuthenticated) {
+      router.push(getWorkerLoginRoute("/screens/search/SearchJobs") as any);
+      return;
+    }
+    if (bookmarkingJobIds.includes(id)) return;
+
+    const wasFavorite = favoriteJobIds.includes(id);
+    setFavoriteJobIds((current) =>
+      current.includes(id)
+        ? current.filter((jobId) => jobId !== id)
+        : [...current, id],
+    );
+    setBookmarkingJobIds((current) => [...current, id]);
+
+    void createJobBookmark({ jobId: id })
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: "success",
+          text1: wasFavorite ? "Bookmark updated" : "Job bookmarked",
+        });
+        void allJobsQuery.refetch();
+        void bookmarkedJobsQuery.refetch();
+      })
+      .catch((error) => {
+        setFavoriteJobIds((current) =>
+          wasFavorite
+            ? Array.from(new Set([...current, id]))
+            : current.filter((jobId) => jobId !== id),
+        );
+        Toast.show({
+          type: "error",
+          text1: "Bookmark failed",
+          text2: (error as any)?.data?.message ?? "Please try again.",
+        });
+      })
+      .finally(() => {
+        setBookmarkingJobIds((current) =>
+          current.filter((jobId) => jobId !== id),
+        );
+      });
+  };
   console.log("mapJobsQuery: ", mapJobsQuery?.data);
   const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
     skip: !selectedMapJobId,
@@ -240,7 +310,6 @@ export default function WorkerSearchScreen() {
   }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
 
   useEffect(() => {
-    setMapJobs([]);
     setSelectedMapJobId("");
   }, [mapLocationCoordinates, maxDistanceMiles, minRatePerDay, tradeSkill]);
 
@@ -291,7 +360,7 @@ export default function WorkerSearchScreen() {
 
     // Keep map card/marker data in the same WorkerHomeJob shape used on the home map.
     setMapJobs(nextJobs);
-  }, [mapJobsQuery.currentData, mapJobsQuery.data, mapJobsQuery.isFetching]);
+  }, [mapJobsQuery.currentData, mapJobsQuery.data]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -456,6 +525,9 @@ export default function WorkerSearchScreen() {
           handleViewDetails={handleViewDetails}
           handleApply={handleApply}
           onOpenDetails={handleOpenDetailsModal}
+          favoriteJobIds={favoriteJobIds}
+          onToggleFavorite={toggleFavoriteJob}
+          bookmarkingJobIds={bookmarkingJobIds}
           onRefresh={handleRefresh}
           onLoadMore={handleLoadMore}
         />

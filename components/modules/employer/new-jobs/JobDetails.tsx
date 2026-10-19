@@ -43,6 +43,14 @@ type JobReview = {
 const getJobReviews = (reviews: unknown): JobReview[] =>
   Array.isArray(reviews) ? reviews : [];
 
+const getWorkersCount = (workersNeeded?: number | { howMany?: number }[]) =>
+  Array.isArray(workersNeeded)
+    ? workersNeeded.reduce(
+        (total, item) => total + Number(item?.howMany ?? 0),
+        0,
+      )
+    : Number(workersNeeded ?? 0);
+
 export default function NewJobDetails({
   jobId,
   showApplications = false,
@@ -64,7 +72,7 @@ export default function NewJobDetails({
     refetch,
     isFetching: isJobFetching,
   } = useGetSingleJobQuery(jobId);
-  // console.log("data --------> ", data);
+  console.log("data from the job details --------> ", data);
   const [applicationPage, setApplicationPage] = useState(1);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -75,6 +83,7 @@ export default function NewJobDetails({
     { skip: !showApplications },
   );
   const job = data?.data?.data ?? data?.data;
+  const workersCount = getWorkersCount(job?.workersNeeded);
   const reviews = getJobReviews(job?.reviews);
   const applications = showApplications
     ? getJobApplications(applicationsQuery.data)
@@ -175,13 +184,19 @@ export default function NewJobDetails({
           {job.title}
         </Text>
         <Text className="mt-2 text-sm font-semibold text-neutral-500">
-          {getFormattedWord(job.status, '_')}
+          {getFormattedWord(job.status, "_")}
         </Text>
 
         <View className="mt-6 gap-4">
           <Detail
             label="Trade"
-            value={(job.trades ?? []).map((trade: string) => getFormattedWord(trade, '_') ).join(", ") || "Not set"}
+            value={
+              (job.workersNeeded ?? [])
+                .map((worker: { trade: string }) =>
+                  getFormattedWord(worker?.trade, "_"),
+                )
+                .join(", ") || "Not set"
+            }
           />
           <Detail
             label="Hourly rate"
@@ -191,7 +206,7 @@ export default function NewJobDetails({
           />
           <Detail
             label="Workers needed"
-            value={String(job.workersNeeded ?? "Not set")}
+            value={`${workersCount} worker${workersCount === 1 ? "" : "s"}`}
           />
           <Detail label="Start date" value={formatDate(job.startDate)} />
           <Detail label="End date" value={formatDate(job.endDate)} />

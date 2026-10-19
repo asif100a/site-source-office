@@ -40,6 +40,14 @@ const formatDate = (value?: string) =>
 const formatList = (items?: string[]) =>
   Array.isArray(items) && items.length ? items.join(", ") : "Not set";
 
+const getWorkersCount = (workersNeeded?: number | { howMany?: number }[]) =>
+  Array.isArray(workersNeeded)
+    ? workersNeeded.reduce(
+        (total, item) => total + Number(item?.howMany ?? 0),
+        0,
+      )
+    : Number(workersNeeded ?? 0);
+
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between gap-4 border-b border-neutral-100 py-3 last:border-b-0">
@@ -115,6 +123,7 @@ export default function JobDetailsWebScreen() {
     useCreateJobApplicationMutation();
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", { skip: !jobId });
   const job = singleJobQuery.data?.data?.data ?? singleJobQuery.data?.data;
+  const workersCount = getWorkersCount(job?.workersNeeded);
   const isApplied = Boolean(singleJobQuery.data?.data?.isApplied);
 
   const coordinates = Array.isArray(job?.location?.coordinates)
@@ -257,7 +266,7 @@ export default function JobDetailsWebScreen() {
                     />
                     <DetailRow
                       label="Workers needed"
-                      value={String(job.workersNeeded ?? "Not set")}
+                      value={`${workersCount} worker${workersCount === 1 ? "" : "s"}`}
                     />
                   </View>
                 </Section>
@@ -370,7 +379,7 @@ export default function JobDetailsWebScreen() {
                       Open positions
                     </Text>
                     <Text className="mt-2 text-2xl font-black text-neutral-950">
-                      {job.workersNeeded ?? "Not set"}
+                      {workersCount} worker{workersCount === 1 ? "" : "s"}
                     </Text>
                   </View>
                 </Section>
