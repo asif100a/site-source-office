@@ -492,11 +492,11 @@ export default function WorkerSearchScreen() {
       </View>
 
       {viewType === "list" ? (
-        <View className="z-10 flex-row items-center gap-3 bg-neutral-50 px-5 pb-2 pt-4">
-          <View className="flex-1 flex-row items-center rounded-xl border border-neutral-200/80 bg-white px-4 py-1">
-            <Search size={18} color="#A3A3A3" className="mr-2" />
+        <View className="z-10 flex-row items-center gap-2.5 bg-neutral-50 px-5 pb-2 pt-3">
+          <View className="flex-1 h-10 flex-row items-center rounded-xl border border-neutral-200/80 bg-white px-3.5">
+            <Search size={16} color="#A3A3A3" className="mr-2" />
             <TextInput
-              className="flex-1 py-0 text-sm font-medium text-neutral-800"
+              className="flex-1 h-full py-0 text-sm font-medium text-neutral-800 focus:outline-none"
               placeholder="Search Jobs"
               placeholderTextColor="#A3A3A3"
               value={searchQuery}
@@ -506,9 +506,9 @@ export default function WorkerSearchScreen() {
 
           <TouchableOpacity
             onPress={() => setShowFilters(true)}
-            className="items-center justify-center rounded-xl border border-neutral-200/80 bg-white p-4 active:opacity-80"
+            className="w-10 h-10 items-center justify-center rounded-xl border border-neutral-200/80 bg-white active:opacity-80"
           >
-            <SlidersHorizontal size={18} color="#333333" />
+            <SlidersHorizontal size={16} color="#333333" />
           </TouchableOpacity>
         </View>
       ) : null}

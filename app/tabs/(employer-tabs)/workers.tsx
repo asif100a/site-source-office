@@ -520,22 +520,22 @@ export default function EmployerWorkersScreen() {
           />
         }
       >
-        <View className="flex-row items-center gap-3">
+        <View className="flex-row items-center gap-2.5">
           <TouchableOpacity
             onPress={handleSearchWorkers}
             activeOpacity={0.9}
-            className="flex-1 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-4 py-3"
+            className="flex-1 h-10 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-3.5"
           >
-            <Search size={18} color="#A3A3A3" className="mr-2" />
+            <Search size={16} color="#A3A3A3" className="mr-2" />
             <Text className="flex-1 text-neutral-400 text-sm font-medium">
               Search workers
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSearchWorkers}
-            className="w-12 h-12 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-85"
+            className="w-10 h-10 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-85"
           >
-            <SlidersHorizontal size={18} color="#333333" />
+            <SlidersHorizontal size={16} color="#333333" />
           </TouchableOpacity>
         </View>
 

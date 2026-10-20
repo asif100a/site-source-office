@@ -86,11 +86,20 @@ export default function UpdateJobPost() {
               : currentJob?.location
                 ? { ...currentJob.location }
               : undefined,
-            endDate: endDate ? endDate.toISOString() : undefined,
+            endDate: endDate
+              ? (endDate instanceof Date ? endDate : new Date(endDate)).toISOString()
+              : undefined,
             workingHours: currentJob?.workingHours ?? [],
             mustHave: currentJob?.mustHave ?? [],
             note: values.note.trim(),
-            ...(startDate ? { startDate: startDate.toISOString() } : {}),
+            ...(startDate
+              ? {
+                  startDate: (startDate instanceof Date
+                    ? startDate
+                    : new Date(startDate)
+                  ).toISOString(),
+                }
+              : {}),
           },
         }).unwrap();
       }
