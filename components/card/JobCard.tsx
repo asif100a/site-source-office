@@ -20,6 +20,7 @@ export default function JobCard({
 }) {
   const closingSoon =
     new Date(job.closingAt).getTime() - Date.now() < 1000 * 60 * 60 * 30;
+  console.log("job workers needed: ", job.workersNeeded);
 
   return (
     <View className="mb-4 rounded-xl bg-white px-4 py-4">
