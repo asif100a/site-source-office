@@ -7,9 +7,15 @@ import ProfileAvatar from "@/components/common/ProfileAvatar";
 export default function WorkerCardRow({
   worker,
   onPress,
+  isFavorite = false,
+  onToggleFavorite,
+  isBookmarking = false,
 }: {
   worker: any;
   onPress: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  isBookmarking?: boolean;
 }) {
   return (
     <TouchableOpacity
@@ -29,8 +35,19 @@ export default function WorkerCardRow({
             </View>
           </View>
 
-          <TouchableOpacity className="p-1.5">
-            <Bookmark size={20} color="#737373" />
+          <TouchableOpacity
+            className="p-1.5"
+            disabled={isBookmarking}
+            onPress={(event) => {
+              event.stopPropagation();
+              onToggleFavorite?.(worker.id);
+            }}
+          >
+            <Bookmark
+              size={20}
+              color={isFavorite ? Colors.common.BRAND : "#737373"}
+              fill={isFavorite ? Colors.common.BRAND : "transparent"}
+            />
           </TouchableOpacity>
         </View>
 

@@ -24,6 +24,14 @@ type AppliedJobsListProps = {
   onLoadMore: () => void;
 };
 
+const getWorkersCount = (workersNeeded?: number | { howMany?: number }[]) =>
+  Array.isArray(workersNeeded)
+    ? workersNeeded.reduce(
+        (total, item) => total + Number(item?.howMany ?? 0),
+        0,
+      )
+    : Number(workersNeeded ?? 0);
+
 function matchesTab(application: AppliedJobApplication, activeTab: string) {
   const applicationStatus = application.status?.toUpperCase();
   const jobStatus = application.job?.status?.toUpperCase();
@@ -121,6 +129,7 @@ export default function AppliedJobsList({
           const status = offer.status?.toUpperCase() ?? "PENDING";
           const isPending = status === "PENDING";
           const isAccepting = acceptingOfferIds.includes(offer.id);
+          const workersCount = getWorkersCount(job?.workersNeeded);
 
           return (
             <TouchableOpacity
@@ -168,9 +177,9 @@ export default function AppliedJobsList({
                 <View className="flex-row items-center gap-2">
                   <Users size={15} color="#858585" />
                   <Text className="text-xs font-semibold text-neutral-500">
-                    {job?.workersNeeded ?? "No"} workers needed
+                    {workersCount} worker{workersCount === 1 ? "" : "s"} needed
                     {job?.hourlyRate != null
-                      ? ` - GBP ${job.hourlyRate}/hour`
+                      ? ` · £${job.hourlyRate}/hour`
                       : ""}
                   </Text>
                 </View>
@@ -236,6 +245,7 @@ export default function AppliedJobsList({
     const jobId = job?.id ?? application.jobId;
     const applicationStatus = application.status?.toUpperCase() ?? "PENDING";
     const isCompleted = job?.status?.toUpperCase() === "COMPLETED";
+    const workersCount = getWorkersCount(job?.workersNeeded);
 
     return (
       <TouchableOpacity
@@ -288,7 +298,7 @@ export default function AppliedJobsList({
           <View className="flex-row items-center gap-2">
             <Users size={15} color="#858585" />
             <Text className="text-xs font-semibold text-neutral-500">
-              {job?.workersNeeded ?? "No"} workers needed
+              {workersCount} worker{workersCount === 1 ? "" : "s"} needed
             </Text>
           </View>
           <View className="flex-row items-center gap-2">

@@ -72,6 +72,29 @@ export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
   )}`;
 };
 
+function MyJobsListHeader({
+  searchQuery,
+  setSearchQuery,
+  activeTab,
+  setActiveTab,
+}: {
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  activeTab: JobTab;
+  setActiveTab: React.Dispatch<React.SetStateAction<JobTab>>;
+}) {
+  return (
+    <View>
+      <SearchAndFilterInput
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        shouldHideFilters
+      />
+      <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
+    </View>
+  );
+}
+
 export default function EmployerMyJobsScreen() {
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -135,7 +158,6 @@ export default function EmployerMyJobsScreen() {
 
   useEffect(() => {
     setPage(1);
-    setJobs([]);
   }, [activeTab, trimmedSearchQuery]);
 
   // console.log("jobsQuery: ", jobsQuery);
@@ -307,18 +329,6 @@ export default function EmployerMyJobsScreen() {
     resetProjectJobForm();
   };
 
-  const renderListHeader = () => (
-    <View>
-      <SearchAndFilterInput
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        shouldHideFilters
-      />
-
-      <MyJobToggleChips activeTab={activeTab} setActiveTab={setActiveTab} />
-    </View>
-  );
-
   const renderJobCard = ({ item }: { item: JobCard }) => {
     // console.log("item: ", item);
     if (activeTab === "upcoming") {
@@ -392,7 +402,7 @@ export default function EmployerMyJobsScreen() {
   return (
     <ScreenWrapper>
       <ScreenHeader />
-      {isLoading || jobsQuery.isFetching ? (
+      {isLoading && jobs.length === 0 ? (
         <ScreenLoader />
       ) : (
         <View className="flex-1">
@@ -401,7 +411,14 @@ export default function EmployerMyJobsScreen() {
             data={jobs}
             keyExtractor={(item) => item.id}
             renderItem={renderJobCard}
-            ListHeaderComponent={renderListHeader}
+            ListHeaderComponent={
+              <MyJobsListHeader
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            }
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={renderListFooter}
             ItemSeparatorComponent={() => <View className="h-4" />}

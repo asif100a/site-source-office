@@ -161,7 +161,7 @@ export const mapApiJobToWorkerHomeJob = (job: any, index: number): WorkerHomeJob
       "Employer",
     area: job.location?.address ?? getCoordinateLabel(job.location?.coordinates),
     distanceMiles: Number(distance ?? 0),
-    workersNeeded: Number(job.workersNeeded ?? 0),
+    workersNeeded: job.workersNeeded,
     startLabel: startDate ? `Starts ${formatDate(startDate)}` : "Start date not set",
     startDate: String(startDate ?? ""),
     startDateLabel: formatFullDate(startDate),

@@ -151,6 +151,7 @@ export default function SearchEmployerMapView({
                 coordinate={job.coordinate}
                 title={job.title}
                 description={job.company}
+                tracksViewChanges={false}
                 onPress={() => onSelectJob(job.id)}
               >
                 <MarkerBubble dark={job.id === featuredJob?.id} />
