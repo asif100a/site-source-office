@@ -95,9 +95,6 @@ android {
         versionCode 1
         versionName "1.0.0"
 
-        def googleMapsApiKey = System.getenv("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ?: findProperty("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ?: ""
-        manifestPlaceholders.googleMapsApiKey = googleMapsApiKey
-
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
     signingConfigs {
