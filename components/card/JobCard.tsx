@@ -57,7 +57,7 @@ export default function JobCard({
         </View>
         <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
           <Text className="text-[10px] font-semibold text-neutral-600">
-            {formatNeeded(job.workersNeeded)}
+            {formatNeeded((job as any).workersNeeded?.[0]?.howMany || 0)}
           </Text>
         </View>
         <View

@@ -57,8 +57,8 @@ function EmployerCompletionRequestCard({
     }
 
     try {
-     const response = await changeCompletionStatus({ jobId, status: nextStatus }).unwrap();
-     console.log("changeCompletionStatus response: ", response);
+      const response = await changeCompletionStatus({ jobId, status: nextStatus }).unwrap();
+      console.log("changeCompletionStatus response: ", response);
       await onUpdated();
       Toast.show({
         type: "success",
@@ -148,7 +148,7 @@ export default function ActiveJobDetailScreen() {
   >("form");
 
   const jobDetails = getSingleJobData(singleJobQuery.data);
-  // console.log("jobDetails from the active job details screen: ", jobDetails);
+  console.log("jobDetails from the active job details screen: ", jobDetails);
 
   const openWorkerDetails = (workerId: string) => {
     router.push({

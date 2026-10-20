@@ -200,9 +200,8 @@ export const mapApiJobToWorkerJobItem = (job: any): WorkerJobItem => {
     payRate: String(Number(job.hourlyRate ?? 0)),
     tag: "Open",
     location: `${job.location?.address ?? "Job site"}${formatDistance(distance)}`,
-    team: `${Number(job.workersNeeded ?? 0)} worker${
-      Number(job.workersNeeded ?? 0) === 1 ? "" : "s"
-    } needed`,
+    team: `${Number(job.workersNeeded?.[0]?.howMany ?? 0)} worker${Number(job.workersNeeded ?? 0) === 1 ? "" : "s"
+      } needed`,
     duration: `${formatDate(startDate)} - ${formatDate(endDate)}`,
     time: formatPostedDate(job.createdAt),
   };

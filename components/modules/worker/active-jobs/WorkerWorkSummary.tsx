@@ -107,7 +107,7 @@ export default function WorkerWorkSummary({
       );
     } catch (error) {
       console.error("error requesting job completion: ", error);
-       Toast.show(
+      Toast.show(
         {
           type: "error",
           text1: "Request failed",
@@ -155,8 +155,8 @@ export default function WorkerWorkSummary({
         ) : null}
 
         {!workerTimesheetQuery.isLoading &&
-        !workerTimesheetQuery.isError &&
-        timesheets.length === 0 ? (
+          !workerTimesheetQuery.isError &&
+          timesheets.length === 0 ? (
           <View className="flex-row justify-between items-center p-4">
             <View className="flex-1">
               <Text className="text-neutral-800 font-extrabold text-sm">

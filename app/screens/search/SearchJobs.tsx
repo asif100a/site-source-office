@@ -112,9 +112,9 @@ export default function WorkerSearchScreen() {
     () =>
       mapLocationCoordinates
         ? {
-            latitude: mapLocationCoordinates[1],
-            longitude: mapLocationCoordinates[0],
-          }
+          latitude: mapLocationCoordinates[1],
+          longitude: mapLocationCoordinates[0],
+        }
         : null,
     [mapLocationCoordinates],
   );
@@ -135,10 +135,10 @@ export default function WorkerSearchScreen() {
       status: "POSTED" as const,
       ...(selectedMapLocation
         ? {
-            latitude: selectedMapLocation.latitude,
-            longitude: selectedMapLocation.longitude,
-            radius: maxDistanceMiles,
-          }
+          latitude: selectedMapLocation.latitude,
+          longitude: selectedMapLocation.longitude,
+          radius: maxDistanceMiles,
+        }
         : {}),
       ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
       ...(minRatePerDay !== 120
@@ -171,10 +171,10 @@ export default function WorkerSearchScreen() {
       status: "POSTED",
       ...(selectedMapLocation
         ? {
-            latitude: selectedMapLocation.latitude,
-            longitude: selectedMapLocation.longitude,
-            radius: maxDistanceMiles,
-          }
+          latitude: selectedMapLocation.latitude,
+          longitude: selectedMapLocation.longitude,
+          radius: maxDistanceMiles,
+        }
         : {}),
       ...(minRatePerDay !== 120
         ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
@@ -236,7 +236,7 @@ export default function WorkerSearchScreen() {
         );
       });
   };
-  console.log("mapJobsQuery: ", mapJobsQuery?.data);
+  // console.log("mapJobsQuery: ", mapJobsQuery?.data);
   const selectedMapJobQuery = useGetSingleJobQuery(selectedMapJobId, {
     skip: !selectedMapJobId,
   });
