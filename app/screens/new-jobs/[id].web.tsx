@@ -313,7 +313,7 @@ export default function NewJobDetailsWebScreen() {
                 <Summary
                   icon={Users}
                   label="Workers needed"
-                  value={String(job.workersNeeded ?? "Not set")}
+                  value={String(job.workersNeeded?.[0]?.howMany ?? "Not set")}
                 />
                 <Summary
                   icon={CalendarDays}

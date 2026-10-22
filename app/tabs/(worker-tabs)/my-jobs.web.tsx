@@ -247,7 +247,7 @@ export default function MyJobsWebScreen() {
                 setSearchQuery={setSearchQuery}
                 shouldHideFilters
                 searchContainerStyle={{
-                  paddingVertical: 16,
+                  // paddingVertical: 16,
                 }}
               />
 

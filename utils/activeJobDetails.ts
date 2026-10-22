@@ -15,6 +15,7 @@ export type ActiveJobDetails = {
   daysPerWeek: string;
   nextInvoice: string;
   isReviewed: boolean;
+  jobCompletion: {status: "PENDING" | "ACCEPTED" | "REJECTED" | string}[]
 };
 
 export const DEFAULT_ACTIVE_JOB_DETAILS: ActiveJobDetails = {
@@ -34,6 +35,7 @@ export const DEFAULT_ACTIVE_JOB_DETAILS: ActiveJobDetails = {
   daysPerWeek: "Not set",
   nextInvoice: "Not set",
   isReviewed: false,
+  jobCompletion: [],
 };
 
 const formatDate = (value?: string) => {
@@ -112,5 +114,6 @@ export const mapSingleJobToActiveJobDetails = (
     daysPerWeek: getDaysPerWeekLabel(job?.workingHours),
     nextInvoice: DEFAULT_ACTIVE_JOB_DETAILS.nextInvoice,
     isReviewed: job?.isReviewed ?? false,
+    jobCompletion: job?.jobCompletion,
   };
 };

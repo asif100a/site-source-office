@@ -239,7 +239,7 @@ export default function EmployerMyJobsScreenWeb() {
             setSearchQuery={setSearchQuery}
             shouldHideFilters
             searchContainerStyle={{
-              paddingVertical: 16,
+              // paddingVertical: 16,
             }}
           />
 

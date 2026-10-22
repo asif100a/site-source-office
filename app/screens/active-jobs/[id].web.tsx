@@ -36,6 +36,12 @@ import {
   DEFAULT_ACTIVE_JOB_DETAILS,
   mapSingleJobToActiveJobDetails,
 } from "@/utils/activeJobDetails";
+import WorkerJobDetails from "@/components/modules/worker/active-jobs/WorkerJobDetails";
+import WorkerEmployerContact from "@/components/modules/worker/active-jobs/WorkerEmployerContact";
+import WorkerToggleChips from "@/components/modules/worker/active-jobs/WorkerToggleChips";
+import WorkerProjectSchedule from "@/components/modules/worker/active-jobs/WorkerProjectSchedule";
+import WorkerWorkSummary from "@/components/modules/worker/active-jobs/WorkerWorkSummary";
+import WorkerWorkPolicy from "@/components/modules/worker/active-jobs/WorkerWorkPolicy";
 
 type WorkerTab = "schedule" | "timesheet" | "policy";
 
@@ -938,8 +944,24 @@ function ApprovalPanel({
   }, [weekOptions]);
 
   return (
-    <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-      <SectionTitle title="Submit Timesheet" />
+    <View className="max-h-[90vh] overflow-hidden rounded-[24px] border border-neutral-200 bg-white">
+      <ScrollView
+        className="max-h-[90vh]"
+        contentContainerStyle={{ padding: 24, paddingBottom: 20 }}
+        showsVerticalScrollIndicator
+      >
+      <View className="mb-5 flex-row items-center justify-between gap-4">
+        <Text className="text-base font-extrabold text-neutral-900">
+          Submit Timesheet
+        </Text>
+        <TouchableOpacity
+          onPress={onClose}
+          activeOpacity={0.8}
+          className="rounded-xl border border-neutral-200 px-3 py-2"
+        >
+          <Text className="text-xs font-bold text-neutral-600">Cancel</Text>
+        </TouchableOpacity>
+      </View>
       <View className="gap-4">
         <View>
           <Text className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-400">
@@ -1046,13 +1068,23 @@ function ApprovalPanel({
         </View>
       </View>
 
-      <TouchableOpacity
-        onPress={onClose}
-        style={{ backgroundColor: Colors.common.GRAY_DARK }}
-        className="mt-5 items-center justify-center rounded-2xl py-4 active:opacity-90"
-      >
-        <Text className="text-sm font-extrabold text-white">Submit</Text>
-      </TouchableOpacity>
+      <View className="mt-5 flex-row gap-3">
+        <TouchableOpacity
+          onPress={onClose}
+          activeOpacity={0.9}
+          className="flex-1 items-center justify-center rounded-2xl border border-neutral-200 bg-white py-4"
+        >
+          <Text className="text-sm font-extrabold text-neutral-700">Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onClose}
+          style={{ backgroundColor: Colors.common.GRAY_DARK }}
+          className="flex-1 items-center justify-center rounded-2xl py-4 active:opacity-90"
+        >
+          <Text className="text-sm font-extrabold text-white">Submit</Text>
+        </TouchableOpacity>
+      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -1254,55 +1286,43 @@ export default function ActiveJobDetailWebScreen() {
 
             <View className="flex-col gap-6 xl:flex-row">
               <View className="flex-[1.45] gap-4">
-                <JobSummaryCard jobDetails={jobDetails} showRate={false} />
-                <WorkerEmployerContactCard jobDetails={jobDetails} />
-                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                  <SectionTitle title="Job workspace" />
-                  <WorkerTabs
-                    activeSubTab={activeSubTab}
-                    setActiveSubTab={setActiveSubTab}
-                  />
-                </View>
-
-                {activeSubTab === "schedule" ? (
-                  <WorkerScheduleCard jobDetails={jobDetails} />
-                ) : null}
-                {activeSubTab === "timesheet" ? (
-                  <WorkerTimesheetCard
+                <WorkerJobDetails jobDetails={jobDetails} />
+                <WorkerEmployerContact jobDetails={jobDetails} />
+                <WorkerToggleChips
+                  activeSubTab={activeSubTab}
+                  setActiveSubTab={setActiveSubTab}
+                />
+                {activeSubTab === "schedule" && (
+                  <WorkerProjectSchedule jobDetails={jobDetails} />
+                )}
+                {activeSubTab === "timesheet" && (
+                  <WorkerWorkSummary
+                    setShowApprovalModal={setShowApprovalPanel}
                     jobId={jobId ?? ""}
-                    onShowApproval={() => setShowApprovalPanel(true)}
-                    onCompletionRequested={() => {
-                      void refreshJob();
-                    }}
+                    onCompletionRequested={() => void refreshJob()}
+                    isAppliedForJobCompletion={Boolean(rawJob?.jobCompletion?.status)}
                   />
-                ) : null}
-                {activeSubTab === "policy" ? <WorkerPolicyCard /> : null}
+                )}
+                {activeSubTab === "policy" && <WorkerWorkPolicy />}
               </View>
 
               <View className="flex-1 gap-4">
-                {showApprovalPanel ? (
-                  <ApprovalPanel
-                    scheduleStartDate={jobDetails.startDate}
-                    onClose={() => setShowApprovalPanel(false)}
-                  />
-                ) : (
-                  <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
-                    <View className="flex-row items-center gap-3">
-                      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
-                        <ShieldCheck size={18} color={Colors.common.BRAND} />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-sm font-semibold text-neutral-900">
-                          Worker view
-                        </Text>
-                        <Text className="mt-1 text-sm leading-6 text-neutral-600">
-                          The schedule, timesheet, and policy stay in the main
-                          column while support and next actions stay visible here.
-                        </Text>
-                      </View>
+                <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-12 w-12 items-center justify-center rounded-2xl bg-orange-50">
+                      <ShieldCheck size={18} color={Colors.common.BRAND} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-semibold text-neutral-900">
+                        Worker view
+                      </Text>
+                      <Text className="mt-1 text-sm leading-6 text-neutral-600">
+                        The schedule, timesheet, and policy stay in the main
+                        column while support and next actions stay visible here.
+                      </Text>
                     </View>
                   </View>
-                )}
+                </View>
 
                 <ActionCard
                   title="Support and next steps"
@@ -1346,6 +1366,17 @@ export default function ActiveJobDetailWebScreen() {
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
       />
+
+      {showApprovalPanel ? (
+        <View className="absolute inset-0 items-center justify-center bg-black/40 px-6">
+          <View className="w-full max-w-2xl">
+            <ApprovalPanel
+              scheduleStartDate={jobDetails.startDate}
+              onClose={() => setShowApprovalPanel(false)}
+            />
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

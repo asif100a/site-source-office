@@ -37,9 +37,6 @@ const formatDate = (value?: string) =>
       })
     : "Not set";
 
-const formatList = (items?: string[]) =>
-  Array.isArray(items) && items.length ? items.join(", ") : "Not set";
-
 const getWorkersCount = (workersNeeded?: number | { howMany?: number }[]) =>
   Array.isArray(workersNeeded)
     ? workersNeeded.reduce(
@@ -255,7 +252,7 @@ export default function JobDetailsWebScreen() {
                   icon={<BriefcaseBusiness size={18} color="#525252" />}
                 >
                   <View className="rounded-2xl border border-neutral-100 px-4">
-                    <DetailRow label="Trade" value={formatList(job.trades)} />
+                    <DetailRow label="Trade" value={job.workersNeeded?.[0]?.trade} />
                     <DetailRow
                       label="Hourly rate"
                       value={

@@ -17,7 +17,7 @@ export default function EmployerApprovalsScreen() {
     useState<EmployerTimesheet | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const timesheetQuery = useGetEmployerTimesheetQuery({ page: 1, limit: 10 });
-  console.log("timesheetQuery from the approvals screen: ", timesheetQuery);
+  // console.log("timesheetQuery from the approvals screen: ", timesheetQuery);
 
   const refreshTimesheets = async () => {
     setRefreshing(true);
