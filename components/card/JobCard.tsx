@@ -20,6 +20,7 @@ export default function JobCard({
 }) {
   const closingSoon =
     new Date(job.closingAt).getTime() - Date.now() < 1000 * 60 * 60 * 30;
+  console.log("job workers needed: ", job.workersNeeded);
 
   return (
     <View className="mb-4 rounded-xl bg-white px-4 py-4">
@@ -56,7 +57,7 @@ export default function JobCard({
         </View>
         <View className="rounded-full bg-[#F4F4F4] px-3 py-1.5">
           <Text className="text-[10px] font-semibold text-neutral-600">
-            {formatNeeded(job.workersNeeded)}
+            {formatNeeded((job as any).workersNeeded?.[0]?.howMany || 0)}
           </Text>
         </View>
         <View

@@ -80,15 +80,15 @@ export default function WorkerHomeScreen() {
   const isAuthenticated = useIsAuthenticated();
   const selectedLocation = locationCoordinates
     ? {
-        latitude: locationCoordinates[1],
-        longitude: locationCoordinates[0],
-      }
+      latitude: locationCoordinates[1],
+      longitude: locationCoordinates[0],
+    }
     : workerLocation;
   const selectedSearchLocation = locationCoordinates
     ? {
-        latitude: locationCoordinates[1],
-        longitude: locationCoordinates[0],
-      }
+      latitude: locationCoordinates[1],
+      longitude: locationCoordinates[0],
+    }
     : null;
   const hasWorkerLocation = Boolean(selectedLocation);
 
@@ -100,10 +100,10 @@ export default function WorkerHomeScreen() {
       status: "POSTED",
       ...(selectedLocation
         ? {
-            latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude,
-            radius: maxDistanceMiles,
-          }
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          radius: maxDistanceMiles,
+        }
         : {}),
       ...(minRatePerDay !== 120
         ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
@@ -118,10 +118,10 @@ export default function WorkerHomeScreen() {
     status: "POSTED",
     ...(selectedSearchLocation
       ? {
-          latitude: selectedSearchLocation.latitude,
-          longitude: selectedSearchLocation.longitude,
-          radius: maxDistanceMiles,
-        }
+        latitude: selectedSearchLocation.latitude,
+        longitude: selectedSearchLocation.longitude,
+        radius: maxDistanceMiles,
+      }
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
   });

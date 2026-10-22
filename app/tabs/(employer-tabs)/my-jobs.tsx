@@ -111,12 +111,15 @@ export default function EmployerMyJobsScreen() {
       : activeTab === "active"
         ? "ACTIVE"
         : "COMPLETED";
-  const jobsQuery = useGetMyJobsQuery({
-    page,
-    limit: 10,
-    status: requestedStatus,
-    ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
-  });
+  const jobsQuery = useGetMyJobsQuery(
+    {
+      page,
+      limit: 10,
+      status: requestedStatus,
+      ...(trimmedSearchQuery ? { searchTerm: trimmedSearchQuery } : {}),
+    },
+    { refetchOnMountOrArgChange: true }
+  );
   const [deleteJob] = useDeleteJobMutation();
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -158,6 +161,7 @@ export default function EmployerMyJobsScreen() {
 
   useEffect(() => {
     setPage(1);
+    setJobs([]);
   }, [activeTab, trimmedSearchQuery]);
 
   // console.log("jobsQuery: ", jobsQuery);
@@ -222,16 +226,19 @@ export default function EmployerMyJobsScreen() {
   const removeJob = (jobId: string) => setJobToDelete(jobId);
   const confirmRemoveJob = async () => {
     if (!jobToDelete) return;
+    const targetId = jobToDelete;
     setIsDeleting(true);
     try {
-      await deleteJob(jobToDelete).unwrap();
+      await deleteJob(targetId).unwrap();
+      setJobs((current) => current.filter((job) => job.id !== targetId));
       Toast.show({
         type: "success",
         text1: "Job deleted",
         text2: "The job posting was deleted.",
       });
       setJobToDelete(null);
-      void jobsQuery.refetch();
+      setPage(1);
+      await jobsQuery.refetch();
     } catch (error: any) {
       console.error("Error deleting job:", error);
       Toast.show({

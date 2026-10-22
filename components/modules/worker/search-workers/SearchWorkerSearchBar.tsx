@@ -12,11 +12,11 @@ export default function SearchWorkerSearchBar({
   setShowFilters: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   return (
-    <View className="px-5 pt-4 pb-2 flex-row gap-3 items-center z-10">
-      <View className="flex-1 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-4 py-0">
-        <Search size={18} color="#A3A3A3" className="mr-2" />
+    <View className="px-5 pt-3 pb-2 flex-row gap-2.5 items-center z-10">
+      <View className="flex-1 h-10 flex-row items-center bg-white border border-neutral-200/80 rounded-xl px-3.5">
+        <Search size={16} color="#A3A3A3" className="mr-2" />
         <TextInput
-          className="flex-1 text-neutral-800 text-sm font-medium py-0"
+          className="flex-1 h-full text-neutral-800 text-sm font-medium py-0 focus:outline-none"
           placeholder="Search workers or location"
           placeholderTextColor="#A3A3A3"
           value={searchQuery}
@@ -26,9 +26,9 @@ export default function SearchWorkerSearchBar({
 
       <TouchableOpacity
         onPress={() => setShowFilters(true)}
-        className="w-12 h-12 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-80"
+        className="w-10 h-10 bg-white border border-neutral-200/80 rounded-xl items-center justify-center active:opacity-80"
       >
-        <SlidersHorizontal size={18} color="#333333" />
+        <SlidersHorizontal size={16} color="#333333" />
       </TouchableOpacity>
     </View>
   );

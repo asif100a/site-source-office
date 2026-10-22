@@ -74,6 +74,12 @@ export const jobApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: [tagTypes.job, tagTypes.meta],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(jobApi.util.invalidateTags([tagTypes.job, tagTypes.meta]));
+        } catch {}
+      },
     }),
     getAllJobs: builder.query<any, JobArgs>({
       query: (args) => {

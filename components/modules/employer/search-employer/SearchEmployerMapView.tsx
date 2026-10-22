@@ -253,7 +253,7 @@ export default function SearchEmployerMapView({
                 <Text className="text-sm font-semibold text-neutral-700">
                   {featuredJob.startDateLabel ?? featuredJob.startLabel} -{" "}
                   {featuredJob.endDateLabel ?? "End date not set"} -{" "}
-                  {formatWorkersNeeded(featuredJob.workersNeeded)}
+                  {formatWorkersNeeded((featuredJob as any).workersNeeded?.[0]?.howMany ?? 0)}
                 </Text>
                 {featuredJob.workingHoursLabel ? (
                   <Text className="text-xs font-medium leading-5 text-neutral-500">

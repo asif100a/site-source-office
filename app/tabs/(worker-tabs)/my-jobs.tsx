@@ -44,11 +44,17 @@ export default function MyJobsScreen() {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [offersHasNextPage, setOffersHasNextPage] = useState(false);
   const [acceptingOfferIds, setAcceptingOfferIds] = useState<string[]>([]);
-  const appliedJobsQuery = useGetAppliedJobsQuery({ page, limit: 10 });
-  const myOffersQuery = useGetReceivedJobOffersQuery({
-    page: offersPage,
-    limit: 10,
-  });
+  const appliedJobsQuery = useGetAppliedJobsQuery(
+    { page, limit: 10 },
+    { refetchOnMountOrArgChange: true }
+  );
+  const myOffersQuery = useGetReceivedJobOffersQuery(
+    {
+      page: offersPage,
+      limit: 10,
+    },
+    { refetchOnMountOrArgChange: true }
+  );
   const [updateJobOfferStatus] = useUpdateJobOfferStatusMutation();
   // console.log("appliedJobsQuery from the my jobs screen: ", appliedJobsQuery);
 
