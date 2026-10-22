@@ -41,7 +41,7 @@ const getEmployerJobDetails = (jobDetails: any) => ({
     DEFAULT_EMPLOYER_JOB_DETAILS.company,
   statusBadge: jobDetails?.status ?? DEFAULT_EMPLOYER_JOB_DETAILS.statusBadge,
   location: getLocationLabel(jobDetails),
-  team: `${jobDetails?.workersNeeded ?? "No"} workers needed`,
+  team: `${jobDetails?.workersNeeded?.[0]?.howMany ?? "No"} workers needed`,
   duration: `${formatDate(jobDetails?.startDate)} - ${formatDate(jobDetails?.endDate)}`,
 });
 

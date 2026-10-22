@@ -32,10 +32,10 @@ export default function CompletedJobDetailScreen() {
   const singleJobQuery = useGetSingleJobQuery(jobId ?? "", {
     skip: !jobId,
   });
-  console.log("singleJobQuery from the completed job details screen: ", singleJobQuery);
+  // console.log("singleJobQuery from the completed job details screen: ", singleJobQuery);
   const rawJob = getSingleJobData(singleJobQuery.data);
   const jobDetails = rawJob ? mapSingleJobToActiveJobDetails(rawJob) : null;
-  console.log("jobDetails from the completed job details screen: ", jobDetails);
+  // console.log("jobDetails from the completed job details screen: ", jobDetails);
 
   const [activeSubTab, setActiveSubTab] = useState<"schedule" | "summary">(
     "schedule",

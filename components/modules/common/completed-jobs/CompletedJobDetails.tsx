@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
 import React from "react";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
 
@@ -11,7 +11,7 @@ export default function CompletedJobDetails({ jobDetails }: { jobDetails: any })
             <Briefcase size={22} color="#FFFFFF" />
           </View>
           <View>
-            <Text className="text-neutral-950 font-extrabold text-base">
+            <Text className="text-neutral-950 font-extrabold text-base" style={Platform.OS === 'ios' ? { maxWidth: 200 } : { maxWidth: 160 }}>
               {jobDetails.title}
             </Text>
             <Text className="text-neutral-500 text-xs font-semibold">

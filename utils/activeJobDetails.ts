@@ -100,7 +100,7 @@ export const mapSingleJobToActiveJobDetails = (
     company: employerProfile?.name ?? DEFAULT_ACTIVE_JOB_DETAILS.company,
     statusBadge: job?.status ?? DEFAULT_ACTIVE_JOB_DETAILS.statusBadge,
     location: getLocationLabel(job),
-    team: `${job?.workersNeeded ?? "No"} workers needed`,
+    team: `${job?.workersNeeded?.[0]?.howMany ?? "No"} workers needed`,
     duration: `${formatDate(job?.startDate)} - ${formatDate(job?.endDate)}`,
     contactName: employerProfile?.name ?? DEFAULT_ACTIVE_JOB_DETAILS.contactName,
     contactTitle: trades.length ? trades.join(", ") : "Employer",

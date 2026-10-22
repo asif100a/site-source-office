@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View, Text, Platform } from "react-native";
 import React from "react";
 import { Briefcase, Calendar, MapPin, Users } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
@@ -14,7 +14,9 @@ const formatDate = (value: unknown) => {
 };
 
 const formatStatus = (value: unknown) => {
-  const status = String(value ?? "Active").replace(/_/g, " ").toLowerCase();
+  const status = String(value ?? "Active")
+    .replace(/_/g, " ")
+    .toLowerCase();
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
@@ -35,8 +37,8 @@ const getLocationLabel = (jobDetails: any) => {
   return jobDetails?.location?.address ?? "Location not available";
 };
 
-export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
-  const workersNeeded = Number(jobDetails?.workersNeeded ?? 0);
+export default function WorkerJobDetails({ jobDetails }: { jobDetails: any }) {
+  const workersNeeded = Number(jobDetails?.workersNeeded?.[0]?.howMany ?? 0);
   const teamLabel = `${workersNeeded} worker${workersNeeded === 1 ? "" : "s"} needed`;
   const durationLabel = `${formatDate(jobDetails?.startDate)} - ${formatDate(
     jobDetails?.endDate,
@@ -50,7 +52,12 @@ export default function WorkerJobDetails({jobDetails}: {jobDetails: any}) {
             <Briefcase size={22} color="#FFFFFF" />
           </View>
           <View>
-            <Text className="text-neutral-950 font-extrabold text-base">
+            <Text
+              className="text-neutral-950 font-extrabold text-base"
+              style={
+                Platform.OS === "ios" ? { maxWidth: 200 } : { maxWidth: 160 }
+              }
+            >
               {jobDetails?.title ?? "Active job"}
             </Text>
             <Text className="text-neutral-500 text-xs font-semibold">
