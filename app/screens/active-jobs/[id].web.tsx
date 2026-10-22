@@ -1365,6 +1365,7 @@ export default function ActiveJobDetailWebScreen() {
         setShowSupportModal={setShowSupportModal}
         supportModalState={supportModalState}
         setSupportModalState={setSupportModalState}
+        presentation="dialog"
       />
 
       {showApprovalPanel ? (

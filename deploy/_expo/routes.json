@@ -141,6 +141,12 @@
       "routeKeys": {}
     },
     {
+      "file": "./apple-callback.tsx",
+      "page": "/apple-callback",
+      "namedRegex": "^/apple\\-callback(?:/)?$",
+      "routeKeys": {}
+    },
+    {
       "file": "./screens/profile/rating-feedback.web.tsx",
       "page": "/screens/profile/rating-feedback",
       "namedRegex": "^/screens/profile/rating\\-feedback(?:/)?$",

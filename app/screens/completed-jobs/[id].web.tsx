@@ -307,7 +307,7 @@ function WorkSummaryCard({ job }: { job?: any }) {
     <View className="rounded-[24px] border border-neutral-200 bg-white p-5 md:p-6">
       <SectionTitle title="Work Summary" />
       <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white">
-        {rows.map((item, index) => (
+        {rows.map((item: any, index: number) => (
           <View
             key={`${item.week}-${index}`}
             className={`flex-row items-center justify-between p-4 ${
@@ -700,7 +700,7 @@ export default function CompletedJobDetailWebScreen() {
                     </View>
                   </View>
 
-                  <ActionCard
+                  {/* <ActionCard
                     onSupport={handleOpenSupport}
                     onBack={handleBack}
                   />
@@ -719,7 +719,7 @@ export default function CompletedJobDetailWebScreen() {
                       </Text>
                     </View>
                     <Headphones size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               </View>
             )}
