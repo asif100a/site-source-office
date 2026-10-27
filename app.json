@@ -25,7 +25,12 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.118495294702-fd8gvl8mjj07tk72msmjnm1cfh1hgmm4"
+        }
+      ],
       "expo-web-browser",
       "expo-font",
       "@react-native-community/datetimepicker",
