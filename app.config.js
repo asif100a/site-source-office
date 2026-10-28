@@ -72,9 +72,62 @@ function withReactNativeMapsPlugin(plugins, googleMapsApiKey) {
   });
 }
 
+function getReversedGoogleClientId(clientId) {
+  if (!clientId) return undefined;
+  if (clientId.startsWith("com.googleusercontent.apps.")) {
+    return clientId;
+  }
+  const match = clientId.match(/^([\w-]+)\.apps\.googleusercontent\.com$/);
+  if (match) {
+    return `com.googleusercontent.apps.${match[1]}`;
+  }
+  return clientId;
+}
+
+function withGoogleSignInPlugin(plugins, iosClientId) {
+  const reversedScheme = getReversedGoogleClientId(iosClientId);
+  if (!reversedScheme) {
+    return plugins;
+  }
+
+  const googlePlugin = [
+    "@react-native-google-signin/google-signin",
+    {
+      iosUrlScheme: reversedScheme,
+    },
+  ];
+
+  const hasPlugin = plugins.some((plugin) =>
+    Array.isArray(plugin)
+      ? plugin[0] === "@react-native-google-signin/google-signin"
+      : plugin === "@react-native-google-signin/google-signin",
+  );
+
+  if (!hasPlugin) {
+    return [...plugins, googlePlugin];
+  }
+
+  return plugins.map((plugin) => {
+    if (Array.isArray(plugin) && plugin[0] === "@react-native-google-signin/google-signin") {
+      return [
+        "@react-native-google-signin/google-signin",
+        {
+          ...(plugin[1] || {}),
+          iosUrlScheme: (plugin[1] && plugin[1].iosUrlScheme) || reversedScheme,
+        },
+      ];
+    }
+    if (plugin === "@react-native-google-signin/google-signin") {
+      return googlePlugin;
+    }
+    return plugin;
+  });
+}
+
 const googleMapsApiKey =
   getEnvValue("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY") ||
   getEnvValue("GOOGLE_MAPS_API_KEY");
+const googleIosClientId = getEnvValue("EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID");
 const googleServicesFile = path.join(__dirname, "google-services.json");
 const hasGoogleServicesFile = fs.existsSync(googleServicesFile);
 const envEasProjectId = getEnvValue("EXPO_PUBLIC_EAS_PROJECT_ID");
@@ -82,7 +135,10 @@ const easProjectId = envEasProjectId && isUuid(envEasProjectId) ? envEasProjectI
 
 module.exports = ({ config }) => ({
   ...config,
-  plugins: withReactNativeMapsPlugin(config.plugins || [], googleMapsApiKey),
+  plugins: withGoogleSignInPlugin(
+    withReactNativeMapsPlugin(config.plugins || [], googleMapsApiKey),
+    googleIosClientId,
+  ),
   extra: {
     ...config.extra,
     ...(googleMapsApiKey ? { googleMapsApiKey } : {}),
