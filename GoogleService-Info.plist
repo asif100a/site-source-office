@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyAbCVIwLiJdZnEiVkquKswEp6XDaKyNhQ8</string>
+	<string>AIzaSyA8cD8ACxOvW-dUcaUUGdsRa89JK30xk2w</string>
 	<key>GCM_SENDER_ID</key>
 	<string>735271374976</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.sitesource.app</string>
+	<string>com.sitesourceuser.app</string>
 	<key>PROJECT_ID</key>
 	<string>site-source-a3208</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:735271374976:ios:d6911acce026f0400ed665</string>
+	<string>1:735271374976:ios:db8eb3e4872580770ed665</string>
 </dict>
 </plist>
