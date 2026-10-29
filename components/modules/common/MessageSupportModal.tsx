@@ -324,7 +324,7 @@ export default function MessageSupportModal({
           }}
         >
           <TouchableWithoutFeedback onPress={handleBackdropPress}>
-            <View style={StyleSheet.absoluteFillObject} />
+            <View style={StyleSheet.absoluteFill} />
           </TouchableWithoutFeedback>
 
           {supportModalState === "form" ? (

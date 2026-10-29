@@ -282,9 +282,8 @@ export default function EditProfileScreen() {
           className="h-14 flex-row items-center justify-between rounded-xl border border-neutral-200 bg-white px-4"
         >
           <Text
-            className={`text-sm font-semibold ${
-              displayValue ? "text-neutral-900" : "text-neutral-400"
-            }`}
+            className={`text-sm font-semibold ${displayValue ? "text-neutral-900" : "text-neutral-400"
+              }`}
           >
             {displayValue || "Select trade / skill"}
           </Text>
@@ -307,16 +306,14 @@ export default function EditProfileScreen() {
                     });
                     setOpenField(null);
                   }}
-                  className={`min-h-[48px] justify-center px-4 ${
-                    selected ? "bg-[#FFF5F2]" : "bg-white"
-                  }`}
+                  className={`min-h-[48px] justify-center px-4 ${selected ? "bg-[#FFF5F2]" : "bg-white"
+                    }`}
                 >
                   <Text
-                    className={`text-sm ${
-                      selected
+                    className={`text-sm ${selected
                         ? "font-bold text-[#FF5500]"
                         : "font-medium text-neutral-800"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </Text>
@@ -334,8 +331,8 @@ export default function EditProfileScreen() {
       ...(data.fullName.trim() ? { name: data.fullName.trim() } : {}),
       ...(isWorker
         ? {
-            trades: data.trade ? [data.trade] : [],
-          }
+          trades: data.trade ? [data.trade] : [],
+        }
         : {}),
     };
 
@@ -501,7 +498,8 @@ export default function EditProfileScreen() {
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setIsPhotoModalOpen(false)}
-          className="flex-1 bg-black/60 justify-end"
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "#0000004d" }}
         >
           <TouchableOpacity
             activeOpacity={1}

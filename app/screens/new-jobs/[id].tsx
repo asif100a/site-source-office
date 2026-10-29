@@ -15,7 +15,7 @@ export default function NewJobDetailsScreen() {
   const [createJobApplication, { isLoading: isApplying }] =
     useCreateJobApplicationMutation();
 
-  console.log("jobId from the new job details screen: ", jobId);
+  // console.log("jobId from the new job details screen: ", jobId);
 
   const handleApply = () => {
     if (!jobId) return;

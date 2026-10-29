@@ -43,6 +43,10 @@ export type JobArgs = {
   longitude?: number;
   startDateFrom?: string;
   startDateTo?: string;
+  endDateFrom?: string;
+  endDateTo?: string;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 const BASE_POINT = "/jobs";
