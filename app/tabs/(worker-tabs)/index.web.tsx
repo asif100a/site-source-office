@@ -41,6 +41,24 @@ import { useIsAuthenticated } from "@/hooks/useAuthGuard";
 import { getWorkerMapPosition, getWorkerMapRegion } from "@/utils/workerMapJobs";
 import JobLocationPicker from "@/components/modules/employer/home/JobLocationPicker";
 import type { AddressDetails } from "@/utils/googlePlaces";
+import { type DateRangeValue } from "@/components/modules/common/DateRangeCalendar";
+
+const formatQueryDate = (
+  date?: Date,
+  bound: "start" | "end" = "start",
+): string | undefined => {
+  if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  if (bound === "start") {
+    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0)).toISOString();
+  }
+  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999)).toISOString();
+};
 
 const MAP_JOBS_LIMIT = 100;
 const ALL_JOBS_LIMIT = 10;
@@ -84,6 +102,14 @@ export default function WorkerHomeScreen() {
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
   const [debouncedMaxDistanceMiles, setDebouncedMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
+
+  // Date and price filter states
+  const [startDateRange, setStartDateRange] = useState<DateRangeValue>({});
+  const [endDateRange, setEndDateRange] = useState<DateRangeValue>({});
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | null>(null);
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState<number | null>(null);
   const [allJobsPage, setAllJobsPage] = useState(1);
   const [allJobs, setAllJobs] = useState<WorkerHomeJob[]>([]);
   const [mapJobs, setMapJobs] = useState<WorkerHomeJob[]>([]);
@@ -122,6 +148,39 @@ export default function WorkerHomeScreen() {
     return () => clearTimeout(timeoutId);
   }, [maxDistanceMiles]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [minPrice]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMaxPrice(maxPrice);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [maxPrice]);
+
+  const startDateFrom = useMemo(
+    () => formatQueryDate(startDateRange.from, "start"),
+    [startDateRange.from],
+  );
+  const startDateTo = useMemo(
+    () => formatQueryDate(startDateRange.to, "end"),
+    [startDateRange.to],
+  );
+  const endDateFrom = useMemo(
+    () => formatQueryDate(endDateRange.from, "start"),
+    [endDateRange.from],
+  );
+  const endDateTo = useMemo(
+    () => formatQueryDate(endDateRange.to, "end"),
+    [endDateRange.to],
+  );
+
   // Location search uses selected coordinates from Google Places, not text search.
   const mapJobsQuery = useGetWorkersMapsJobsQuery(
     {
@@ -135,9 +194,16 @@ export default function WorkerHomeScreen() {
             radius: debouncedMaxDistanceMiles,
           }
         : {}),
-      ...(minRatePerDay !== 120
-        ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
+      ...(debouncedMinPrice != null && debouncedMinPrice > 0
+        ? { minPrice: debouncedMinPrice }
         : {}),
+      ...(debouncedMaxPrice != null && debouncedMaxPrice > 0
+        ? { maxPrice: debouncedMaxPrice }
+        : {}),
+      ...(startDateFrom ? { startDateFrom } : {}),
+      ...(startDateTo ? { startDateTo } : {}),
+      ...(endDateFrom ? { endDateFrom } : {}),
+      ...(endDateTo ? { endDateTo } : {}),
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
     { skip: locationPermission === "checking" },
@@ -531,11 +597,25 @@ export default function WorkerHomeScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
+        startDateRange={startDateRange}
+        onStartDateRangeChange={setStartDateRange}
+        endDateRange={endDateRange}
+        onEndDateRangeChange={setEndDateRange}
+        minPrice={minPrice}
+        onMinPriceChange={setMinPrice}
+        maxPrice={maxPrice}
+        onMaxPriceChange={setMaxPrice}
         resultCount={filteredMapJobs.length}
         onReset={() => {
           setSelectedTrade("");
           setMaxDistanceMiles(5);
           setMinRatePerDay(120);
+          setStartDateRange({});
+          setEndDateRange({});
+          setMinPrice(null);
+          setMaxPrice(null);
+          setDebouncedMinPrice(null);
+          setDebouncedMaxPrice(null);
         }}
       />
 

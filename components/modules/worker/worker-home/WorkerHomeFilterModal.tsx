@@ -57,8 +57,8 @@ function FilterBody({
   onSelectedTradeChange,
   maxDistanceMiles,
   onMaxDistanceMilesChange,
-  minRatePerDay,
-  onMinRatePerDayChange,
+  minRatePerDay: _minRatePerDay,
+  onMinRatePerDayChange: _onMinRatePerDayChange,
   resultCount,
   startDateRange,
   onStartDateRangeChange,
@@ -72,14 +72,58 @@ function FilterBody({
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null);
   const [isAdjustingRange, setIsAdjustingRange] = useState(false);
 
+  // Internal state fallbacks so filters are always fully functional even if not provided externally
+  const [internalStartDateRange, setInternalStartDateRange] = useState<DateRangeValue>({});
+  const [internalEndDateRange, setInternalEndDateRange] = useState<DateRangeValue>({});
+  const [internalMinPrice, setInternalMinPrice] = useState<number | null>(null);
+  const [internalMaxPrice, setInternalMaxPrice] = useState<number | null>(null);
+
+  const effectiveStartDateRange = startDateRange ?? internalStartDateRange;
+  const effectiveEndDateRange = endDateRange ?? internalEndDateRange;
+  const effectiveMinPrice = minPrice !== undefined ? minPrice : internalMinPrice;
+  const effectiveMaxPrice = maxPrice !== undefined ? maxPrice : internalMaxPrice;
+
+  const handleStartDateChange = (range: DateRangeValue) => {
+    setInternalStartDateRange(range);
+    onStartDateRangeChange?.(range);
+  };
+
+  const handleEndDateChange = (range: DateRangeValue) => {
+    setInternalEndDateRange(range);
+    onEndDateRangeChange?.(range);
+  };
+
+  const handleMinPriceChange = (price: number | null) => {
+    setInternalMinPrice(price);
+    onMinPriceChange?.(price);
+  };
+
+  const handleMaxPriceChange = (price: number | null) => {
+    setInternalMaxPrice(price);
+    onMaxPriceChange?.(price);
+  };
+
+  const handleReset = () => {
+    setInternalStartDateRange({});
+    setInternalEndDateRange({});
+    setInternalMinPrice(null);
+    setInternalMaxPrice(null);
+    setOpenPanel(null);
+    onReset();
+  };
+
   return (
     <View
       className={`bg-white ${
         isWeb
           ? "w-full max-w-[760px] overflow-hidden rounded-[32px] border border-neutral-200/80 shadow-2xl"
-          : "rounded-t-[28px] px-5 pb-6 pt-3 max-h-[90%]"
+          : "rounded-t-[28px] px-5 pt-3"
       }`}
-      style={isWeb ? ({ maxHeight: "88vh" } as any) : undefined}
+      style={
+        isWeb
+          ? ({ maxHeight: "88vh" } as any)
+          : { maxHeight: "90%", height: "85%", display: "flex", flexDirection: "column" }
+      }
     >
       {isWeb ? (
         <View className="flex-row items-start justify-between border-b border-neutral-200/80 px-6 py-5">
@@ -94,7 +138,7 @@ function FilterBody({
 
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
-              onPress={onReset}
+              onPress={handleReset}
               className="rounded-full bg-neutral-100 px-3 py-2"
             >
               <Text className="text-sm font-bold text-neutral-700">Reset</Text>
@@ -114,17 +158,21 @@ function FilterBody({
       <ScrollView
         scrollEnabled={!isAdjustingRange}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: isWeb ? 0 : 8 }}
-        style={isWeb ? ({ maxHeight: "calc(88vh - 180px)" } as any) : undefined}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ paddingBottom: 28 }}
+        style={
+          isWeb
+            ? ({ maxHeight: "calc(88vh - 180px)" } as any)
+            : { flex: 1 }
+        }
       >
         <View className={isWeb ? "px-6 py-5" : ""}>
           {!isWeb ? (
-            <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center justify-between mb-2">
               <Text className="text-[22px] font-bold text-neutral-950">
                 Filter jobs
               </Text>
-              <TouchableOpacity onPress={onReset}>
+              <TouchableOpacity onPress={handleReset}>
                 <Text
                   className="text-sm font-bold"
                   style={{ color: Colors.common.BRAND }}
@@ -144,8 +192,9 @@ function FilterBody({
             </View>
           )}
 
-          <View className="mt-5">
-            <Text className="mb-3 text-xs font-bold uppercase tracking-[1px] text-neutral-400">
+          {/* 1. TRADE SECTION */}
+          <View className="mt-4">
+            <Text className="mb-2.5 text-xs font-bold uppercase tracking-[1px] text-neutral-400">
               Trade
             </Text>
             <TouchableOpacity
@@ -221,8 +270,131 @@ function FilterBody({
             ) : null}
           </View>
 
-          <View className="mt-5">
-            <View className="mb-3 flex-row items-center justify-between">
+          {/* 2. RATE / PRICE (£) FILTER SECTION */}
+          <View className="mt-6">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
+                Rate / Price (£)
+              </Text>
+              {effectiveMinPrice != null || effectiveMaxPrice != null ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    handleMinPriceChange(null);
+                    handleMaxPriceChange(null);
+                  }}
+                >
+                  <Text className="text-xs font-bold text-[#FF5500]">
+                    Clear
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <Text className="text-sm font-bold text-neutral-900 mb-3">
+              {effectiveMinPrice != null && effectiveMaxPrice != null
+                ? `£${effectiveMinPrice} - £${effectiveMaxPrice}/hr`
+                : effectiveMinPrice != null
+                ? `From £${effectiveMinPrice}/hr`
+                : effectiveMaxPrice != null
+                ? `Up to £${effectiveMaxPrice}/hr`
+                : "Any rate"}
+            </Text>
+
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1">
+                <Text className="text-[11px] font-semibold text-neutral-500 mb-1">
+                  Min (£/hr)
+                </Text>
+                <View className="flex-row items-center rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
+                  <Text className="text-neutral-500 font-bold text-sm mr-1">
+                    £
+                  </Text>
+                  <TextInput
+                    className="flex-1 text-sm font-semibold text-neutral-900 py-0"
+                    placeholder="Min"
+                    placeholderTextColor="#A3A3A3"
+                    keyboardType="numeric"
+                    value={effectiveMinPrice != null ? String(effectiveMinPrice) : ""}
+                    onChangeText={(text) => {
+                      const val = text.replace(/[^0-9]/g, "");
+                      handleMinPriceChange(val ? Number(val) : null);
+                    }}
+                  />
+                </View>
+              </View>
+
+              <Text className="text-neutral-300 font-bold mt-5">—</Text>
+
+              <View className="flex-1">
+                <Text className="text-[11px] font-semibold text-neutral-500 mb-1">
+                  Max (£/hr)
+                </Text>
+                <View className="flex-row items-center rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
+                  <Text className="text-neutral-500 font-bold text-sm mr-1">
+                    £
+                  </Text>
+                  <TextInput
+                    className="flex-1 text-sm font-semibold text-neutral-900 py-0"
+                    placeholder="Max"
+                    placeholderTextColor="#A3A3A3"
+                    keyboardType="numeric"
+                    value={effectiveMaxPrice != null ? String(effectiveMaxPrice) : ""}
+                    onChangeText={(text) => {
+                      const val = text.replace(/[^0-9]/g, "");
+                      handleMaxPriceChange(val ? Number(val) : null);
+                    }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {[
+                { label: "Any", min: null, max: null },
+                { label: "£15+", min: 15, max: null },
+                { label: "£20+", min: 20, max: null },
+                { label: "£25+", min: 25, max: null },
+                { label: "£30+", min: 30, max: null },
+                { label: "£40+", min: 40, max: null },
+                { label: "£50+", min: 50, max: null },
+              ].map((preset) => {
+                const isSelected =
+                  preset.min === effectiveMinPrice &&
+                  (preset.max === effectiveMaxPrice ||
+                    (preset.max === null && effectiveMaxPrice == null));
+
+                return (
+                  <TouchableOpacity
+                    key={preset.label}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      handleMinPriceChange(preset.min);
+                      handleMaxPriceChange(preset.max);
+                    }}
+                    className={`rounded-full px-3.5 py-1.5 border ${
+                      isSelected
+                        ? "bg-[#FFF5F2] border-[#FF5500]"
+                        : "bg-neutral-50 border-neutral-200"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        isSelected
+                          ? "font-bold text-[#FF5500]"
+                          : "font-medium text-neutral-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* 3. DISTANCE SECTION */}
+          <View className="mt-6">
+            <View className="mb-2 flex-row items-center justify-between">
               <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
                 Distance
               </Text>
@@ -248,329 +420,202 @@ function FilterBody({
             </View>
           </View>
 
-          {/* Job Dates filter section */}
-          {onStartDateRangeChange || onEndDateRangeChange ? (
-            <View className="mt-6">
-              <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
-                  Job Dates
-                </Text>
-                {startDateRange?.from || endDateRange?.from ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      onStartDateRangeChange?.({});
-                      onEndDateRangeChange?.({});
-                    }}
-                  >
-                    <Text className="text-xs font-bold text-[#FF5500]">
-                      Clear all dates
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <Text className="text-[11px] font-medium text-neutral-500 mb-3">
-                The jobs that come up start / finish within these timeframes.
+          {/* 4. JOB DATES FILTER SECTION */}
+          <View className="mt-6">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
+                Job Dates
               </Text>
-
-              {/* Start Date Timeframe Card */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() =>
-                  setOpenPanel((current) =>
-                    current === "startDate" ? null : "startDate",
-                  )
-                }
-                className={`rounded-2xl border p-3.5 flex-row items-center justify-between ${
-                  openPanel === "startDate"
-                    ? "border-[#FF5500] bg-orange-50/20"
-                    : startDateRange?.from
-                    ? "border-orange-200 bg-orange-50/10"
-                    : "border-neutral-200 bg-white"
-                }`}
-              >
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View
-                    className={`w-9 h-9 rounded-xl items-center justify-center ${
-                      startDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
-                    }`}
-                  >
-                    <Calendar
-                      size={18}
-                      color={startDateRange?.from ? "#FFFFFF" : "#737373"}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                      Starts between
-                    </Text>
-                    <Text
-                      className={`text-sm font-semibold mt-0.5 ${
-                        startDateRange?.from
-                          ? "text-[#FF5500]"
-                          : "text-neutral-800"
-                      }`}
-                    >
-                      {formatDateRange(startDateRange ?? {}, "Any start date")}
-                    </Text>
-                  </View>
-                </View>
-                <View className="flex-row items-center gap-2">
-                  {startDateRange?.from ? (
-                    <TouchableOpacity
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        onStartDateRangeChange?.({});
-                      }}
-                      className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
-                    >
-                      <Text className="text-xs font-bold text-neutral-600">
-                        Clear
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  <ChevronDown
-                    size={18}
-                    color="#999999"
-                    style={{
-                      transform: [
-                        {
-                          rotate:
-                            openPanel === "startDate" ? "180deg" : "0deg",
-                        },
-                      ],
-                    }}
-                  />
-                </View>
-              </TouchableOpacity>
-
-              {openPanel === "startDate" && onStartDateRangeChange ? (
-                <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
-                  <DateRangeCalendar
-                    value={startDateRange ?? {}}
-                    onChange={(val) => onStartDateRangeChange(val)}
-                    onClear={() => onStartDateRangeChange({})}
-                    summaryEmptyLabel="Select start date window"
-                    helperText="Jobs starting within this timeframe will be shown."
-                    minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
-                  />
-                </View>
-              ) : null}
-
-              {/* Finish Date Timeframe Card */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() =>
-                  setOpenPanel((current) =>
-                    current === "endDate" ? null : "endDate",
-                  )
-                }
-                className={`mt-2.5 rounded-2xl border p-3.5 flex-row items-center justify-between ${
-                  openPanel === "endDate"
-                    ? "border-[#FF5500] bg-orange-50/20"
-                    : endDateRange?.from
-                    ? "border-orange-200 bg-orange-50/10"
-                    : "border-neutral-200 bg-white"
-                }`}
-              >
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View
-                    className={`w-9 h-9 rounded-xl items-center justify-center ${
-                      endDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
-                    }`}
-                  >
-                    <CalendarDays
-                      size={18}
-                      color={endDateRange?.from ? "#FFFFFF" : "#737373"}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                      Finishes between
-                    </Text>
-                    <Text
-                      className={`text-sm font-semibold mt-0.5 ${
-                        endDateRange?.from
-                          ? "text-[#FF5500]"
-                          : "text-neutral-800"
-                      }`}
-                    >
-                      {formatDateRange(endDateRange ?? {}, "Any finish date")}
-                    </Text>
-                  </View>
-                </View>
-                <View className="flex-row items-center gap-2">
-                  {endDateRange?.from ? (
-                    <TouchableOpacity
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        onEndDateRangeChange?.({});
-                      }}
-                      className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
-                    >
-                      <Text className="text-xs font-bold text-neutral-600">
-                        Clear
-                      </Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  <ChevronDown
-                    size={18}
-                    color="#999999"
-                    style={{
-                      transform: [
-                        { rotate: openPanel === "endDate" ? "180deg" : "0deg" },
-                      ],
-                    }}
-                  />
-                </View>
-              </TouchableOpacity>
-
-              {openPanel === "endDate" && onEndDateRangeChange ? (
-                <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
-                  <DateRangeCalendar
-                    value={endDateRange ?? {}}
-                    onChange={(val) => onEndDateRangeChange(val)}
-                    onClear={() => onEndDateRangeChange({})}
-                    summaryEmptyLabel="Select finish date window"
-                    helperText="Jobs finishing within this timeframe will be shown."
-                    minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
-                  />
-                </View>
+              {effectiveStartDateRange?.from || effectiveEndDateRange?.from ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    handleStartDateChange({});
+                    handleEndDateChange({});
+                  }}
+                >
+                  <Text className="text-xs font-bold text-[#FF5500]">
+                    Clear all dates
+                  </Text>
+                </TouchableOpacity>
               ) : null}
             </View>
-          ) : null}
+            <Text className="text-[11px] font-medium text-neutral-500 mb-3">
+              The jobs that come up start / finish within these timeframes.
+            </Text>
 
-          {/* Rate / Price (£) filter section */}
-          {onMinPriceChange || onMaxPriceChange ? (
-            <View className="mt-6">
-              <View className="mb-2 flex-row items-center justify-between">
-                <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
-                  Rate / Price (£)
-                </Text>
-                {minPrice != null || maxPrice != null ? (
-                  <TouchableOpacity
-                    onPress={() => {
-                      onMinPriceChange?.(null);
-                      onMaxPriceChange?.(null);
-                    }}
+            {/* Start Date Timeframe Card */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                setOpenPanel((current) =>
+                  current === "startDate" ? null : "startDate",
+                )
+              }
+              className={`rounded-2xl border p-3.5 flex-row items-center justify-between ${
+                openPanel === "startDate"
+                  ? "border-[#FF5500] bg-orange-50/20"
+                  : effectiveStartDateRange?.from
+                  ? "border-orange-200 bg-orange-50/10"
+                  : "border-neutral-200 bg-white"
+              }`}
+            >
+              <View className="flex-row items-center gap-3 flex-1">
+                <View
+                  className={`w-9 h-9 rounded-xl items-center justify-center ${
+                    effectiveStartDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
+                  }`}
+                >
+                  <Calendar
+                    size={18}
+                    color={effectiveStartDateRange?.from ? "#FFFFFF" : "#737373"}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Starts between
+                  </Text>
+                  <Text
+                    className={`text-sm font-semibold mt-0.5 ${
+                      effectiveStartDateRange?.from
+                        ? "text-[#FF5500]"
+                        : "text-neutral-800"
+                    }`}
                   >
-                    <Text className="text-xs font-bold text-[#FF5500]">
+                    {formatDateRange(effectiveStartDateRange ?? {}, "Any start date")}
+                  </Text>
+                </View>
+              </View>
+              <View className="flex-row items-center gap-2">
+                {effectiveStartDateRange?.from ? (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleStartDateChange({});
+                    }}
+                    className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
+                  >
+                    <Text className="text-xs font-bold text-neutral-600">
                       Clear
                     </Text>
                   </TouchableOpacity>
                 ) : null}
+                <ChevronDown
+                  size={18}
+                  color="#999999"
+                  style={{
+                    transform: [
+                      {
+                        rotate:
+                          openPanel === "startDate" ? "180deg" : "0deg",
+                      },
+                    ],
+                  }}
+                />
               </View>
+            </TouchableOpacity>
 
-              <Text className="text-sm font-bold text-neutral-900 mb-3">
-                {minPrice != null && maxPrice != null
-                  ? `£${minPrice} - £${maxPrice}/hr`
-                  : minPrice != null
-                  ? `From £${minPrice}/hr`
-                  : maxPrice != null
-                  ? `Up to £${maxPrice}/hr`
-                  : "Any rate"}
-              </Text>
+            {openPanel === "startDate" ? (
+              <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
+                <DateRangeCalendar
+                  value={effectiveStartDateRange ?? {}}
+                  onChange={(val) => handleStartDateChange(val)}
+                  onClear={() => handleStartDateChange({})}
+                  summaryEmptyLabel="Select start date window"
+                  helperText="Jobs starting within this timeframe will be shown."
+                  minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
+                />
+              </View>
+            ) : null}
 
-              <View className="flex-row items-center gap-3">
-                <View className="flex-1">
-                  <Text className="text-[11px] font-semibold text-neutral-500 mb-1">
-                    Min (£/hr)
-                  </Text>
-                  <View className="flex-row items-center rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
-                    <Text className="text-neutral-500 font-bold text-sm mr-1">
-                      £
-                    </Text>
-                    <TextInput
-                      className="flex-1 text-sm font-semibold text-neutral-900 py-0"
-                      placeholder="Min"
-                      placeholderTextColor="#A3A3A3"
-                      keyboardType="numeric"
-                      value={minPrice != null ? String(minPrice) : ""}
-                      onChangeText={(text) => {
-                        const val = text.replace(/[^0-9]/g, "");
-                        onMinPriceChange?.(val ? Number(val) : null);
-                      }}
-                    />
-                  </View>
+            {/* Finish Date Timeframe Card */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                setOpenPanel((current) =>
+                  current === "endDate" ? null : "endDate",
+                )
+              }
+              className={`mt-2.5 rounded-2xl border p-3.5 flex-row items-center justify-between ${
+                openPanel === "endDate"
+                  ? "border-[#FF5500] bg-orange-50/20"
+                  : effectiveEndDateRange?.from
+                  ? "border-orange-200 bg-orange-50/10"
+                  : "border-neutral-200 bg-white"
+              }`}
+            >
+              <View className="flex-row items-center gap-3 flex-1">
+                <View
+                  className={`w-9 h-9 rounded-xl items-center justify-center ${
+                    effectiveEndDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
+                  }`}
+                >
+                  <CalendarDays
+                    size={18}
+                    color={effectiveEndDateRange?.from ? "#FFFFFF" : "#737373"}
+                  />
                 </View>
-
-                <Text className="text-neutral-300 font-bold mt-5">—</Text>
-
                 <View className="flex-1">
-                  <Text className="text-[11px] font-semibold text-neutral-500 mb-1">
-                    Max (£/hr)
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Finishes between
                   </Text>
-                  <View className="flex-row items-center rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
-                    <Text className="text-neutral-500 font-bold text-sm mr-1">
-                      £
-                    </Text>
-                    <TextInput
-                      className="flex-1 text-sm font-semibold text-neutral-900 py-0"
-                      placeholder="Max"
-                      placeholderTextColor="#A3A3A3"
-                      keyboardType="numeric"
-                      value={maxPrice != null ? String(maxPrice) : ""}
-                      onChangeText={(text) => {
-                        const val = text.replace(/[^0-9]/g, "");
-                        onMaxPriceChange?.(val ? Number(val) : null);
-                      }}
-                    />
-                  </View>
+                  <Text
+                    className={`text-sm font-semibold mt-0.5 ${
+                      effectiveEndDateRange?.from
+                        ? "text-[#FF5500]"
+                        : "text-neutral-800"
+                    }`}
+                  >
+                    {formatDateRange(effectiveEndDateRange ?? {}, "Any finish date")}
+                  </Text>
                 </View>
               </View>
-
-              <View className="mt-3 flex-row flex-wrap gap-2">
-                {[
-                  { label: "Any", min: null, max: null },
-                  { label: "£15+", min: 15, max: null },
-                  { label: "£20+", min: 20, max: null },
-                  { label: "£25+", min: 25, max: null },
-                  { label: "£30+", min: 30, max: null },
-                  { label: "£40+", min: 40, max: null },
-                  { label: "£50+", min: 50, max: null },
-                ].map((preset) => {
-                  const isSelected =
-                    preset.min === minPrice &&
-                    (preset.max === maxPrice ||
-                      (preset.max === null && maxPrice == null));
-
-                  return (
-                    <TouchableOpacity
-                      key={preset.label}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        onMinPriceChange?.(preset.min);
-                        onMaxPriceChange?.(preset.max);
-                      }}
-                      className={`rounded-full px-3.5 py-1.5 border ${
-                        isSelected
-                          ? "bg-[#FFF5F2] border-[#FF5500]"
-                          : "bg-neutral-50 border-neutral-200"
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs ${
-                          isSelected
-                            ? "font-bold text-[#FF5500]"
-                            : "font-medium text-neutral-700"
-                        }`}
-                      >
-                        {preset.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              <View className="flex-row items-center gap-2">
+                {effectiveEndDateRange?.from ? (
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEndDateChange({});
+                    }}
+                    className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
+                  >
+                    <Text className="text-xs font-bold text-neutral-600">
+                      Clear
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+                <ChevronDown
+                  size={18}
+                  color="#999999"
+                  style={{
+                    transform: [
+                      { rotate: openPanel === "endDate" ? "180deg" : "0deg" },
+                    ],
+                  }}
+                />
               </View>
-            </View>
-          ) : null}
+            </TouchableOpacity>
+
+            {openPanel === "endDate" ? (
+              <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
+                <DateRangeCalendar
+                  value={effectiveEndDateRange ?? {}}
+                  onChange={(val) => handleEndDateChange(val)}
+                  onClear={() => handleEndDateChange({})}
+                  summaryEmptyLabel="Select finish date window"
+                  helperText="Jobs finishing within this timeframe will be shown."
+                  minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
+                />
+              </View>
+            ) : null}
+          </View>
         </View>
       </ScrollView>
 
-      <View className={isWeb ? "border-t border-neutral-200/80 px-6 py-5" : ""}>
+      {/* FOOTER PINNED AT BOTTOM */}
+      <View className={isWeb ? "border-t border-neutral-200/80 px-6 py-5" : "border-t border-neutral-100 px-5 pt-3 pb-8 bg-white"}>
         <TouchableOpacity
           onPress={onClose}
-          className={`rounded-2xl bg-[#111111] py-4 ${
-            isWeb ? "" : "mt-2 mb-10"
-          }`}
+          className="rounded-2xl bg-[#111111] py-4"
         >
           <Text className="text-center text-sm font-bold text-white">
             Show {resultCount} {resultCount === 1 ? "job" : "jobs"}
