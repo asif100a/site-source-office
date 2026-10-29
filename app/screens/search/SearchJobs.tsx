@@ -126,8 +126,7 @@ export default function WorkerSearchScreen() {
   const [minRatePerDay, setMinRatePerDay] = useState(120);
 
   // Date and price filter states
-  const [startDateRange, setStartDateRange] = useState<DateRangeValue>({});
-  const [endDateRange, setEndDateRange] = useState<DateRangeValue>({});
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | null>(null);
@@ -181,20 +180,12 @@ export default function WorkerSearchScreen() {
   }, [maxPrice]);
 
   const startDateFrom = useMemo(
-    () => formatQueryDate(startDateRange.from, "start"),
-    [startDateRange.from],
-  );
-  const startDateTo = useMemo(
-    () => formatQueryDate(startDateRange.to, "end"),
-    [startDateRange.to],
-  );
-  const endDateFrom = useMemo(
-    () => formatQueryDate(endDateRange.from, "start"),
-    [endDateRange.from],
+    () => formatQueryDate(dateRange.from, "start"),
+    [dateRange.from],
   );
   const endDateTo = useMemo(
-    () => formatQueryDate(endDateRange.to, "end"),
-    [endDateRange.to],
+    () => formatQueryDate(dateRange.to, "end"),
+    [dateRange.to],
   );
 
   const hasActiveFilters = Boolean(
@@ -203,8 +194,6 @@ export default function WorkerSearchScreen() {
       debouncedMinPrice != null ||
       debouncedMaxPrice != null ||
       startDateFrom ||
-      startDateTo ||
-      endDateFrom ||
       endDateTo,
   );
 
@@ -229,8 +218,6 @@ export default function WorkerSearchScreen() {
         ? { maxPrice: debouncedMaxPrice }
         : {}),
       ...(startDateFrom ? { startDateFrom } : {}),
-      ...(startDateTo ? { startDateTo } : {}),
-      ...(endDateFrom ? { endDateFrom } : {}),
       ...(endDateTo ? { endDateTo } : {}),
     }),
     [
@@ -239,12 +226,10 @@ export default function WorkerSearchScreen() {
       debouncedMaxPrice,
       debouncedMinPrice,
       debouncedSearchQuery,
-      endDateFrom,
       endDateTo,
       page,
       selectedMapLocation,
       startDateFrom,
-      startDateTo,
     ],
   );
 
@@ -276,8 +261,6 @@ export default function WorkerSearchScreen() {
         ? { maxPrice: debouncedMaxPrice }
         : {}),
       ...(startDateFrom ? { startDateFrom } : {}),
-      ...(startDateTo ? { startDateTo } : {}),
-      ...(endDateFrom ? { endDateFrom } : {}),
       ...(endDateTo ? { endDateTo } : {}),
     },
   );
@@ -412,8 +395,6 @@ export default function WorkerSearchScreen() {
     debouncedMinPrice,
     debouncedMaxPrice,
     startDateFrom,
-    startDateTo,
-    endDateFrom,
     endDateTo,
     tradeSkill,
   ]);
@@ -426,8 +407,6 @@ export default function WorkerSearchScreen() {
     debouncedMinPrice,
     debouncedMaxPrice,
     startDateFrom,
-    startDateTo,
-    endDateFrom,
     endDateTo,
     tradeSkill,
   ]);
@@ -692,10 +671,8 @@ export default function WorkerSearchScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        startDateRange={startDateRange}
-        onStartDateRangeChange={setStartDateRange}
-        endDateRange={endDateRange}
-        onEndDateRangeChange={setEndDateRange}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
         minPrice={minPrice}
         onMinPriceChange={setMinPrice}
         maxPrice={maxPrice}
@@ -710,8 +687,7 @@ export default function WorkerSearchScreen() {
           setMaxDistanceMiles(50);
           setDebouncedMaxDistanceMiles(50);
           setMinRatePerDay(120);
-          setStartDateRange({});
-          setEndDateRange({});
+          setDateRange({});
           setMinPrice(null);
           setMaxPrice(null);
           setDebouncedMinPrice(null);

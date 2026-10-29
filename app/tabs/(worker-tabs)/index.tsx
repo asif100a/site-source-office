@@ -83,8 +83,7 @@ export default function WorkerHomeScreen() {
   const [minRatePerDay, setMinRatePerDay] = useState(120);
 
   // Date and price filter states
-  const [startDateRange, setStartDateRange] = useState<DateRangeValue>({});
-  const [endDateRange, setEndDateRange] = useState<DateRangeValue>({});
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | null>(null);
@@ -144,20 +143,21 @@ export default function WorkerHomeScreen() {
   }, [maxPrice]);
 
   const startDateFrom = useMemo(
-    () => formatQueryDate(startDateRange.from, "start"),
-    [startDateRange.from],
-  );
-  const startDateTo = useMemo(
-    () => formatQueryDate(startDateRange.to, "end"),
-    [startDateRange.to],
-  );
-  const endDateFrom = useMemo(
-    () => formatQueryDate(endDateRange.from, "start"),
-    [endDateRange.from],
+    () => formatQueryDate(dateRange.from, "start"),
+    [dateRange.from],
   );
   const endDateTo = useMemo(
-    () => formatQueryDate(endDateRange.to, "end"),
-    [endDateRange.to],
+    () => formatQueryDate(dateRange.to, "end"),
+    [dateRange.to],
+  );
+
+  const hasActiveFilters = Boolean(
+    selectedTrade ||
+      debouncedMaxDistanceMiles !== 50 ||
+      debouncedMinPrice != null ||
+      debouncedMaxPrice != null ||
+      startDateFrom ||
+      endDateTo,
   );
 
   // Location search uses selected coordinates from Google Places, not text search.
@@ -180,8 +180,6 @@ export default function WorkerHomeScreen() {
         ? { maxPrice: debouncedMaxPrice }
         : {}),
       ...(startDateFrom ? { startDateFrom } : {}),
-      ...(startDateTo ? { startDateTo } : {}),
-      ...(endDateFrom ? { endDateFrom } : {}),
       ...(endDateTo ? { endDateTo } : {}),
       ...(apiTrade ? { trade: apiTrade } : {}),
     },
@@ -199,6 +197,15 @@ export default function WorkerHomeScreen() {
       }
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
+    ...(apiTrade ? { trade: apiTrade } : {}),
+    ...(debouncedMinPrice != null && debouncedMinPrice > 0
+      ? { minPrice: debouncedMinPrice }
+      : {}),
+    ...(debouncedMaxPrice != null && debouncedMaxPrice > 0
+      ? { maxPrice: debouncedMaxPrice }
+      : {}),
+    ...(startDateFrom ? { startDateFrom } : {}),
+    ...(endDateTo ? { endDateTo } : {}),
   });
   console.log("allJobsQuery: ", allJobsQuery);
   const selectedJobQuery = useGetSingleJobQuery(selectedJobId, {
@@ -261,12 +268,30 @@ export default function WorkerHomeScreen() {
   useEffect(() => {
     setMapJobs([]);
     setSelectedJobId("");
-  }, [locationCoordinates, debouncedMaxDistanceMiles, minRatePerDay, selectedTrade]);
+  }, [
+    locationCoordinates,
+    debouncedMaxDistanceMiles,
+    minRatePerDay,
+    selectedTrade,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    startDateFrom,
+    endDateTo,
+  ]);
 
   useEffect(() => {
     setAllJobsPage(1);
     setAllJobs([]);
-  }, [activeFilter, locationCoordinates, debouncedMaxDistanceMiles]);
+  }, [
+    activeFilter,
+    locationCoordinates,
+    debouncedMaxDistanceMiles,
+    selectedTrade,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    startDateFrom,
+    endDateTo,
+  ]);
 
   useEffect(() => {
     if (!mapJobsQuery.currentData && mapJobsQuery.isFetching) return;
@@ -455,7 +480,9 @@ export default function WorkerHomeScreen() {
                   </View>
 
                   <TouchableOpacity
-                    className="rounded-2xl bg-[#111111] px-4 py-3 shadow-sm"
+                    className={`rounded-2xl px-4 py-3 shadow-sm ${
+                      hasActiveFilters ? "bg-[#FF5500]" : "bg-[#111111]"
+                    }`}
                     onPress={() => setShowFilterModal(true)}
                   >
                     <View className="flex-row items-center gap-2">
@@ -463,6 +490,9 @@ export default function WorkerHomeScreen() {
                       <Text className="text-xs font-bold text-white">
                         Filters
                       </Text>
+                      {hasActiveFilters ? (
+                        <View className="h-2 w-2 rounded-full bg-white" />
+                      ) : null}
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -603,21 +633,23 @@ export default function WorkerHomeScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        startDateRange={startDateRange}
-        onStartDateRangeChange={setStartDateRange}
-        endDateRange={endDateRange}
-        onEndDateRangeChange={setEndDateRange}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
         minPrice={minPrice}
         onMinPriceChange={setMinPrice}
         maxPrice={maxPrice}
         onMaxPriceChange={setMaxPrice}
-        resultCount={filteredMapJobs.length}
+        resultCount={
+          allJobsQuery.data?.data?.meta?.total ??
+          visibleAllJobs.length ??
+          filteredMapJobs.length
+        }
         onReset={() => {
           setSelectedTrade("");
-          setMaxDistanceMiles(5);
+          setMaxDistanceMiles(50);
+          setDebouncedMaxDistanceMiles(50);
           setMinRatePerDay(120);
-          setStartDateRange({});
-          setEndDateRange({});
+          setDateRange({});
           setMinPrice(null);
           setMaxPrice(null);
           setDebouncedMinPrice(null);

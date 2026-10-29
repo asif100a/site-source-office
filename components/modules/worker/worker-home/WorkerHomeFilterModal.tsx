@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import {
-  Calendar,
   CalendarDays,
   ChevronDown,
   X,
@@ -37,6 +36,8 @@ export type WorkerHomeFilterModalProps = {
   onMinRatePerDayChange: (value: number) => void;
   resultCount: number;
   onReset: () => void;
+  dateRange?: DateRangeValue;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   startDateRange?: DateRangeValue;
   onStartDateRangeChange?: (range: DateRangeValue) => void;
   endDateRange?: DateRangeValue;
@@ -47,7 +48,7 @@ export type WorkerHomeFilterModalProps = {
   onMaxPriceChange?: (price: number | null) => void;
 };
 
-type OpenPanel = "trade" | "startDate" | "endDate" | null;
+type OpenPanel = "trade" | "date" | null;
 
 function FilterBody({
   isWeb,
@@ -60,10 +61,12 @@ function FilterBody({
   minRatePerDay: _minRatePerDay,
   onMinRatePerDayChange: _onMinRatePerDayChange,
   resultCount,
+  dateRange,
+  onDateRangeChange,
   startDateRange,
   onStartDateRangeChange,
-  endDateRange,
-  onEndDateRangeChange,
+  endDateRange: _endDateRange,
+  onEndDateRangeChange: _onEndDateRangeChange,
   minPrice,
   onMinPriceChange,
   maxPrice,
@@ -73,24 +76,18 @@ function FilterBody({
   const [isAdjustingRange, setIsAdjustingRange] = useState(false);
 
   // Internal state fallbacks so filters are always fully functional even if not provided externally
-  const [internalStartDateRange, setInternalStartDateRange] = useState<DateRangeValue>({});
-  const [internalEndDateRange, setInternalEndDateRange] = useState<DateRangeValue>({});
+  const [internalDateRange, setInternalDateRange] = useState<DateRangeValue>({});
   const [internalMinPrice, setInternalMinPrice] = useState<number | null>(null);
   const [internalMaxPrice, setInternalMaxPrice] = useState<number | null>(null);
 
-  const effectiveStartDateRange = startDateRange ?? internalStartDateRange;
-  const effectiveEndDateRange = endDateRange ?? internalEndDateRange;
+  const effectiveDateRange = dateRange ?? startDateRange ?? internalDateRange;
   const effectiveMinPrice = minPrice !== undefined ? minPrice : internalMinPrice;
   const effectiveMaxPrice = maxPrice !== undefined ? maxPrice : internalMaxPrice;
 
-  const handleStartDateChange = (range: DateRangeValue) => {
-    setInternalStartDateRange(range);
+  const handleDateRangeChange = (range: DateRangeValue) => {
+    setInternalDateRange(range);
+    onDateRangeChange?.(range);
     onStartDateRangeChange?.(range);
-  };
-
-  const handleEndDateChange = (range: DateRangeValue) => {
-    setInternalEndDateRange(range);
-    onEndDateRangeChange?.(range);
   };
 
   const handleMinPriceChange = (price: number | null) => {
@@ -104,8 +101,7 @@ function FilterBody({
   };
 
   const handleReset = () => {
-    setInternalStartDateRange({});
-    setInternalEndDateRange({});
+    setInternalDateRange({});
     setInternalMinPrice(null);
     setInternalMaxPrice(null);
     setOpenPanel(null);
@@ -426,35 +422,32 @@ function FilterBody({
               <Text className="text-xs font-bold uppercase tracking-[1px] text-neutral-400">
                 Job Dates
               </Text>
-              {effectiveStartDateRange?.from || effectiveEndDateRange?.from ? (
+              {effectiveDateRange?.from || effectiveDateRange?.to ? (
                 <TouchableOpacity
                   onPress={() => {
-                    handleStartDateChange({});
-                    handleEndDateChange({});
+                    handleDateRangeChange({});
                   }}
                 >
                   <Text className="text-xs font-bold text-[#FF5500]">
-                    Clear all dates
+                    Clear dates
                   </Text>
                 </TouchableOpacity>
               ) : null}
             </View>
             <Text className="text-[11px] font-medium text-neutral-500 mb-3">
-              The jobs that come up start / finish within these timeframes.
+              The jobs that come up start / finish within these dates.
             </Text>
 
-            {/* Start Date Timeframe Card */}
+            {/* Single Date Range Card */}
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() =>
-                setOpenPanel((current) =>
-                  current === "startDate" ? null : "startDate",
-                )
+                setOpenPanel((current) => (current === "date" ? null : "date"))
               }
               className={`rounded-2xl border p-3.5 flex-row items-center justify-between ${
-                openPanel === "startDate"
+                openPanel === "date"
                   ? "border-[#FF5500] bg-orange-50/20"
-                  : effectiveStartDateRange?.from
+                  : effectiveDateRange?.from
                   ? "border-orange-200 bg-orange-50/10"
                   : "border-neutral-200 bg-white"
               }`}
@@ -462,35 +455,35 @@ function FilterBody({
               <View className="flex-row items-center gap-3 flex-1">
                 <View
                   className={`w-9 h-9 rounded-xl items-center justify-center ${
-                    effectiveStartDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
+                    effectiveDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
                   }`}
                 >
-                  <Calendar
+                  <CalendarDays
                     size={18}
-                    color={effectiveStartDateRange?.from ? "#FFFFFF" : "#737373"}
+                    color={effectiveDateRange?.from ? "#FFFFFF" : "#737373"}
                   />
                 </View>
                 <View className="flex-1">
                   <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                    Starts between
+                    Dates
                   </Text>
                   <Text
                     className={`text-sm font-semibold mt-0.5 ${
-                      effectiveStartDateRange?.from
+                      effectiveDateRange?.from
                         ? "text-[#FF5500]"
                         : "text-neutral-800"
                     }`}
                   >
-                    {formatDateRange(effectiveStartDateRange ?? {}, "Any start date")}
+                    {formatDateRange(effectiveDateRange ?? {}, "Select start & end date")}
                   </Text>
                 </View>
               </View>
               <View className="flex-row items-center gap-2">
-                {effectiveStartDateRange?.from ? (
+                {effectiveDateRange?.from ? (
                   <TouchableOpacity
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleStartDateChange({});
+                      handleDateRangeChange({});
                     }}
                     className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
                   >
@@ -505,8 +498,7 @@ function FilterBody({
                   style={{
                     transform: [
                       {
-                        rotate:
-                          openPanel === "startDate" ? "180deg" : "0deg",
+                        rotate: openPanel === "date" ? "180deg" : "0deg",
                       },
                     ],
                   }}
@@ -514,95 +506,14 @@ function FilterBody({
               </View>
             </TouchableOpacity>
 
-            {openPanel === "startDate" ? (
+            {openPanel === "date" ? (
               <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
                 <DateRangeCalendar
-                  value={effectiveStartDateRange ?? {}}
-                  onChange={(val) => handleStartDateChange(val)}
-                  onClear={() => handleStartDateChange({})}
-                  summaryEmptyLabel="Select start date window"
-                  helperText="Jobs starting within this timeframe will be shown."
-                  minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
-                />
-              </View>
-            ) : null}
-
-            {/* Finish Date Timeframe Card */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() =>
-                setOpenPanel((current) =>
-                  current === "endDate" ? null : "endDate",
-                )
-              }
-              className={`mt-2.5 rounded-2xl border p-3.5 flex-row items-center justify-between ${
-                openPanel === "endDate"
-                  ? "border-[#FF5500] bg-orange-50/20"
-                  : effectiveEndDateRange?.from
-                  ? "border-orange-200 bg-orange-50/10"
-                  : "border-neutral-200 bg-white"
-              }`}
-            >
-              <View className="flex-row items-center gap-3 flex-1">
-                <View
-                  className={`w-9 h-9 rounded-xl items-center justify-center ${
-                    effectiveEndDateRange?.from ? "bg-[#FF5500]" : "bg-neutral-100"
-                  }`}
-                >
-                  <CalendarDays
-                    size={18}
-                    color={effectiveEndDateRange?.from ? "#FFFFFF" : "#737373"}
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                    Finishes between
-                  </Text>
-                  <Text
-                    className={`text-sm font-semibold mt-0.5 ${
-                      effectiveEndDateRange?.from
-                        ? "text-[#FF5500]"
-                        : "text-neutral-800"
-                    }`}
-                  >
-                    {formatDateRange(effectiveEndDateRange ?? {}, "Any finish date")}
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row items-center gap-2">
-                {effectiveEndDateRange?.from ? (
-                  <TouchableOpacity
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleEndDateChange({});
-                    }}
-                    className="px-2 py-1 rounded-lg bg-neutral-100 active:opacity-75"
-                  >
-                    <Text className="text-xs font-bold text-neutral-600">
-                      Clear
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-                <ChevronDown
-                  size={18}
-                  color="#999999"
-                  style={{
-                    transform: [
-                      { rotate: openPanel === "endDate" ? "180deg" : "0deg" },
-                    ],
-                  }}
-                />
-              </View>
-            </TouchableOpacity>
-
-            {openPanel === "endDate" ? (
-              <View className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white p-2">
-                <DateRangeCalendar
-                  value={effectiveEndDateRange ?? {}}
-                  onChange={(val) => handleEndDateChange(val)}
-                  onClear={() => handleEndDateChange({})}
-                  summaryEmptyLabel="Select finish date window"
-                  helperText="Jobs finishing within this timeframe will be shown."
+                  value={effectiveDateRange ?? {}}
+                  onChange={(val) => handleDateRangeChange(val)}
+                  onClear={() => handleDateRangeChange({})}
+                  summaryEmptyLabel="Select start and end date"
+                  helperText="Jobs starting and finishing within these dates will be shown."
                   minDate={new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)}
                 />
               </View>
@@ -637,6 +548,8 @@ export default function WorkerHomeFilterModal({
   onMinRatePerDayChange,
   resultCount,
   onReset,
+  dateRange,
+  onDateRangeChange,
   startDateRange,
   onStartDateRangeChange,
   endDateRange,
@@ -678,6 +591,8 @@ export default function WorkerHomeFilterModal({
           minRatePerDay={minRatePerDay}
           onMinRatePerDayChange={onMinRatePerDayChange}
           resultCount={resultCount}
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
           startDateRange={startDateRange}
           onStartDateRangeChange={onStartDateRangeChange}
           endDateRange={endDateRange}
