@@ -134,7 +134,13 @@ export default function AuthFlow() {
     if (step === "register_sso" || step === "register_employer") {
       setStep("login");
     } else if (step === "register_general") {
-      setStep(role === "worker" ? "register_sso" : "login");
+      setStep(
+        registrationProvider === "google" || registrationProvider === "apple"
+          ? "login"
+          : role === "worker"
+            ? "register_sso"
+            : "login",
+      );
     } else if (step === "register_documents") {
       setStep(role === "employer" ? "register_employer" : "register_general");
     } else if (step === "verify_otp") {
@@ -151,7 +157,16 @@ export default function AuthFlow() {
     } else if (step === "register_password") {
       setStep("register_documents");
     } else if (step === "complete_payroll" || step === "review") {
-      setStep("login");
+      if (
+        registrationProvider === "google" ||
+        registrationProvider === "apple"
+      ) {
+        setStep(
+          role === "employer" ? "register_employer" : "register_documents",
+        );
+      } else {
+        setStep("login");
+      }
     } else {
       router.back();
     }
@@ -159,13 +174,22 @@ export default function AuthFlow() {
 
   const renderActiveScreen = () => {
     if (role === "employer" && step === "register_employer") {
+      const isSsoEmployer =
+        registrationProvider === "google" || registrationProvider === "apple";
       return (
         <RegisterEmployerScreen
+          isSso={isSsoEmployer}
+          initialEmail={registrationEmail}
+          initialName={registrationName}
           onContinue={(data) => {
             setRegistrationEmail(data.email ?? "");
             setRegistrationName(data.name ?? "");
-            setRegistrationProvider("manual");
-            goToRegistrationOtp();
+            if (isSsoEmployer) {
+              goToStep("complete_payroll");
+            } else {
+              setRegistrationProvider("manual");
+              goToRegistrationOtp();
+            }
           }}
           onLoginPress={() => setStep("login")}
         />
@@ -180,6 +204,14 @@ export default function AuthFlow() {
             onRegisterPress={goToRegisterForCurrentRole}
             onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
+            onRequireDetails={(data) => {
+              setRegistrationEmail(data.email);
+              if (data.name) setRegistrationName(data.name);
+              setRegistrationProvider(data.provider ?? "manual");
+              goToStep(
+                role === "employer" ? "register_employer" : "register_general",
+              );
+            }}
           />
         );
       case "register_sso":
@@ -188,10 +220,20 @@ export default function AuthFlow() {
             onContinue={(data) => {
               setRegistrationEmail(data.email ?? "");
               setRegistrationName(data.name ?? "");
-              setRegistrationProvider(
-                (data.provider ?? "manual") as "google" | "apple" | "manual",
-              );
-              goToRegistrationOtp();
+              const provider = (data.provider ?? "manual") as
+                | "google"
+                | "apple"
+                | "manual";
+              setRegistrationProvider(provider);
+              if (provider === "google" || provider === "apple") {
+                goToStep(
+                  role === "employer"
+                    ? "register_employer"
+                    : "register_general",
+                );
+              } else {
+                goToRegistrationOtp();
+              }
             }}
             onLoginPress={() => setStep("login")}
           />
@@ -286,7 +328,16 @@ export default function AuthFlow() {
       case "complete_payroll":
         return (
           <CompletePayrollScreen
-            onComplete={goToLoginAfterRegistration}
+            onComplete={() => {
+              if (
+                registrationProvider === "google" ||
+                registrationProvider === "apple"
+              ) {
+                goToRoleDashboard();
+              } else {
+                goToLoginAfterRegistration();
+              }
+            }}
             paymentUserId={registrationEmail}
           />
         );
@@ -305,6 +356,14 @@ export default function AuthFlow() {
             onRegisterPress={goToRegisterForCurrentRole}
             onForgotPasswordPress={goToForgotPassword}
             onLoginPress={goToRoleDashboard}
+            onRequireDetails={(data) => {
+              setRegistrationEmail(data.email);
+              if (data.name) setRegistrationName(data.name);
+              setRegistrationProvider(data.provider ?? "manual");
+              goToStep(
+                role === "employer" ? "register_employer" : "register_general",
+              );
+            }}
           />
         );
     }
