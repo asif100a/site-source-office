@@ -6,6 +6,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ArrowRight } from "lucide-react-native";
 import Toast from "react-native-toast-message";
+import { useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setToken } from "@/store/slices/authSlice";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import { normalizeUserRole } from "@/constants/Routes";
 import {
@@ -41,6 +44,7 @@ export default function RegisterSsoScreenWeb({
   onBackPress,
 }: RegisterSsoScreenProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const params = useLocalSearchParams();
   const activeRole = normalizeUserRole(params.role);
   const [register, { isLoading }] = useRegisterMutation();
@@ -98,6 +102,14 @@ export default function RegisterSsoScreenWeb({
         fcmToken: "",
         idToken: token,
       }).unwrap();
+      const appToken =
+        response.accessToken ??
+        response.data?.accessToken ??
+        (response.data as any)?.token;
+      if (appToken) {
+        dispatch(setToken(appToken));
+        await AsyncStorage.setItem("token", appToken);
+      }
       const user = response.data?.user;
       onContinue?.({
         provider: "google",
@@ -124,6 +136,14 @@ export default function RegisterSsoScreenWeb({
           fcmToken: "",
           idToken: identity.idToken,
         }).unwrap();
+        const appToken =
+          response.accessToken ??
+          response.data?.accessToken ??
+          (response.data as any)?.token;
+        if (appToken) {
+          dispatch(setToken(appToken));
+          await AsyncStorage.setItem("token", appToken);
+        }
         const user = response.data?.user;
         onContinue?.({ provider: "apple", email: user?.email ?? identity.email, name: user?.name ?? identity.name });
       })

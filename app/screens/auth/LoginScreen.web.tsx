@@ -25,12 +25,18 @@ import AuthWebShell from "./_web-shell";
 import { signInWithAppleOnWeb } from "@/utils/appleSignIn.web";
 import { passwordSchema } from "@/zod/authSchema";
 import { getRoleFromToken } from "@/utils/authToken";
+import { checkIsProfileComplete } from "@/utils/profileCompleteness";
 
 interface LoginScreenProps {
   role?: UserRole;
   onRegisterPress?: () => void;
   onForgotPasswordPress?: () => void;
   onLoginPress?: (email: string) => void;
+  onRequireDetails?: (data: {
+    email: string;
+    name?: string;
+    provider?: "google" | "apple" | "manual";
+  }) => void;
 }
 
 WebBrowser.maybeCompleteAuthSession();
@@ -46,6 +52,7 @@ export default function LoginScreenWeb({
   onRegisterPress,
   onForgotPasswordPress,
   onLoginPress,
+  onRequireDetails,
 }: LoginScreenProps) {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -93,6 +100,33 @@ export default function LoginScreenWeb({
 
         dispatch(setToken(token));
         await AsyncStorage.setItem("token", token);
+
+        const isComplete = await checkIsProfileComplete(dispatch, activeRole);
+        if (!isComplete) {
+          Toast.show({
+            type: "info",
+            text1: "Profile incomplete",
+            text2: "Please complete your profile details to continue.",
+          });
+          if (onRequireDetails) {
+            onRequireDetails({
+              email: data.email,
+              provider: "manual",
+            });
+            return;
+          }
+          router.replace({
+            pathname: "/auth",
+            params: {
+              step:
+                activeRole === "employer"
+                  ? "register_employer"
+                  : "register_general",
+              role: activeRole,
+            },
+          });
+          return;
+        }
 
         Toast.show({
           type: "success",
@@ -186,6 +220,34 @@ export default function LoginScreenWeb({
       dispatch(setToken(appToken));
       await AsyncStorage.setItem("token", appToken);
 
+      const isComplete = await checkIsProfileComplete(dispatch, activeRole);
+      if (!isComplete) {
+        Toast.show({
+          type: "info",
+          text1: "Profile incomplete",
+          text2: "Please complete your profile details to continue.",
+        });
+        if (onRequireDetails) {
+          onRequireDetails({
+            email: identity.email,
+            name: identity.name,
+            provider: "google",
+          });
+          return;
+        }
+        router.replace({
+          pathname: "/auth",
+          params: {
+            step:
+              activeRole === "employer"
+                ? "register_employer"
+                : "register_general",
+            role: activeRole,
+          },
+        });
+        return;
+      }
+
       Toast.show({
         type: "success",
         text1: "Login successful",
@@ -224,10 +286,61 @@ export default function LoginScreenWeb({
         }).unwrap();
         const token = response.accessToken ?? response.data?.accessToken ?? (response.data as any)?.token;
         if (!token) throw new Error("The server did not return an access token.");
+
+        const tokenRole = token ? getRoleFromToken(token) : null;
+        if (!tokenRole || tokenRole !== activeRole) {
+          dispatch(logout());
+          await AsyncStorage.removeItem("token");
+          Toast.show({
+            type: "error",
+            text1: "Wrong account type",
+            text2: `This account is not registered as a ${activeRole}.`,
+          });
+          return;
+        }
+
         dispatch(setToken(token));
         await AsyncStorage.setItem("token", token);
-        onLoginPress?.(identity.email);
-        if (!onLoginPress) router.replace(getDashboardRouteForRole(activeRole));
+
+        const isComplete = await checkIsProfileComplete(dispatch, activeRole);
+        if (!isComplete) {
+          Toast.show({
+            type: "info",
+            text1: "Profile incomplete",
+            text2: "Please complete your profile details to continue.",
+          });
+          if (onRequireDetails) {
+            onRequireDetails({
+              email: identity.email,
+              name: identity.name,
+              provider: "apple",
+            });
+            return;
+          }
+          router.replace({
+            pathname: "/auth",
+            params: {
+              step:
+                activeRole === "employer"
+                  ? "register_employer"
+                  : "register_general",
+              role: activeRole,
+            },
+          });
+          return;
+        }
+
+        Toast.show({
+          type: "success",
+          text1: "Login successful",
+          text2: response.message ?? "Welcome back.",
+        });
+
+        if (onLoginPress) {
+          onLoginPress(identity.email);
+        } else {
+          router.replace(getDashboardRouteForRole(activeRole));
+        }
       })
       .catch((error: any) => Toast.show({ type: "error", text1: "Apple sign-in failed", text2: error?.message ?? "Please try again." }))
       .finally(() => setSsoLoading(false));
