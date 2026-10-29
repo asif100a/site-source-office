@@ -82,6 +82,7 @@ export default function WorkerHomeScreen() {
   const [showBestMatchLoginModal, setShowBestMatchLoginModal] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState("");
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
+  const [debouncedMaxDistanceMiles, setDebouncedMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const [allJobsPage, setAllJobsPage] = useState(1);
   const [allJobs, setAllJobs] = useState<WorkerHomeJob[]>([]);
@@ -113,6 +114,14 @@ export default function WorkerHomeScreen() {
     : null;
   const hasWorkerLocation = Boolean(selectedLocation);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMaxDistanceMiles(maxDistanceMiles);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [maxDistanceMiles]);
+
   // Location search uses selected coordinates from Google Places, not text search.
   const mapJobsQuery = useGetWorkersMapsJobsQuery(
     {
@@ -123,7 +132,7 @@ export default function WorkerHomeScreen() {
         ? {
             latitude: selectedLocation.latitude,
             longitude: selectedLocation.longitude,
-            radius: maxDistanceMiles,
+            radius: debouncedMaxDistanceMiles,
           }
         : {}),
       ...(minRatePerDay !== 120
@@ -141,7 +150,7 @@ export default function WorkerHomeScreen() {
       ? {
           latitude: selectedSearchLocation.latitude,
           longitude: selectedSearchLocation.longitude,
-          radius: maxDistanceMiles,
+          radius: debouncedMaxDistanceMiles,
         }
       : {}),
     ...(apiFilter ? { filter: apiFilter } : {}),
@@ -193,12 +202,12 @@ export default function WorkerHomeScreen() {
   useEffect(() => {
     setMapJobs([]);
     setSelectedJobId("");
-  }, [locationCoordinates, maxDistanceMiles, minRatePerDay, selectedTrade]);
+  }, [locationCoordinates, debouncedMaxDistanceMiles, minRatePerDay, selectedTrade]);
 
   useEffect(() => {
     setAllJobsPage(1);
     setAllJobs([]);
-  }, [activeFilter, locationCoordinates, maxDistanceMiles]);
+  }, [activeFilter, locationCoordinates, debouncedMaxDistanceMiles]);
 
   useEffect(() => {
     if (!mapJobsQuery.currentData && mapJobsQuery.isFetching) return;

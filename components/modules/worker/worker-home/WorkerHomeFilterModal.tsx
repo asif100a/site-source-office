@@ -208,18 +208,14 @@ function FilterBody({
                 {maxDistanceMiles} mi
               </Text>
             </View>
-            <View
-              className="px-3 py-3"
-              onTouchStart={() => setIsAdjustingRange(true)}
-              onTouchEnd={() => setIsAdjustingRange(false)}
-              onTouchCancel={() => setIsAdjustingRange(false)}
-            >
+            <View className="px-3 py-1">
               <Slider
                 value={maxDistanceMiles}
                 minValue={1}
                 maxValue={50}
                 step={1}
                 onChange={onMaxDistanceMilesChange}
+                onChangeStart={() => setIsAdjustingRange(true)}
                 onChangeEnd={() => setIsAdjustingRange(false)}
               >
                 <SliderTrack className="h-1.5 rounded-full bg-neutral-700">
@@ -239,18 +235,14 @@ function FilterBody({
                 £{minRatePerDay}/day
               </Text>
             </View>
-            <View
-              className="px-3 py-3"
-              onTouchStart={() => setIsAdjustingRange(true)}
-              onTouchEnd={() => setIsAdjustingRange(false)}
-              onTouchCancel={() => setIsAdjustingRange(false)}
-            >
+            <View className="px-3 py-1">
               <Slider
                 value={minRatePerDay}
                 minValue={120}
                 maxValue={300}
                 step={10}
                 onChange={onMinRatePerDayChange}
+                onChangeStart={() => setIsAdjustingRange(true)}
                 onChangeEnd={() => setIsAdjustingRange(false)}
               >
                 <SliderTrack className="h-1.5 rounded-full bg-neutral-700">

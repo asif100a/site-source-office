@@ -9,8 +9,10 @@ import {
   Platform,
 } from "react-native";
 import React, { useState } from "react";
-import { Check, Info, Trash2, X } from "lucide-react-native";
+import { Check, FileText, Images, Info, Trash2, X } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+import { Image as ExpoImage } from "expo-image";
 import { File as ExpoFile } from "expo-file-system";
 import { Colors } from "@/constants/Colors";
 import { useCreateSupportTicketMutation } from "@/store/api/supportApi";
@@ -62,17 +64,83 @@ export default function MessageSupportModal({
     useCreateSupportTicketMutation();
   const isDialog = presentation === "dialog";
 
-  const handlePickAttachments = async () => {
+  const handlePickPhotos = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        setFormError("Please allow access to your photo library in device settings.");
+        if (Platform.OS !== "web") {
+          Alert.alert(
+            "Permission Required",
+            "Please allow access to your photo library to select photos.",
+            [{ text: "OK" }]
+          );
+        }
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets) return;
+
+      const nextAttachments: SupportAttachment[] = result.assets
+        .filter((asset) => {
+          if (asset.fileSize && asset.fileSize > MAX_ATTACHMENT_SIZE) {
+            setFormError("Please select attachments under 10MB.");
+            return false;
+          }
+
+          return Boolean(asset.uri);
+        })
+        .map((asset) => {
+          const uriParts = asset.uri.split("/");
+          const fallbackName = uriParts[uriParts.length - 1] || `photo_${Date.now()}.jpg`;
+          const name = asset.fileName || fallbackName;
+          const extension = (name.split(".").pop() || "jpg").toLowerCase();
+          const type = asset.mimeType || (extension === "png" ? "image/png" : "image/jpeg");
+
+          return {
+            uri: asset.uri,
+            name,
+            type,
+            size: asset.fileSize ?? undefined,
+          };
+        });
+
+      if (nextAttachments.length === 0) return;
+
+      setFormError("");
+      setAttachments((current) => {
+        const existing = new Set(
+          current.map((file) => `${file.name}-${file.size ?? 0}`)
+        );
+        return [
+          ...current,
+          ...nextAttachments.filter(
+            (file) => !existing.has(`${file.name}-${file.size ?? 0}`)
+          ),
+        ];
+      });
+    } catch (error) {
+      setFormError("Unable to select photos. Please try again.");
+    }
+  };
+
+  const handlePickDocuments = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["image/jpeg", "image/png", "application/pdf"],
+        type: ["application/pdf", "image/jpeg", "image/png", "*/*"],
         copyToCacheDirectory: true,
         multiple: true,
       });
 
-      if (result.canceled) return;
+      if (result.canceled || !result.assets) return;
 
-      const nextAttachments = result.assets
+      const nextAttachments: SupportAttachment[] = result.assets
         .filter((asset) => {
           if (asset.size && asset.size > MAX_ATTACHMENT_SIZE) {
             setFormError("Please select attachments under 10MB.");
@@ -208,46 +276,84 @@ export default function MessageSupportModal({
                   <Text className="text-neutral-400 text-[9px] font-semibold mb-4">
                     JPG - PNG - PDF - MAX 10MB
                   </Text>
-                  <TouchableOpacity
-                    onPress={handlePickAttachments}
-                    disabled={isSubmitting}
-                    className="bg-neutral-950 px-5 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60"
-                  >
-                    <Text className="text-white text-xs font-extrabold">
-                      Upload
-                    </Text>
-                  </TouchableOpacity>
+                  <View className="flex-row items-center gap-2.5">
+                    <TouchableOpacity
+                      onPress={handlePickPhotos}
+                      disabled={isSubmitting}
+                      className="bg-neutral-950 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
+                    >
+                      <Images size={14} color="#FFFFFF" />
+                      <Text className="text-white text-xs font-extrabold">
+                        Gallery / Photos
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={handlePickDocuments}
+                      disabled={isSubmitting}
+                      className="bg-white border border-neutral-200 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
+                    >
+                      <FileText size={14} color="#171717" />
+                      <Text className="text-neutral-900 text-xs font-extrabold">
+                        Browse Files
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {attachments.length > 0 ? (
                   <View className="gap-2">
-                    {attachments.map((attachment, index) => (
-                      <View
-                        key={`${attachment.name}-${attachment.size ?? index}`}
-                        className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-3"
-                      >
-                        <View className="flex-1 pr-3">
-                          <Text
-                            className="text-xs font-bold text-neutral-800"
-                            numberOfLines={1}
-                          >
-                            {attachment.name}
-                          </Text>
-                          {attachment.size ? (
-                            <Text className="mt-0.5 text-[10px] font-semibold text-neutral-400">
-                              {(attachment.size / (1024 * 1024)).toFixed(2)} MB
-                            </Text>
-                          ) : null}
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => handleRemoveAttachment(index)}
-                          disabled={isSubmitting}
-                          className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 disabled:opacity-60"
+                    {attachments.map((attachment, index) => {
+                      const isImage =
+                        attachment.type.startsWith("image/") ||
+                        /\.(jpg|jpeg|png|webp|gif|heic)$/i.test(attachment.name);
+
+                      return (
+                        <View
+                          key={`${attachment.name}-${attachment.size ?? index}`}
+                          className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3.5 py-3"
                         >
-                          <Trash2 size={14} color="#525252" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
+                          <View className="flex-1 flex-row items-center pr-3">
+                            {isImage ? (
+                              <ExpoImage
+                                source={{ uri: attachment.uri }}
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 10,
+                                  marginRight: 12,
+                                }}
+                                contentFit="cover"
+                              />
+                            ) : (
+                              <View className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center mr-3">
+                                <FileText size={18} color="#EF4444" />
+                              </View>
+                            )}
+                            <View className="flex-1">
+                              <Text
+                                className="text-xs font-bold text-neutral-800"
+                                numberOfLines={1}
+                              >
+                                {attachment.name}
+                              </Text>
+                              {attachment.size ? (
+                                <Text className="mt-0.5 text-[10px] font-semibold text-neutral-400">
+                                  {(attachment.size / (1024 * 1024)).toFixed(2)} MB
+                                </Text>
+                              ) : null}
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveAttachment(index)}
+                            disabled={isSubmitting}
+                            className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 disabled:opacity-60"
+                          >
+                            <Trash2 size={14} color="#525252" />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
                   </View>
                 ) : null}
 

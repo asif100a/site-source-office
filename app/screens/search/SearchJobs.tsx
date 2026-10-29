@@ -104,6 +104,7 @@ export default function WorkerSearchScreen() {
   // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
+  const [debouncedMaxDistanceMiles, setDebouncedMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
   const trimmedSearchQuery = searchQuery.trim();
   const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
@@ -128,6 +129,14 @@ export default function WorkerSearchScreen() {
     return () => clearTimeout(timeoutId);
   }, [trimmedSearchQuery]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMaxDistanceMiles(maxDistanceMiles);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [maxDistanceMiles]);
+
   const queryArgs = useMemo(
     () => ({
       page,
@@ -137,7 +146,7 @@ export default function WorkerSearchScreen() {
         ? {
           latitude: selectedMapLocation.latitude,
           longitude: selectedMapLocation.longitude,
-          radius: maxDistanceMiles,
+          radius: debouncedMaxDistanceMiles,
         }
         : {}),
       ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
@@ -148,8 +157,8 @@ export default function WorkerSearchScreen() {
     }),
     [
       apiTrade,
+      debouncedMaxDistanceMiles,
       debouncedSearchQuery,
-      maxDistanceMiles,
       minRatePerDay,
       page,
       selectedMapLocation,
@@ -173,7 +182,7 @@ export default function WorkerSearchScreen() {
         ? {
           latitude: selectedMapLocation.latitude,
           longitude: selectedMapLocation.longitude,
-          radius: maxDistanceMiles,
+          radius: debouncedMaxDistanceMiles,
         }
         : {}),
       ...(minRatePerDay !== 120
@@ -307,11 +316,11 @@ export default function WorkerSearchScreen() {
   useEffect(() => {
     setPage(1);
     setJobs([]);
-  }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
+  }, [debouncedSearchQuery, debouncedMaxDistanceMiles, minRatePerDay, tradeSkill]);
 
   useEffect(() => {
     setSelectedMapJobId("");
-  }, [mapLocationCoordinates, maxDistanceMiles, minRatePerDay, tradeSkill]);
+  }, [mapLocationCoordinates, debouncedMaxDistanceMiles, minRatePerDay, tradeSkill]);
 
   useEffect(() => {
     if (
@@ -567,6 +576,7 @@ export default function WorkerSearchScreen() {
         onReset={() => {
           setTradeSkill("");
           setMaxDistanceMiles(50);
+          setDebouncedMaxDistanceMiles(50);
           setMinRatePerDay(120);
         }}
       />
