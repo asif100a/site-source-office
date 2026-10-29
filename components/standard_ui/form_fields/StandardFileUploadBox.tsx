@@ -31,7 +31,8 @@ export default function StandardFileUploadBox({
   readonly = false,
   errorMessage = "",
   optional = false,
-  asterisk = false
+  asterisk = false,
+  onCustomUpload,
 }: {
   file: UploadedFile | null;
   setFile: (file: UploadedFile | null) => void;
@@ -44,6 +45,7 @@ export default function StandardFileUploadBox({
   errorMessage?: string;
   optional?: boolean;
   asterisk?: boolean;
+  onCustomUpload?: () => void;
 }) {
   const MAX_FILE_SIZE_BYTES = maxFileSize * 1024 * 1024;
 
@@ -65,26 +67,76 @@ export default function StandardFileUploadBox({
   const resolvedTitle = title ?? defaultTitle;
   const resolvedDescription = description ?? defaultDescription;
 
+  // ── Camera picker ────────────────────────────────────────────────────────────
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please allow camera access in device settings to take a photo.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+
+      if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE_BYTES) {
+        Alert.alert(
+          "File Too Large",
+          `Please select a file under ${maxFileSize}MB.`,
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const uriParts = asset.uri.split(".");
+      const extension = uriParts[uriParts.length - 1].toLowerCase();
+      const mimeType = extension === "png" ? "image/png" : "image/jpeg";
+      const fileName = asset.fileName ?? `photo_${Date.now()}.${extension}`;
+
+      setFile({
+        uri: asset.uri,
+        name: fileName,
+        type: mimeType,
+        size: asset.fileSize,
+      });
+    } catch (error) {
+      Alert.alert("Camera Error", "Unable to open camera. Please try again.");
+    }
+  };
+
   // ── Image picker ─────────────────────────────────────────────────────────────
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
         "Permission Required",
-        "Please allow access to your photo library.",
+        "Please allow access to your photo library in device settings.",
         [{ text: "OK" }],
       );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       allowsEditing: true,
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.9,
       allowsMultipleSelection: false,
     });
 
-    if (result.canceled) return;
+    if (result.canceled || !result.assets || !result.assets[0]) return;
 
     const asset = result.assets[0];
 
@@ -117,7 +169,7 @@ export default function StandardFileUploadBox({
       copyToCacheDirectory: true,
     });
 
-    if (result.canceled) return;
+    if (result.canceled || !result.assets || !result.assets[0]) return;
 
     const asset = result.assets[0];
 
@@ -140,13 +192,23 @@ export default function StandardFileUploadBox({
 
   // ── Upload handler — branches by mode ────────────────────────────────────────
   const handleUpload = async () => {
+    if (onCustomUpload) {
+      onCustomUpload();
+      return;
+    }
+
     if (mode === "image") {
-      await handlePickImage();
+      Alert.alert("Profile Photo", "Choose an option", [
+        { text: "Take Photo Now", onPress: handleTakePhoto },
+        { text: "Choose from Camera Roll", onPress: handlePickImage },
+        { text: "Cancel", style: "cancel" },
+      ]);
     } else if (mode === "pdf") {
       await handlePickPdf();
     } else {
       // "both" — let user choose via action sheet
       Alert.alert("Upload File", "Choose a source", [
+        { text: "Take Photo Now", onPress: handleTakePhoto },
         { text: "Photo Library", onPress: handlePickImage },
         { text: "PDF Document", onPress: handlePickPdf },
         { text: "Cancel", style: "cancel" },

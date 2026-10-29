@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Modal,
   RefreshControl,
   ScrollView,
   Text,
@@ -7,13 +8,14 @@ import {
   View,
 } from "react-native";
 import { useForm } from "react-hook-form";
-import { ChevronDown } from "lucide-react-native";
+import { Camera, ChevronDown, Image as ImageIcon, Trash2, X } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import StandardFileUploadBox, {
   UploadedFile,
 } from "@/components/standard_ui/form_fields/StandardFileUploadBox";
 import ScreenLoader from "@/components/ui/screen-loader";
+import HeadshotCropModalWeb from "@/components/modules/common/HeadshotCropModal.web";
 import {
   Avatar,
   FileChip,
@@ -78,12 +80,61 @@ export default function EditProfileScreenWeb() {
   const params = useLocalSearchParams<{ origin?: string | string[] }>();
   const [userRole, setUserRole] = useState<UserRole>("worker");
   const [openField, setOpenField] = useState<"trade" | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [cropCandidateUri, setCropCandidateUri] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [profileImageFile, setProfileImageFile] = useState<UploadedFile | null>(
     null,
   );
   const [certificate, setCertificate] = useState<UploadedFile | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isWorker = userRole === "worker";
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      Toast.show({
+        type: "error",
+        text1: "File too large",
+        text2: "Please select an image under 10MB.",
+      });
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setCropCandidateUri(objectUrl);
+    setIsCropModalOpen(true);
+    e.target.value = "";
+  };
+
+  const handleTakePhotoNow = () => {
+    setIsPhotoModalOpen(false);
+    cameraInputRef.current?.click();
+  };
+
+  const handlePickFromLibrary = () => {
+    setIsPhotoModalOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleRemovePhoto = () => {
+    setIsPhotoModalOpen(false);
+    setProfileImageFile(null);
+  };
+
+  const handleCropConfirmed = (croppedFile: UploadedFile) => {
+    setProfileImageFile(croppedFile);
+    Toast.show({
+      type: "success",
+      text1: "Profile photo set",
+      text2: "Your headshot has been framed and is ready to save.",
+    });
+  };
 
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<EditProfileFormValues>({
@@ -307,19 +358,37 @@ export default function EditProfileScreenWeb() {
                 <View className="flex-col gap-6 lg:flex-row lg:items-start">
                   <View className="flex-[1.15] gap-6">
                     <View className="flex-row items-center justify-between gap-4">
-                      <View className="flex-row items-center gap-3">
-                        <Avatar
-                          uri={avatarUri}
-                          size={52}
-                          fallbackLabel={currentName}
-                        />
+                      <View className="flex-row items-center gap-4">
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => setIsPhotoModalOpen(true)}
+                          className="relative cursor-pointer"
+                        >
+                          <Avatar
+                            uri={avatarUri}
+                            size={64}
+                            fallbackLabel={currentName}
+                          />
+                          <View className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#1E2933] items-center justify-center border-2 border-white shadow-sm">
+                            <Camera size={14} color="#FFFFFF" />
+                          </View>
+                        </TouchableOpacity>
                         <View>
                           <Text className="text-base font-bold text-neutral-950">
                             {currentName || "Profile"}
                           </Text>
-                          <Text className="text-sm text-neutral-500">
+                          <Text className="text-sm text-neutral-500 mb-1">
                             {currentEmail || "No email available"}
                           </Text>
+                          <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => setIsPhotoModalOpen(true)}
+                            className="cursor-pointer"
+                          >
+                            <Text className="text-[#FF5500] text-xs font-bold">
+                              Change profile photo
+                            </Text>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>
@@ -367,8 +436,9 @@ export default function EditProfileScreenWeb() {
                         setFile={setProfileImageFile}
                         mode="image"
                         title="Upload Profile Image"
-                        description="JPG or PNG (max 10MB)"
+                        description="Take a photo or choose from camera roll (max 10MB)"
                         optional
+                        onCustomUpload={() => setIsPhotoModalOpen(true)}
                       />
 
                       {isWorker ? (
@@ -412,6 +482,119 @@ export default function EditProfileScreenWeb() {
           </View>
         </ScrollView>
       )}
+
+      {/* Hidden file inputs for Web Camera & File selection */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        style={{ display: "none" }}
+        onChange={handleFileSelected}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileSelected}
+      />
+
+      {/* Photo Picker Options Modal on Web */}
+      <Modal
+        visible={isPhotoModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPhotoModalOpen(false)}
+      >
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setIsPhotoModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl border border-neutral-200 bg-white p-6 shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-extrabold text-neutral-950">
+                Profile Photo
+              </h3>
+              <button
+                onClick={() => setIsPhotoModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 font-medium mb-5">
+              Take a picture now or select from your camera roll. Drag to frame your headshot.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleTakePhotoNow}
+                className="flex items-center gap-3.5 p-4 rounded-2xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 transition-colors text-left"
+              >
+                <div className="w-11 h-11 rounded-full bg-[#FFF5F2] flex items-center justify-center flex-shrink-0">
+                  <Camera size={20} color="#FF5500" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-neutral-900">
+                    Take a Picture Now
+                  </div>
+                  <div className="text-xs text-neutral-500 mt-0.5">
+                    Open your camera and snap a new headshot
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={handlePickFromLibrary}
+                className="flex items-center gap-3.5 p-4 rounded-2xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 transition-colors text-left"
+              >
+                <div className="w-11 h-11 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <ImageIcon size={20} color="#2563EB" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-neutral-900">
+                    Choose from Camera Roll / Files
+                  </div>
+                  <div className="text-xs text-neutral-500 mt-0.5">
+                    Select a photo and drag to fit your profile headshot
+                  </div>
+                </div>
+              </button>
+
+              {profileImageFile ? (
+                <button
+                  onClick={handleRemovePhoto}
+                  className="flex items-center gap-3.5 p-4 rounded-2xl border border-red-100 bg-red-50/50 hover:bg-red-50 transition-colors text-left"
+                >
+                  <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <Trash2 size={20} color="#EF4444" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-red-600">
+                      Remove Selected Photo
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-0.5">
+                      Clear current photo selection
+                    </div>
+                  </div>
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Interactive Headshot Drag & Crop Modal on Web */}
+      <HeadshotCropModalWeb
+        visible={isCropModalOpen}
+        imageUri={cropCandidateUri}
+        onClose={() => setIsCropModalOpen(false)}
+        onConfirm={handleCropConfirmed}
+      />
     </ScreenShell>
   );
 }

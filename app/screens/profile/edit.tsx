@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  Modal,
   RefreshControl,
   ScrollView,
   Text,
@@ -7,7 +9,8 @@ import {
   View,
 } from "react-native";
 import { useForm } from "react-hook-form";
-import { ChevronDown } from "lucide-react-native";
+import { Camera, ChevronDown, Image as ImageIcon, Trash2, X } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import StandardFileUploadBox, {
   UploadedFile,
@@ -72,11 +75,116 @@ function getOptionLabel(
 export default function EditProfileScreen() {
   const router = useRouter();
   const [openField, setOpenField] = useState<"trade" | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState<UploadedFile | null>(
     null,
   );
   const [certificate, setCertificate] = useState<UploadedFile | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleTakePhoto = async () => {
+    setIsPhotoModalOpen(false);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Camera Permission Required",
+          "Please allow camera access in your device settings to take a profile picture.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (result.canceled || !result.assets || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const uriParts = asset.uri.split(".");
+      const extension = uriParts[uriParts.length - 1].toLowerCase();
+      const mimeType = extension === "png" ? "image/png" : "image/jpeg";
+      const fileName = asset.fileName ?? `profile_${Date.now()}.${extension}`;
+
+      setProfileImageFile({
+        uri: asset.uri,
+        name: fileName,
+        type: mimeType,
+        size: asset.fileSize ?? undefined,
+      });
+
+      Toast.show({
+        type: "success",
+        text1: "Profile photo set",
+        text2: "Your headshot has been framed and is ready to save.",
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Unable to open camera. Please try again.",
+      });
+    }
+  };
+
+  const handlePickFromLibrary = async () => {
+    setIsPhotoModalOpen(false);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Photo Library Permission Required",
+          "Please allow access to your photo library in device settings to choose a profile picture.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+        allowsMultipleSelection: false,
+      });
+
+      if (result.canceled || !result.assets || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const uriParts = asset.uri.split(".");
+      const extension = uriParts[uriParts.length - 1].toLowerCase();
+      const mimeType = extension === "png" ? "image/png" : "image/jpeg";
+      const fileName = asset.fileName ?? `profile_${Date.now()}.${extension}`;
+
+      setProfileImageFile({
+        uri: asset.uri,
+        name: fileName,
+        type: mimeType,
+        size: asset.fileSize ?? undefined,
+      });
+
+      Toast.show({
+        type: "success",
+        text1: "Profile photo set",
+        text2: "Your headshot has been framed and is ready to save.",
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Unable to select photo. Please try again.",
+      });
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setIsPhotoModalOpen(false);
+    setProfileImageFile(null);
+  };
   const { control, handleSubmit, reset, setValue, watch } =
     useForm<EditProfileFormValues>({
       defaultValues: {
@@ -296,14 +404,28 @@ export default function EditProfileScreen() {
         >
           <View className="flex-row items-center justify-between mb-8">
             <View className="flex-row items-center gap-3">
-              <Avatar uri={avatarUri} size={44} fallbackLabel={currentName} />
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setIsPhotoModalOpen(true)}
+                className="relative"
+              >
+                <Avatar uri={avatarUri} size={54} fallbackLabel={currentName} />
+                <View className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#1E2933] items-center justify-center border-2 border-white shadow-sm">
+                  <Camera size={12} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
               <View>
                 <Text className="text-slate-900 text-base font-extrabold">
                   {currentName || "Profile"}
                 </Text>
-                <Text className="text-neutral-500 text-sm">
-                  {currentEmail || "No email available"}
-                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setIsPhotoModalOpen(true)}
+                >
+                  <Text className="text-[#FF5500] text-xs font-bold mt-0.5">
+                    Change profile photo
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -336,8 +458,9 @@ export default function EditProfileScreen() {
             setFile={setProfileImageFile}
             mode="image"
             title="Upload Profile Image"
-            description="JPG or PNG (max 10MB)"
+            description="Take a photo or choose from camera roll (max 10MB)"
             optional
+            onCustomUpload={() => setIsPhotoModalOpen(true)}
           />
 
           {isWorker && (
@@ -367,6 +490,99 @@ export default function EditProfileScreen() {
           </ScrollView>
         </ScrollView>
       )}
+
+      {/* Photo Picker Options Modal */}
+      <Modal
+        visible={isPhotoModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsPhotoModalOpen(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setIsPhotoModalOpen(false)}
+          className="flex-1 bg-black/60 justify-end"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            className="bg-white rounded-t-3xl p-6 pb-10 shadow-2xl"
+          >
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-lg font-extrabold text-neutral-950">
+                Profile Photo
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsPhotoModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center active:opacity-75"
+              >
+                <X size={16} color="#333333" />
+              </TouchableOpacity>
+            </View>
+            <Text className="text-xs text-neutral-500 font-medium mb-5">
+              Take a picture now or select from your camera roll. Drag to frame your headshot.
+            </Text>
+
+            <View className="gap-3">
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleTakePhoto}
+                className="flex-row items-center gap-3.5 p-4 rounded-2xl border border-neutral-200 bg-neutral-50 active:bg-neutral-100"
+              >
+                <View className="w-11 h-11 rounded-full bg-[#FFF5F2] items-center justify-center">
+                  <Camera size={20} color="#FF5500" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-neutral-900">
+                    Take a Picture Now
+                  </Text>
+                  <Text className="text-xs text-neutral-500 mt-0.5">
+                    Open your camera and snap a new headshot
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handlePickFromLibrary}
+                className="flex-row items-center gap-3.5 p-4 rounded-2xl border border-neutral-200 bg-neutral-50 active:bg-neutral-100"
+              >
+                <View className="w-11 h-11 rounded-full bg-blue-50 items-center justify-center">
+                  <ImageIcon size={20} color="#2563EB" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-neutral-900">
+                    Choose from Camera Roll
+                  </Text>
+                  <Text className="text-xs text-neutral-500 mt-0.5">
+                    Select a photo and drag to fit your profile headshot
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {profileImageFile ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleRemovePhoto}
+                  className="flex-row items-center gap-3.5 p-4 rounded-2xl border border-red-100 bg-red-50/50 active:bg-red-50"
+                >
+                  <View className="w-11 h-11 rounded-full bg-red-100 items-center justify-center">
+                    <Trash2 size={20} color="#EF4444" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-sm font-bold text-red-600">
+                      Remove Selected Photo
+                    </Text>
+                    <Text className="text-xs text-neutral-500 mt-0.5">
+                      Clear current photo selection
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </ScreenShell>
   );
 }

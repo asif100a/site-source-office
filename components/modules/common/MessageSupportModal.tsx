@@ -7,8 +7,14 @@ import {
   TextInput,
   Alert,
   Platform,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback,
+  StyleSheet,
+  useWindowDimensions,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check, FileText, Images, Info, Trash2, X } from "lucide-react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
@@ -60,11 +66,72 @@ export default function MessageSupportModal({
   const [attachments, setAttachments] = useState<SupportAttachment[]>([]);
   const [submittedTicketId, setSubmittedTicketId] = useState("");
   const [formError, setFormError] = useState("");
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [subjectY, setSubjectY] = useState(0);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const subjectInputRef = useRef<TextInput>(null);
+  const descriptionInputRef = useRef<TextInput>(null);
+
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
   const [createSupportTicket, { isLoading: isSubmitting }] =
     useCreateSupportTicketMutation();
   const isDialog = presentation === "dialog";
 
+  const maxCardHeight =
+    isKeyboardVisible && Platform.OS === "ios"
+      ? Math.max(300, windowHeight - keyboardHeight - insets.top - 16)
+      : isDialog
+      ? windowHeight * 0.85
+      : windowHeight * 0.88;
+
+  useEffect(() => {
+    if (!showSupportModal) {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+      return;
+    }
+
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [showSupportModal]);
+
+  const handleClose = () => {
+    if (isSubmitting) return;
+    Keyboard.dismiss();
+    setShowSupportModal(false);
+  };
+
+  const handleBackdropPress = () => {
+    if (isSubmitting) return;
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+    } else {
+      handleClose();
+    }
+  };
+
   const handlePickPhotos = async () => {
+    Keyboard.dismiss();
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -131,6 +198,7 @@ export default function MessageSupportModal({
   };
 
   const handlePickDocuments = async () => {
+    Keyboard.dismiss();
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/jpeg", "image/png", "*/*"],
@@ -182,6 +250,7 @@ export default function MessageSupportModal({
   };
 
   const handleSubmit = async () => {
+    Keyboard.dismiss();
     const subject = supportSubject.trim();
     const description = supportDescription.trim();
 
@@ -238,219 +307,281 @@ export default function MessageSupportModal({
       animationType={isDialog ? "fade" : "slide"}
       transparent={true}
       visible={showSupportModal}
-      onRequestClose={() => setShowSupportModal(false)}
+      onRequestClose={handleClose}
+      statusBarTranslucent
     >
-      <View
-        className={isDialog ? "flex-1 items-center justify-center px-5" : "flex-1 justify-end"}
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
-        {supportModalState === "form" ? (
-          <View
-            className={
-              isDialog
-                ? "w-full max-w-[540px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl"
-                : "bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100"
-            }
-          >
-            <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-neutral-900 font-extrabold text-lg tracking-tight">
-                Message Support
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowSupportModal(false)}
-                className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center active:opacity-75"
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            justifyContent: isDialog ? "center" : "flex-end",
+            alignItems: isDialog ? "center" : undefined,
+            paddingHorizontal: isDialog ? 20 : 0,
+          }}
+        >
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <View style={StyleSheet.absoluteFillObject} />
+          </TouchableWithoutFeedback>
+
+          {supportModalState === "form" ? (
+            <View
+              style={{
+                maxHeight: maxCardHeight,
+                paddingBottom: isKeyboardVisible
+                  ? 12
+                  : isDialog
+                  ? 24
+                  : Math.max(24, insets.bottom + 8),
+              }}
+              className={
+                isDialog
+                  ? "w-full max-w-[540px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl"
+                  : "w-full bg-white rounded-t-4xl px-6 pt-6 shadow-2xl border-t border-neutral-100"
+              }
+            >
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-neutral-900 font-extrabold text-lg tracking-tight">
+                  Message Support
+                </Text>
+                <TouchableOpacity
+                  onPress={handleClose}
+                  disabled={isSubmitting}
+                  className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center active:opacity-75"
+                >
+                  <X size={16} color="#333333" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                ref={scrollViewRef}
+                style={{ flexShrink: 1 }}
+                contentContainerStyle={{ flexGrow: 0, paddingBottom: 4 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
               >
-                <X size={16} color="#333333" />
+                <View className="gap-5 pr-1">
+                  <View className="border border-dashed border-neutral-300 rounded-3xl p-6 bg-neutral-50/50 items-center justify-center">
+                    <Text className="text-neutral-400 text-[10px] font-extrabold tracking-wider uppercase mb-1">
+                      Upload PDF or Photo
+                    </Text>
+                    <Text className="text-neutral-400 text-[9px] font-semibold mb-4">
+                      JPG - PNG - PDF - MAX 10MB
+                    </Text>
+                    <View className="flex-row items-center gap-2.5">
+                      <TouchableOpacity
+                        onPress={handlePickPhotos}
+                        disabled={isSubmitting}
+                        className="bg-neutral-950 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
+                      >
+                        <Images size={14} color="#FFFFFF" />
+                        <Text className="text-white text-xs font-extrabold">
+                          Gallery / Photos
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={handlePickDocuments}
+                        disabled={isSubmitting}
+                        className="bg-white border border-neutral-200 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
+                      >
+                        <FileText size={14} color="#171717" />
+                        <Text className="text-neutral-900 text-xs font-extrabold">
+                          Browse Files
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {attachments.length > 0 ? (
+                    <View className="gap-2">
+                      {attachments.map((attachment, index) => {
+                        const isImage =
+                          attachment.type.startsWith("image/") ||
+                          /\.(jpg|jpeg|png|webp|gif|heic)$/i.test(attachment.name);
+
+                        return (
+                          <View
+                            key={`${attachment.name}-${attachment.size ?? index}`}
+                            className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3.5 py-3"
+                          >
+                            <View className="flex-1 flex-row items-center pr-3">
+                              {isImage ? (
+                                <ExpoImage
+                                  source={{ uri: attachment.uri }}
+                                  style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 10,
+                                    marginRight: 12,
+                                  }}
+                                  contentFit="cover"
+                                />
+                              ) : (
+                                <View className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center mr-3">
+                                  <FileText size={18} color="#EF4444" />
+                                </View>
+                              )}
+                              <View className="flex-1">
+                                <Text
+                                  className="text-xs font-bold text-neutral-800"
+                                  numberOfLines={1}
+                                >
+                                  {attachment.name}
+                                </Text>
+                                {attachment.size ? (
+                                  <Text className="mt-0.5 text-[10px] font-semibold text-neutral-400">
+                                    {(attachment.size / (1024 * 1024)).toFixed(2)} MB
+                                  </Text>
+                                ) : null}
+                              </View>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => handleRemoveAttachment(index)}
+                              disabled={isSubmitting}
+                              className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 disabled:opacity-60"
+                            >
+                              <Trash2 size={14} color="#525252" />
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : null}
+
+                  <View
+                    onLayout={(e) => {
+                      setSubjectY(e.nativeEvent.layout.y);
+                    }}
+                  >
+                    <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
+                      Subject
+                    </Text>
+                    <View className="bg-neutral-50 border border-neutral-200/60 rounded-2xl px-4 py-3">
+                      <TextInput
+                        ref={subjectInputRef}
+                        className="text-neutral-800 text-sm font-semibold py-0"
+                        placeholder="Enter your subject"
+                        placeholderTextColor="#A3A3A3"
+                        value={supportSubject}
+                        onChangeText={setSupportSubject}
+                        editable={!isSubmitting}
+                        returnKeyType="next"
+                        onSubmitEditing={() => descriptionInputRef.current?.focus()}
+                        blurOnSubmit={false}
+                        onFocus={() => {
+                          setTimeout(() => {
+                            scrollViewRef.current?.scrollTo({
+                              y: Math.max(0, subjectY - 12),
+                              animated: true,
+                            });
+                          }, 120);
+                        }}
+                      />
+                    </View>
+                  </View>
+
+                  <View>
+                    <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
+                      Description
+                    </Text>
+                    <View className="bg-neutral-50 border border-neutral-200/60 rounded-2xl px-4 py-3">
+                      <TextInput
+                        ref={descriptionInputRef}
+                        className="text-neutral-800 text-sm font-semibold py-0"
+                        placeholder="Describe the issue"
+                        placeholderTextColor="#A3A3A3"
+                        value={supportDescription}
+                        onChangeText={setSupportDescription}
+                        editable={!isSubmitting}
+                        multiline
+                        numberOfLines={4}
+                        style={{
+                          minHeight: 88,
+                          textAlignVertical: "top",
+                        }}
+                        onFocus={() => {
+                          setTimeout(() => {
+                            scrollViewRef.current?.scrollToEnd({ animated: true });
+                          }, 120);
+                        }}
+                      />
+                    </View>
+                  </View>
+
+                  {formError ? (
+                    <Text className="text-xs font-semibold text-red-600">
+                      {formError}
+                    </Text>
+                  ) : null}
+                </View>
+              </ScrollView>
+
+              <View className="pt-3">
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                  style={{ backgroundColor: Colors.common.GRAY_DARK }}
+                  className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90 disabled:opacity-60"
+                >
+                  <Text className="text-white font-extrabold text-sm">
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View
+              style={{
+                paddingBottom: isDialog
+                  ? 24
+                  : Math.max(24, insets.bottom + 8),
+              }}
+              className={
+                isDialog
+                  ? "w-full max-w-[460px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl items-center"
+                  : "w-full bg-white rounded-t-4xl px-6 pt-6 shadow-2xl border-t border-neutral-100 items-center"
+              }
+            >
+              <View className="w-20 h-20 bg-green-50 rounded-full items-center justify-center mb-6 border border-green-100">
+                <View className="w-14 h-14 bg-green-500 rounded-full items-center justify-center shadow-lg shadow-green-500/25">
+                  <Check size={28} color="#FFFFFF" strokeWidth={3} />
+                </View>
+              </View>
+
+              <Text className="text-neutral-950 font-extrabold text-xl tracking-tight mb-1.5">
+                Submitted
+              </Text>
+              <Text className="text-neutral-400 text-xs font-semibold mb-6">
+                Ticket ID: {submittedTicketId ? `#${submittedTicketId}` : "Created"}
+              </Text>
+
+              <View className="bg-orange-50/80 border border-orange-100/50 rounded-2xl p-4 flex-row items-center gap-3 w-full mb-8">
+                <View className="w-7 h-7 bg-orange-500/10 rounded-full justify-center items-center">
+                  <Info size={14} color="#F97316" />
+                </View>
+                <Text className="flex-1 text-orange-800 text-xs font-semibold leading-relaxed">
+                  Our admin team will review your issue and respond shortly.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleClose}
+                style={{ backgroundColor: Colors.common.GRAY_DARK }}
+                className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90"
+              >
+                <Text className="text-white font-extrabold text-sm">
+                  Go to dashboard
+                </Text>
               </TouchableOpacity>
             </View>
-
-            <ScrollView
-              className={isDialog ? "max-h-[460px] mb-6" : "max-h-112.5 mb-6"}
-              showsVerticalScrollIndicator={false}
-            >
-              <View className="gap-5 pr-1">
-                <View className="border border-dashed border-neutral-300 rounded-3xl p-6 bg-neutral-50/50 items-center justify-center">
-                  <Text className="text-neutral-400 text-[10px] font-extrabold tracking-wider uppercase mb-1">
-                    Upload PDF or Photo
-                  </Text>
-                  <Text className="text-neutral-400 text-[9px] font-semibold mb-4">
-                    JPG - PNG - PDF - MAX 10MB
-                  </Text>
-                  <View className="flex-row items-center gap-2.5">
-                    <TouchableOpacity
-                      onPress={handlePickPhotos}
-                      disabled={isSubmitting}
-                      className="bg-neutral-950 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
-                    >
-                      <Images size={14} color="#FFFFFF" />
-                      <Text className="text-white text-xs font-extrabold">
-                        Gallery / Photos
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={handlePickDocuments}
-                      disabled={isSubmitting}
-                      className="bg-white border border-neutral-200 px-4 py-2.5 rounded-full active:opacity-85 shadow-sm disabled:opacity-60 flex-row items-center gap-1.5"
-                    >
-                      <FileText size={14} color="#171717" />
-                      <Text className="text-neutral-900 text-xs font-extrabold">
-                        Browse Files
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {attachments.length > 0 ? (
-                  <View className="gap-2">
-                    {attachments.map((attachment, index) => {
-                      const isImage =
-                        attachment.type.startsWith("image/") ||
-                        /\.(jpg|jpeg|png|webp|gif|heic)$/i.test(attachment.name);
-
-                      return (
-                        <View
-                          key={`${attachment.name}-${attachment.size ?? index}`}
-                          className="flex-row items-center justify-between rounded-2xl border border-neutral-200 bg-white px-3.5 py-3"
-                        >
-                          <View className="flex-1 flex-row items-center pr-3">
-                            {isImage ? (
-                              <ExpoImage
-                                source={{ uri: attachment.uri }}
-                                style={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: 10,
-                                  marginRight: 12,
-                                }}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <View className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center mr-3">
-                                <FileText size={18} color="#EF4444" />
-                              </View>
-                            )}
-                            <View className="flex-1">
-                              <Text
-                                className="text-xs font-bold text-neutral-800"
-                                numberOfLines={1}
-                              >
-                                {attachment.name}
-                              </Text>
-                              {attachment.size ? (
-                                <Text className="mt-0.5 text-[10px] font-semibold text-neutral-400">
-                                  {(attachment.size / (1024 * 1024)).toFixed(2)} MB
-                                </Text>
-                              ) : null}
-                            </View>
-                          </View>
-                          <TouchableOpacity
-                            onPress={() => handleRemoveAttachment(index)}
-                            disabled={isSubmitting}
-                            className="h-8 w-8 items-center justify-center rounded-full bg-neutral-100 disabled:opacity-60"
-                          >
-                            <Trash2 size={14} color="#525252" />
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : null}
-
-                <View>
-                  <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
-                    Subject
-                  </Text>
-                  <View className="bg-neutral-50 border border-neutral-200/60 rounded-2xl px-4 py-3">
-                    <TextInput
-                      className="text-neutral-800 text-sm font-semibold py-0"
-                      placeholder="Enter your subject"
-                      placeholderTextColor="#A3A3A3"
-                      value={supportSubject}
-                      onChangeText={setSupportSubject}
-                      editable={!isSubmitting}
-                    />
-                  </View>
-                </View>
-
-                <View>
-                  <Text className="text-neutral-400 text-xs font-bold uppercase mb-2 tracking-wider">
-                    Description
-                  </Text>
-                  <View className="bg-neutral-50 border border-neutral-200/60 rounded-2xl px-4 py-3">
-                    <TextInput
-                      className="text-neutral-800 text-sm font-semibold py-0"
-                      placeholder="Describe the issue"
-                      placeholderTextColor="#A3A3A3"
-                      value={supportDescription}
-                      onChangeText={setSupportDescription}
-                      editable={!isSubmitting}
-                      multiline
-                    />
-                  </View>
-                </View>
-
-                {formError ? (
-                  <Text className="text-xs font-semibold text-red-600">
-                    {formError}
-                  </Text>
-                ) : null}
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-              style={{ backgroundColor: Colors.common.GRAY_DARK }}
-              className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90 mb-3 disabled:opacity-60"
-            >
-              <Text className="text-white font-extrabold text-sm">
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View
-            className={
-              isDialog
-                ? "w-full max-w-[460px] rounded-[28px] border border-neutral-200 bg-white p-6 shadow-2xl items-center"
-                : "bg-white rounded-t-4xl p-6 pb-12 shadow-2xl border-t border-neutral-100 items-center"
-            }
-          >
-            <View className="w-20 h-20 bg-green-50 rounded-full items-center justify-center mb-6 border border-green-100">
-              <View className="w-14 h-14 bg-green-500 rounded-full items-center justify-center shadow-lg shadow-green-500/25">
-                <Check size={28} color="#FFFFFF" strokeWidth={3} />
-              </View>
-            </View>
-
-            <Text className="text-neutral-950 font-extrabold text-xl tracking-tight mb-1.5">
-              Submitted
-            </Text>
-            <Text className="text-neutral-400 text-xs font-semibold mb-6">
-              Ticket ID: {submittedTicketId ? `#${submittedTicketId}` : "Created"}
-            </Text>
-
-            <View className="bg-orange-50/80 border border-orange-100/50 rounded-2xl p-4 flex-row items-center gap-3 w-full mb-8">
-              <View className="w-7 h-7 bg-orange-500/10 rounded-full justify-center items-center">
-                <Info size={14} color="#F97316" />
-              </View>
-              <Text className="flex-1 text-orange-800 text-xs font-semibold leading-relaxed">
-                Our admin team will review your issue and respond shortly.
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => setShowSupportModal(false)}
-              style={{ backgroundColor: Colors.common.GRAY_DARK }}
-              className="w-full py-4 rounded-2xl items-center justify-center active:opacity-90"
-            >
-              <Text className="text-white font-extrabold text-sm">
-                Go to dashboard
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
