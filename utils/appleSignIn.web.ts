@@ -21,6 +21,8 @@ declare global {
 
 let sdkPromise: Promise<void> | null = null;
 
+export const isAppleWebSignInConfigured = Boolean(appleClientId);
+
 const loadAppleSdk = () => {
   if (window.AppleID) return Promise.resolve();
   if (sdkPromise) return sdkPromise;

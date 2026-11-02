@@ -22,7 +22,10 @@ import {
   type UserRole,
 } from "@/constants/Routes";
 import AuthWebShell from "./_web-shell";
-import { signInWithAppleOnWeb } from "@/utils/appleSignIn.web";
+import {
+  isAppleWebSignInConfigured,
+  signInWithAppleOnWeb,
+} from "@/utils/appleSignIn.web";
 import { passwordSchema } from "@/zod/authSchema";
 import { getRoleFromToken } from "@/utils/authToken";
 import { checkIsProfileComplete } from "@/utils/profileCompleteness";
@@ -448,16 +451,18 @@ export default function LoginScreenWeb({
             </UiText>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleAppleLogin}
-            activeOpacity={0.9}
-            disabled={isLoading || ssoLoading}
-            className="items-center justify-center rounded-2xl bg-[#1B2530] py-4"
-          >
-            <UiText className="text-base font-semibold text-white">
-              Sign in with Apple
-            </UiText>
-          </TouchableOpacity>
+          {isAppleWebSignInConfigured && (
+            <TouchableOpacity
+              onPress={handleAppleLogin}
+              activeOpacity={0.9}
+              disabled={isLoading || ssoLoading}
+              className="items-center justify-center rounded-2xl bg-[#1B2530] py-4"
+            >
+              <UiText className="text-base font-semibold text-white">
+                Sign in with Apple
+              </UiText>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View className="flex-row items-center justify-center">
