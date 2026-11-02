@@ -7,6 +7,9 @@ import LogoWhite from "@/assets/icons/LogoWhite";
 import { useForm } from "react-hook-form";
 import StandardInputField from "@/components/standard_ui/form_fields/StandardInputField";
 import Toast from "react-native-toast-message";
+import { useDispatch } from "react-redux";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setToken } from "@/store/slices/authSlice";
 import { normalizeUserRole } from "@/constants/Routes";
 import {
   useAppleLoginMutation,
@@ -36,6 +39,7 @@ export default function RegisterSsoScreen({
   onLoginPress,
 }: RegisterSsoScreenProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const params = useLocalSearchParams();
   const activeRole = normalizeUserRole(params.role);
   const [register, { isLoading }] = useRegisterMutation();
@@ -93,6 +97,17 @@ export default function RegisterSsoScreen({
       provider === "google"
         ? await googleLogin(payload).unwrap()
         : await appleLogin(payload).unwrap();
+
+    const appToken =
+      response.accessToken ??
+      response.data?.accessToken ??
+      (response.data as any)?.token;
+
+    if (appToken) {
+      dispatch(setToken(appToken));
+      await AsyncStorage.setItem("token", appToken);
+    }
+
     const user = response.data?.user;
     onContinue?.({
       provider,

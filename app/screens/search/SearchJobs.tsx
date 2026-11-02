@@ -36,6 +36,7 @@ import {
   mapApiJobToWorkerJobItem,
 } from "@/utils/workerJobs";
 import WorkerHomeFilterModal from "@/components/modules/worker/worker-home/WorkerHomeFilterModal";
+import { type DateRangeValue } from "@/components/modules/common/DateRangeCalendar";
 import { getWorkerJobTrade } from "@/utils/workerJobFilters";
 import { getWorkerMapRegion } from "@/utils/workerMapJobs";
 import type { WorkerHomeJob } from "@/types";
@@ -43,6 +44,23 @@ import {
   getAddressFromCoordinates,
   type AddressDetails,
 } from "@/utils/googlePlaces";
+
+const formatQueryDate = (
+  date?: Date,
+  bound: "start" | "end" = "start",
+): string | undefined => {
+  if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  if (bound === "start") {
+    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0)).toISOString();
+  }
+  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999)).toISOString();
+};
 
 const JOBS_LIMIT = 10;
 const MAP_JOBS_LIMIT = 100;
@@ -104,7 +122,16 @@ export default function WorkerSearchScreen() {
   // The map filter state mirrors the worker home map filter controls.
   const [tradeSkill, setTradeSkill] = useState("");
   const [maxDistanceMiles, setMaxDistanceMiles] = useState(50);
+  const [debouncedMaxDistanceMiles, setDebouncedMaxDistanceMiles] = useState(50);
   const [minRatePerDay, setMinRatePerDay] = useState(120);
+
+  // Date and price filter states
+  const [dateRange, setDateRange] = useState<DateRangeValue>({});
+  const [minPrice, setMinPrice] = useState<number | null>(null);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState<number | null>(null);
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState<number | null>(null);
+
   const trimmedSearchQuery = searchQuery.trim();
   const isWaitingForSearch = trimmedSearchQuery !== debouncedSearchQuery;
   const apiTrade = getWorkerJobTrade(tradeSkill);
@@ -128,6 +155,48 @@ export default function WorkerSearchScreen() {
     return () => clearTimeout(timeoutId);
   }, [trimmedSearchQuery]);
 
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMaxDistanceMiles(maxDistanceMiles);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [maxDistanceMiles]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [minPrice]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedMaxPrice(maxPrice);
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [maxPrice]);
+
+  const startDateFrom = useMemo(
+    () => formatQueryDate(dateRange.from, "start"),
+    [dateRange.from],
+  );
+  const endDateTo = useMemo(
+    () => formatQueryDate(dateRange.to, "end"),
+    [dateRange.to],
+  );
+
+  const hasActiveFilters = Boolean(
+    tradeSkill ||
+      debouncedMaxDistanceMiles !== 50 ||
+      debouncedMinPrice != null ||
+      debouncedMaxPrice != null ||
+      startDateFrom ||
+      endDateTo,
+  );
+
   const queryArgs = useMemo(
     () => ({
       page,
@@ -137,22 +206,30 @@ export default function WorkerSearchScreen() {
         ? {
           latitude: selectedMapLocation.latitude,
           longitude: selectedMapLocation.longitude,
-          radius: maxDistanceMiles,
+          radius: debouncedMaxDistanceMiles,
         }
         : {}),
       ...(debouncedSearchQuery ? { searchTerm: debouncedSearchQuery } : {}),
-      ...(minRatePerDay !== 120
-        ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
-        : {}),
       ...(apiTrade ? { trade: apiTrade } : {}),
+      ...(debouncedMinPrice != null && debouncedMinPrice > 0
+        ? { minPrice: debouncedMinPrice }
+        : {}),
+      ...(debouncedMaxPrice != null && debouncedMaxPrice > 0
+        ? { maxPrice: debouncedMaxPrice }
+        : {}),
+      ...(startDateFrom ? { startDateFrom } : {}),
+      ...(endDateTo ? { endDateTo } : {}),
     }),
     [
       apiTrade,
+      debouncedMaxDistanceMiles,
+      debouncedMaxPrice,
+      debouncedMinPrice,
       debouncedSearchQuery,
-      maxDistanceMiles,
-      minRatePerDay,
+      endDateTo,
       page,
       selectedMapLocation,
+      startDateFrom,
     ],
   );
 
@@ -173,13 +250,18 @@ export default function WorkerSearchScreen() {
         ? {
           latitude: selectedMapLocation.latitude,
           longitude: selectedMapLocation.longitude,
-          radius: maxDistanceMiles,
+          radius: debouncedMaxDistanceMiles,
         }
         : {}),
-      ...(minRatePerDay !== 120
-        ? { hourlyRate: Math.ceil(minRatePerDay / 9) }
-        : {}),
       ...(apiTrade ? { trade: apiTrade } : {}),
+      ...(debouncedMinPrice != null && debouncedMinPrice > 0
+        ? { minPrice: debouncedMinPrice }
+        : {}),
+      ...(debouncedMaxPrice != null && debouncedMaxPrice > 0
+        ? { maxPrice: debouncedMaxPrice }
+        : {}),
+      ...(startDateFrom ? { startDateFrom } : {}),
+      ...(endDateTo ? { endDateTo } : {}),
     },
   );
 
@@ -307,11 +389,27 @@ export default function WorkerSearchScreen() {
   useEffect(() => {
     setPage(1);
     setJobs([]);
-  }, [debouncedSearchQuery, maxDistanceMiles, minRatePerDay, tradeSkill]);
+  }, [
+    debouncedSearchQuery,
+    debouncedMaxDistanceMiles,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    startDateFrom,
+    endDateTo,
+    tradeSkill,
+  ]);
 
   useEffect(() => {
     setSelectedMapJobId("");
-  }, [mapLocationCoordinates, maxDistanceMiles, minRatePerDay, tradeSkill]);
+  }, [
+    mapLocationCoordinates,
+    debouncedMaxDistanceMiles,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    startDateFrom,
+    endDateTo,
+    tradeSkill,
+  ]);
 
   useEffect(() => {
     if (
@@ -506,9 +604,19 @@ export default function WorkerSearchScreen() {
 
           <TouchableOpacity
             onPress={() => setShowFilters(true)}
-            className="w-10 h-10 items-center justify-center rounded-xl border border-neutral-200/80 bg-white active:opacity-80"
+            className={`w-10 h-10 items-center justify-center rounded-xl border relative active:opacity-80 ${
+              hasActiveFilters
+                ? "border-[#FF5500] bg-orange-50/20"
+                : "border-neutral-200/80 bg-white"
+            }`}
           >
-            <SlidersHorizontal size={16} color="#333333" />
+            <SlidersHorizontal
+              size={16}
+              color={hasActiveFilters ? "#FF5500" : "#333333"}
+            />
+            {hasActiveFilters ? (
+              <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF5500]" />
+            ) : null}
           </TouchableOpacity>
         </View>
       ) : null}
@@ -563,11 +671,27 @@ export default function WorkerSearchScreen() {
         onMaxDistanceMilesChange={setMaxDistanceMiles}
         minRatePerDay={minRatePerDay}
         onMinRatePerDayChange={setMinRatePerDay}
-        resultCount={mapJobs.length}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        minPrice={minPrice}
+        onMinPriceChange={setMinPrice}
+        maxPrice={maxPrice}
+        onMaxPriceChange={setMaxPrice}
+        resultCount={
+          viewType === "list"
+            ? (allJobsQuery.data?.data?.meta?.total ?? jobs.length)
+            : mapJobs.length
+        }
         onReset={() => {
           setTradeSkill("");
           setMaxDistanceMiles(50);
+          setDebouncedMaxDistanceMiles(50);
           setMinRatePerDay(120);
+          setDateRange({});
+          setMinPrice(null);
+          setMaxPrice(null);
+          setDebouncedMinPrice(null);
+          setDebouncedMaxPrice(null);
         }}
       />
 

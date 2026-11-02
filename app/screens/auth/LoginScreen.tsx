@@ -28,12 +28,18 @@ import {
   signInWithGoogleInApp,
 } from "@/utils/googleSignIn";
 import { getOptionalPushNotificationToken } from "@/services/pushNotifications";
+import { checkIsProfileComplete } from "@/utils/profileCompleteness";
 
 interface LoginScreenProps {
   role?: UserRole;
   onRegisterPress?: () => void;
   onForgotPasswordPress?: () => void;
   onLoginPress?: (email: string) => void;
+  onRequireDetails?: (data: {
+    email: string;
+    name?: string;
+    provider?: "google" | "apple" | "manual";
+  }) => void;
 }
 
 export default function LoginScreen({
@@ -41,6 +47,7 @@ export default function LoginScreen({
   onRegisterPress,
   onForgotPasswordPress,
   onLoginPress,
+  onRequireDetails,
 }: LoginScreenProps) {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -86,6 +93,33 @@ export default function LoginScreen({
 
         dispatch(setToken(token));
         await AsyncStorage.setItem("token", token);
+
+        const isComplete = await checkIsProfileComplete(dispatch, activeRole);
+        if (!isComplete) {
+          Toast.show({
+            type: "info",
+            text1: "Profile incomplete",
+            text2: "Please complete your profile details to continue.",
+          });
+          if (onRequireDetails) {
+            onRequireDetails({
+              email: data.email,
+              provider: "manual",
+            });
+            return;
+          }
+          router.replace({
+            pathname: "/auth",
+            params: {
+              step:
+                activeRole === "employer"
+                  ? "register_employer"
+                  : "register_general",
+              role: activeRole,
+            },
+          });
+          return;
+        }
 
         Toast.show({
           type: "success",
@@ -169,6 +203,34 @@ export default function LoginScreen({
 
     dispatch(setToken(appToken));
     await AsyncStorage.setItem("token", appToken);
+
+    const isComplete = await checkIsProfileComplete(dispatch, activeRole);
+    if (!isComplete) {
+      Toast.show({
+        type: "info",
+        text1: "Profile incomplete",
+        text2: "Please complete your profile details to continue.",
+      });
+      if (onRequireDetails) {
+        onRequireDetails({
+          email: identity.email,
+          name: identity.name,
+          provider,
+        });
+        return;
+      }
+      router.replace({
+        pathname: "/auth",
+        params: {
+          step:
+            activeRole === "employer"
+              ? "register_employer"
+              : "register_general",
+          role: activeRole,
+        },
+      });
+      return;
+    }
 
     Toast.show({
       type: "success",
