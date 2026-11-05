@@ -56,7 +56,7 @@ export default function MyJobsScreen() {
     { refetchOnMountOrArgChange: true }
   );
   const [updateJobOfferStatus] = useUpdateJobOfferStatusMutation();
-  // console.log("appliedJobsQuery from the my jobs screen: ", appliedJobsQuery);
+  console.log("appliedJobsQuery from the my jobs screen: ", appliedJobsQuery);
 
   useEffect(() => {
     if (!appliedJobsQuery.data || (page > 1 && appliedJobsQuery.isFetching)) {
