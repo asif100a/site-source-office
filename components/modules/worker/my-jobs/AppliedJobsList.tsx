@@ -38,7 +38,11 @@ function matchesTab(application: AppliedJobApplication, activeTab: string) {
 
   if (activeTab === "My Offers") return applicationStatus === "PENDING";
   if (activeTab === "My Applications") {
-    return applicationStatus === "ACCEPTED" || applicationStatus === "REJECTED";
+    return (
+      applicationStatus === "PENDING" ||
+      applicationStatus === "ACCEPTED" ||
+      applicationStatus === "REJECTED"
+    );
   }
   if (activeTab === "Active Jobs") return applicationStatus === "ACCEPTED";
   if (activeTab === "Completed") {
