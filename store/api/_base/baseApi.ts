@@ -69,7 +69,8 @@ const baseQueryWithAuth: BaseQueryFn<
   const result = await baseQuery(authArgs, api, extraOptions);
 
   // Only clear the login session when the access token itself was rejected.
-  if (result.error?.status === 401 && token && token === state.auth.token) {
+  const currentToken = (api.getState() as RootState).auth.token;
+  if (result.error?.status === 401 && token && token === currentToken) {
     api.dispatch(logout());
   }
 

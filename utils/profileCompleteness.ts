@@ -1,6 +1,11 @@
 import { workerProfileApi } from "@/store/api/workerProfileApi";
 import { employerProfileApi } from "@/store/api/employerProfileApi";
 import type { UserRole } from "@/constants/Routes";
+import { BACKEND_URL } from "@/constants/env.config";
+
+// Log structure and field presence only; never log profile values or credentials.
+const keys = (value: any): string[] =>
+  value && typeof value === "object" ? Object.keys(value) : [];
 
 /**
  * Checks whether the logged-in user has completed their onboarding profile details.
@@ -18,10 +23,23 @@ export const checkIsProfileComplete = async (
   role: UserRole,
 ): Promise<boolean> => {
   try {
+    // A login mutation can invalidate profile queries before its caller stores
+    // the new token. forceRefetch still joins an in-flight request with the same
+    // cache key, so let that request finish before verifying the new session.
+    const pending = dispatch(
+      role === "worker"
+        ? workerProfileApi.util.getRunningQueryThunk("getWorkerProfile", undefined)
+        : employerProfileApi.util.getRunningQueryThunk("getEmployerProfile", undefined),
+    );
+    if (pending) {
+      if (__DEV__) console.info("[ProfileCompletion] waiting for earlier profile request", { role });
+      await pending;
+    }
     if (role === "worker") {
       const result = await dispatch(
         workerProfileApi.endpoints.getWorkerProfile.initiate(undefined, {
           forceRefetch: true,
+          subscribe: false,
         }),
       ).unwrap();
 
@@ -51,11 +69,29 @@ export const checkIsProfileComplete = async (
           address?.description,
       );
 
-      return Boolean(hasTrade && (hasCoordinates || hasAddress));
+      const complete = Boolean(hasTrade && (hasCoordinates || hasAddress));
+      if (__DEV__) {
+        console.info("[ProfileCompletion] worker check", JSON.stringify({
+          backend: BACKEND_URL,
+          responseKeys: keys(result),
+          accountKeys: keys(accountData),
+          workerProfileKeys: keys(workerProfile),
+          commonProfileKeys: keys(accountData?.profile),
+          addressType: typeof address,
+          addressKeys: keys(address),
+          tradesType: Array.isArray(trades) ? "array" : typeof trades,
+          tradeCount: Array.isArray(trades) ? trades.length : null,
+          coordinateTypes: Array.isArray(coordinates)
+            ? coordinates.map((value: unknown) => typeof value) : null,
+          hasTrade, hasCoordinates, hasAddress, complete,
+        }));
+      }
+      return complete;
     } else {
       const result = await dispatch(
         employerProfileApi.endpoints.getEmployerProfile.initiate(undefined, {
           forceRefetch: true,
+          subscribe: false,
         }),
       ).unwrap();
 
@@ -94,7 +130,13 @@ export const checkIsProfileComplete = async (
       return Boolean((hasCoordinates || hasAddress) && hasName);
     }
   } catch (error) {
-    console.log("Profile completeness verification encountered an issue or 404:", error);
-    return false;
+    const status = (error as { status?: unknown })?.status;
+    if (__DEV__) {
+      console.warn("[ProfileCompletion] request failed", JSON.stringify({
+        role, backend: BACKEND_URL, status: status ?? "unknown",
+      }));
+    }
+    if (status === 404) return false;
+    throw new Error("Unable to verify your saved profile. Please try logging in again.");
   }
 };
