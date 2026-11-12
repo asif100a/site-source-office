@@ -101,7 +101,10 @@
 
 /* ─── Tailwind v4 color utilities ─────────────────────────────────
    bg-primary, text-foreground, border-border, etc. */
-@theme inline {
+/* Semantic color tokens are kept above for platform theme handling.
+   Tailwind's @theme directive is web-only and is not supported by the
+   React Native CSS parser. */
+/* @theme inline {
   --color-primary: rgb(var(--primary));
   --color-primary-foreground: rgb(var(--primary-foreground));
   --color-card: rgb(var(--card));
@@ -119,4 +122,4 @@
   --color-ring: rgb(var(--ring));
   --color-accent: rgb(var(--accent));
   --color-accent-foreground: rgb(var(--accent-foreground));
-}
+} */

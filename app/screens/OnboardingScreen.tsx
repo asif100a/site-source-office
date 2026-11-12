@@ -1,17 +1,14 @@
 import React from 'react';
-import { View, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
+import { View, ImageBackground, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import LogoWhite from '@/assets/icons/LogoWhite';
 import { Text } from '@/components/ui/text';
-import { Box } from '@/components/ui/box';
 import { Svg, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import ONBOARDING_1 from '@/assets/images/onboarding/onboarding-1.png';
 import { clearUserAuthenticated, setActiveRole } from "@/constants/authState";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const BottomGradient = () => (
-  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: SCREEN_HEIGHT * 0.65, zIndex: 1 }}>
+  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '65%', zIndex: 1 }}>
     <Svg height="100%" width="100%">
       <Defs>
         <LinearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -44,7 +41,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <Box className="flex-1 bg-black">
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
       {/* Logo Overlay */}
       <View style={{ position: 'absolute', top: 55, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}>
         <LogoWhite />
@@ -52,7 +49,7 @@ export default function OnboardingScreen() {
 
       <ImageBackground
         source={ONBOARDING_1}
-        style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+        style={{ flex: 1, width: '100%' }}
         resizeMode="cover"
       >
         {/* Dark bottom gradient overlay */}
@@ -60,30 +57,66 @@ export default function OnboardingScreen() {
 
         {/* Role Selection Actions */}
         <View style={{ position: 'absolute', bottom: 50, left: 0, right: 0, paddingHorizontal: 24, zIndex: 5 }}>
-          <Text className="text-white text-3xl font-extrabold text-center mb-2 leading-tight">
+          <Text
+            style={{
+              color: '#FFFFFF',
+              fontSize: 30,
+              fontWeight: '800',
+              lineHeight: 36,
+              textAlign: 'center',
+              marginBottom: 8,
+            }}
+          >
             The Smarter Way{'\n'}To Find Work
           </Text>
-          <Text className="text-neutral-300 text-sm text-center px-4 mb-8">
+          <Text
+            style={{
+              color: '#D4D4D4',
+              fontSize: 14,
+              textAlign: 'center',
+              paddingHorizontal: 16,
+              marginBottom: 32,
+            }}
+          >
             Workers find real jobs at transparent rates.
           </Text>
 
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={navigateToWorker}
-            className="bg-white rounded-xl py-4 items-center justify-center shadow-md"
+            style={{
+              minHeight: 56,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 12,
+              backgroundColor: '#FFFFFF',
+            }}
           >
-            <Text className="text-black font-bold text-base">Worker</Text>
+            <Text style={{ color: '#000000', fontSize: 16, fontWeight: '700' }}>
+              Worker
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={navigateToEmployer}
-            className="border border-white/40 bg-black/35 rounded-xl py-4 items-center justify-center mt-3"
+            style={{
+              minHeight: 56,
+              marginTop: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.4)',
+              borderRadius: 12,
+              backgroundColor: 'rgba(0,0,0,0.35)',
+            }}
           >
-            <Text className="text-white font-bold text-base">Employer</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
+              Employer
+            </Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
-    </Box>
+    </View>
   );
 }

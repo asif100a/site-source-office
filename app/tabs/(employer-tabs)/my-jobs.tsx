@@ -33,6 +33,7 @@ import { useGetEmployerProfileQuery } from "@/store/api/employerProfileApi";
 import Toast from "react-native-toast-message";
 import ConfirmDeleteJobModal from "@/components/modules/employer/my-jobs/ConfirmDeleteJobModal";
 import ScreenLoader from "@/components/ui/screen-loader";
+import { formatProjectJobDateRange } from "@/utils/projectJob";
 
 const EMPTY_PROJECT_FORM: ProjectForm = {
   name: "",
@@ -53,24 +54,6 @@ const formatProjectDate = (date: Date) =>
     month: "short",
     year: "numeric",
   });
-
-export const formatProjectJobDateRange = (range: ProjectJobDateRange) => {
-  if (!range.from && !range.to) {
-    return "Select required days";
-  }
-
-  if (range.from && !range.to) {
-    return formatProjectDate(range.from);
-  }
-
-  if (!range.from && range.to) {
-    return formatProjectDate(range.to);
-  }
-
-  return `${formatProjectDate(range.from as Date)} - ${formatProjectDate(
-    range.to as Date,
-  )}`;
-};
 
 function MyJobsListHeader({
   searchQuery,

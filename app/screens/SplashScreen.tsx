@@ -1,8 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, View } from 'react-native';
+import React from 'react';
+import { View } from 'react-native';
 import Logo from '@/assets/icons/Logo';
-import { Center } from '@/components/ui/center';
-import { Box } from '@/components/ui/box';
 
 export default function SplashScreen() {
   // const logoFade = useRef(new Animated.Value(0)).current;
@@ -25,12 +23,15 @@ export default function SplashScreen() {
   // }, []);
 
   return (
-    <Box className="flex-1 bg-white items-center justify-center">
-      <View>
-        <Center className="">
-          <Logo />
-        </Center>
-      </View>
-    </Box>
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+      }}
+    >
+      <Logo />
+    </View>
   );
 }

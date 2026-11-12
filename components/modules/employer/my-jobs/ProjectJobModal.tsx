@@ -5,7 +5,7 @@ import { CalendarDays } from "lucide-react-native";
 import { Colors } from "@/constants/Colors";
 import DateTimePicker, { useDefaultStyles } from "react-native-ui-datepicker";
 import { ProjectCard, ProjectJobDateRange, ProjectJobForm } from "@/types";
-import { formatProjectJobDateRange } from "@/app/tabs/(employer-tabs)/my-jobs";
+import { formatProjectJobDateRange } from "@/utils/projectJob";
 
 export default function ProjectJobModal({
   visible,
