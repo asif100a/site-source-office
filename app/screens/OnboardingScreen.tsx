@@ -49,8 +49,9 @@ export default function OnboardingScreen() {
 
       <ImageBackground
         source={ONBOARDING_1}
-        style={{ flex: 1, width: '100%' }}
+        style={{ flex: 1, width: '100%', backgroundColor: '#000000' }}
         resizeMode="cover"
+        imageStyle={{ width: '100%', height: '100%' }}
       >
         {/* Dark bottom gradient overlay */}
         <BottomGradient />
