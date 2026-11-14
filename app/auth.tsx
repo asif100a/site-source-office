@@ -131,7 +131,9 @@ export default function AuthFlow() {
 
   // Go back to the previous screen in the flow
   const handleBack = () => {
-    if (step === "register_sso" || step === "register_employer") {
+    if (step === "login") {
+      router.replace("/" as any);
+    } else if (step === "register_sso" || step === "register_employer") {
       setStep("login");
     } else if (step === "register_general") {
       setStep(
