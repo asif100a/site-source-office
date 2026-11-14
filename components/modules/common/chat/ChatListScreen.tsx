@@ -40,6 +40,48 @@ export default function ChatListScreen({
   );
 
   useEffect(() => {
+    console.log("[ChatListScreen] chats query state", {
+      endpoint: "GET /chats?page=1&limit=30",
+      hasToken: Boolean(token),
+      isUninitialized: chatsQuery.isUninitialized,
+      isLoading: chatsQuery.isLoading,
+      isFetching: chatsQuery.isFetching,
+      isSuccess: chatsQuery.isSuccess,
+      isError: chatsQuery.isError,
+      dataCount: chatsQuery.data?.length ?? 0,
+      error: chatsQuery.error ?? null,
+    });
+
+    if (chatsQuery.data) {
+      console.log(
+        "[ChatListScreen] chat conversations received",
+        chatsQuery.data.map((conversation) => ({
+          id: conversation.id,
+          jobId: conversation.job?.id ?? null,
+          fields: Object.keys(conversation),
+        })),
+      );
+    }
+  }, [
+    chatsQuery.data,
+    chatsQuery.error,
+    chatsQuery.isError,
+    chatsQuery.isFetching,
+    chatsQuery.isLoading,
+    chatsQuery.isSuccess,
+    chatsQuery.isUninitialized,
+    token,
+  ]);
+
+  useEffect(() => {
+    console.log("[ChatListScreen] threads normalized", {
+      conversationCount: chatsQuery.data?.length ?? 0,
+      threadCount: threads.length,
+      threadIds: threads.map((thread) => thread.id),
+    });
+  }, [chatsQuery.data?.length, threads]);
+
+  useEffect(() => {
     if (!jobId || !chatsQuery.data) return;
     const matchingChat = chatsQuery.data.find(
       (conversation) => conversation.job?.id === jobId,

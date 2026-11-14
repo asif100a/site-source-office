@@ -44,7 +44,9 @@ function matchesTab(application: AppliedJobApplication, activeTab: string) {
       applicationStatus === "REJECTED"
     );
   }
-  if (activeTab === "Active Jobs") return applicationStatus === "ACCEPTED";
+  if (activeTab === "Active Jobs") {
+    return applicationStatus === "ACCEPTED" && jobStatus !== "COMPLETED";
+  }
   if (activeTab === "Completed") {
     return applicationStatus === "COMPLETED" || jobStatus === "COMPLETED";
   }
@@ -248,7 +250,10 @@ export default function AppliedJobsList({
     const job = application.job;
     const jobId = job?.id ?? application.jobId;
     const applicationStatus = application.status?.toUpperCase() ?? "PENDING";
-    const isCompleted = job?.status?.toUpperCase() === "COMPLETED";
+    const isCompleted =
+      applicationStatus === "COMPLETED" ||
+      job?.status?.toUpperCase() === "COMPLETED";
+    const displayStatus = isCompleted ? "COMPLETED" : applicationStatus;
     const workersCount = getWorkersCount(job?.workersNeeded);
 
     return (
@@ -285,7 +290,7 @@ export default function AppliedJobsList({
               className="text-[10px] font-extrabold"
               style={{ color: Colors.common.BRAND }}
             >
-              {applicationStatus}
+              {displayStatus}
             </Text>
           </View>
         </View>

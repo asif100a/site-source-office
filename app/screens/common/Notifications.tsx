@@ -18,7 +18,11 @@ import {
   useMarkAllAsDoneNotificationsMutation,
 } from "@/store/api/notificationApi";
 import Toast from "react-native-toast-message";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { getRoleFromToken } from "@/utils/authToken";
+import { getNotificationRoute, type NotificationNavigationData } from "@/utils/notificationNavigation";
+import type { RootState } from "@/store/store";
 
 type Notification = {
   id?: string;
@@ -28,9 +32,12 @@ type Notification = {
   description?: string;
   body?: string;
   createdAt?: string;
+  sentAt?: string;
   time?: string;
   isRead?: boolean;
   read?: boolean;
+  seen?: boolean;
+  data?: NotificationNavigationData;
 };
 
 const getNotificationId = (notification: Notification) =>
@@ -68,6 +75,7 @@ function NotificationItem({
   time,
   isRead,
   onDelete,
+  onPress,
   isDeleting,
 }: {
   title: string;
@@ -75,10 +83,15 @@ function NotificationItem({
   time: string;
   isRead: boolean;
   onDelete: () => void;
+  onPress: () => void;
   isDeleting: boolean;
 }) {
   return (
-    <View className="bg-white rounded-[18px] px-4 py-4 flex-row items-start border border-neutral-100 shadow-sm">
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      className="bg-white rounded-[18px] px-4 py-4 flex-row items-start border border-neutral-100 shadow-sm"
+    >
       <View
         className="w-7 h-7 rounded-full items-center justify-center mt-0.5"
         style={{ backgroundColor: isRead ? "#CBD5E1" : Colors.common.BRAND }}
@@ -101,16 +114,22 @@ function NotificationItem({
       </View>
       <TouchableOpacity
         disabled={isDeleting}
-        onPress={onDelete}
+        onPress={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
         className="h-8 w-8 items-center justify-center rounded-full bg-neutral-50 active:opacity-70"
       >
         <Trash2 size={15} color="#737373" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default function Notifications() {
+  const router = useRouter();
+  const token = useSelector((state: RootState) => state.auth.token);
+  const role = getRoleFromToken(token ?? "") ?? "worker";
   const notificationsQuery = useGetNotificationsQuery({ page: 1, limit: 50 });
   const [markAllAsDone, { isLoading: isMarkingAll }] =
     useMarkAllAsDoneNotificationsMutation();
@@ -119,6 +138,7 @@ export default function Notifications() {
   const [deleteAllNotifications, { isLoading: isDeletingAll }] =
     useDeleteAllNotificationMutation();
   const notifications = getNotifications(notificationsQuery.data);
+  console.log("notifications: ", notifications);
 
   const handleMarkAllAsRead = async () => {
     try {
@@ -157,6 +177,21 @@ export default function Notifications() {
         text2: (error as any)?.data?.message ?? "Please try again.",
       });
     }
+  };
+
+  const handleOpenNotification = (notification: Notification) => {
+    const destination = getNotificationRoute(notification.data, notification.title, role);
+
+    if (!destination) {
+      Toast.show({
+        type: "info",
+        text1: "Details unavailable",
+        text2: "This notification does not include a screen to open.",
+      });
+      return;
+    }
+
+    router.push(destination as any);
   };
 
   return (
@@ -234,10 +269,11 @@ export default function Notifications() {
                   notification.body ??
                   ""
                 }
-                time={notification.time ?? formatNotificationTime(notification.createdAt)}
-                isRead={Boolean(notification.isRead ?? notification.read)}
+                time={notification.time ?? formatNotificationTime(notification.sentAt ?? notification.createdAt)}
+                isRead={Boolean(notification.isRead ?? notification.read ?? notification.seen)}
                 isDeleting={isDeleting}
                 onDelete={() => void handleDelete(getNotificationId(notification))}
+                onPress={() => handleOpenNotification(notification)}
               />
             </View>
           ))}

@@ -11,6 +11,10 @@ import {
   useMarkAllAsDoneNotificationsMutation,
 } from "@/store/api/notificationApi";
 import Toast from "react-native-toast-message";
+import { useSelector } from "react-redux";
+import { getRoleFromToken } from "@/utils/authToken";
+import { getNotificationRoute, type NotificationNavigationData } from "@/utils/notificationNavigation";
+import type { RootState } from "@/store/store";
 
 type Notification = {
   id?: string;
@@ -20,9 +24,12 @@ type Notification = {
   description?: string;
   body?: string;
   createdAt?: string;
+  sentAt?: string;
   time?: string;
   isRead?: boolean;
   read?: boolean;
+  seen?: boolean;
+  data?: NotificationNavigationData;
 };
 
 const getNotificationId = (notification: Notification) =>
@@ -60,6 +67,7 @@ function NotificationItem({
   time,
   isRead,
   onDelete,
+  onPress,
   isDeleting,
 }: {
   title: string;
@@ -67,10 +75,15 @@ function NotificationItem({
   time: string;
   isRead: boolean;
   onDelete: () => void;
+  onPress: () => void;
   isDeleting: boolean;
 }) {
   return (
-    <View className="rounded-[22px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm">
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.82}
+      className="rounded-[22px] border border-neutral-200/80 bg-white px-5 py-4 shadow-sm"
+    >
       <View className="flex-row items-start gap-4">
         <View
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -94,18 +107,23 @@ function NotificationItem({
 
         <TouchableOpacity
           disabled={isDeleting}
-          onPress={onDelete}
+          onPress={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
           className="h-9 w-9 items-center justify-center rounded-full bg-neutral-50 active:opacity-70 disabled:opacity-50"
         >
           <Trash2 size={16} color="#737373" />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default function NotificationsWeb() {
   const router = useRouter();
+  const token = useSelector((state: RootState) => state.auth.token);
+  const role = getRoleFromToken(token ?? "") ?? "worker";
   const notificationsQuery = useGetNotificationsQuery({ page: 1, limit: 50 });
   const [markAllAsDone, { isLoading: isMarkingAll }] =
     useMarkAllAsDoneNotificationsMutation();
@@ -152,6 +170,21 @@ export default function NotificationsWeb() {
         text2: (error as any)?.data?.message ?? "Please try again.",
       });
     }
+  };
+
+  const handleOpenNotification = (notification: Notification) => {
+    const destination = getNotificationRoute(notification.data, notification.title, role);
+
+    if (!destination) {
+      Toast.show({
+        type: "info",
+        text1: "Details unavailable",
+        text2: "This notification does not include a screen to open.",
+      });
+      return;
+    }
+
+    router.push(destination as any);
   };
 
   return (
@@ -277,10 +310,11 @@ export default function NotificationsWeb() {
                       notification.body ??
                       ""
                     }
-                    time={notification.time ?? formatNotificationTime(notification.createdAt)}
-                    isRead={Boolean(notification.isRead ?? notification.read)}
+                    time={notification.time ?? formatNotificationTime(notification.sentAt ?? notification.createdAt)}
+                    isRead={Boolean(notification.isRead ?? notification.read ?? notification.seen)}
                     isDeleting={isDeleting}
                     onDelete={() => void handleDelete(getNotificationId(notification))}
+                    onPress={() => handleOpenNotification(notification)}
                   />
                 ))}
               </View>
