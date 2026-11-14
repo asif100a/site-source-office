@@ -21,7 +21,7 @@ export default function WorkerDetailsHeader({
         >
           <ArrowLeft size={18} color="#111827" />
         </TouchableOpacity>
-        <Text className="flex-1 text-neutral-900 text-lg font-extrabold ml-2">
+        <Text className="flex-1 text-neutral-900 text-base font-extrabold ml-2">
           Worker Details
         </Text>
       </View>

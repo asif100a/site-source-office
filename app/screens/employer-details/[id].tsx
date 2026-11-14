@@ -179,7 +179,7 @@ export default function EmployerDetailsScreen() {
           <View className="flex-row items-center justify-between">
             <BackButton
               title="Employer Details"
-              textStyle={{ fontSize: 18, fontWeight: "600" }}
+              textStyle={{ fontSize: 16, fontWeight: "600" }}
             />
 
             <TouchableOpacity className="h-11 w-11 items-center justify-center rounded-2xl bg-neutral-900 active:opacity-85">
