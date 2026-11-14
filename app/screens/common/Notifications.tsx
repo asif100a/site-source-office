@@ -163,12 +163,12 @@ export default function Notifications() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F8FAFC" }} edges={[]}>
       <View
         style={{ backgroundColor: Colors.common.BRAND }}
-        className="px-6 pt-12 pb-3"
+        className="px-6 pt-14 pb-3"
       >
         <BackButton />
-        <Text className="text-white text-[17px] font-semibold mt-4">
+        {/* <Text className="text-white text-base font-semibold mt-4">
           Notifications
-        </Text>
+        </Text> */}
         <View className="mt-3 flex-row gap-2">
           <TouchableOpacity
             disabled={isMarkingAll || notifications.length === 0}
